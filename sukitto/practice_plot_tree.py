@@ -29,27 +29,30 @@ if not fle:
 df = pd.read_csv(fle)
 print(df.head(5))
 print(df.shape) # 全体の数（行数・列数）
-# print(df[""].value_counts()) #項目ごとの件数
+
+# 数字以外の項目が入力されている場合、件数を表示する
+need_dummy_l = []
+for col in df.columns:
+    is_numeric = pd.to_numeric(df[col], errors='coerce').notna()
+    if not is_numeric.any():
+        need_dummy_l.append(df[col])
+    
 print(df.isnull().sum()) #列ごとに欠損値数を表示
 print(df[df.isnull().any(axis=1)]) #欠損値のある行を抽出
 
 
-
-#TODO: 文字列データをダミー変数化----------------------
-
 l_col = []
-ans = ""
-while True:
-    ans = input("ダミーデータに変換するカラム名を入力してください。")
-    if ans:
-        l_col.append(ans)
-    else:
-        break
+#TODO: 文字列データをダミー変数化----------------------
+for need_dummy in need_dummy_l:
+    print(need_dummy.value_counts())
+    col = need_dummy.name
     
-for col in l_col:
-    dum_df = pd.get_dummies(df[col], drop_first=True, dtype=int, prefix=col)
-    df = pd.concat([df, dum_df], axis=1)
+    if input(f"{col}:ダミーデータに変換しますか？ y or n : ") == "y":
+        dum_df = pd.get_dummies(df[col], drop_first=True, dtype=int, prefix=col)
+        df = pd.concat([df, dum_df], axis=1)
+
     df = df.drop(col,axis=1)
+
 
 #TODO: テストデータの分離
 test_sizeval=0.2
@@ -58,68 +61,59 @@ train_df, test_df = train_test_split(df, test_size=test_sizeval, random_state=ra
 
 
 #TODO：　#外れ値を確認するためのプロット図表示　確認の際は処理を中断
-base_col = ""
-while True:
-    ans = input("外れ値をプロット図で確認しますか？ y or n")
-    if "y" == ans:
-        base_col = input("基準となるカラム名を入力してください")  
-        if not base_col:
-            continue
-        flg = True
-        break
-    elif "n" ==ans:
-        flg = False
-        break
-    else:
-        print("無効な入力です。再度入力してください")
+if input("プロット図で外れ値を確認しますか？ y or n : ") == "y":
+    base_col = input("基準となるカラム名を入力してください : ")  
     
-if flg: 
-    se = train_df.corr()[base_col].map(abs).sort_values(ascending=False)
-    print(se)
-    
-    plt.figure(figsize=(12, 8)) 
-    for col in train_df.columns: 
-        df.plot(kind="scatter", x=col, y=base_col)
-    plt.show()
+    if base_col:
+        se = train_df.corr()[base_col].map(abs).sort_values(ascending=False)
+        print(se)
+        
+        plt.figure(figsize=(12, 8)) 
+        for col in train_df.columns: 
+            df.plot(kind="scatter", x=col, y=base_col)
+        plt.show()
+        
 
-ans = ""
-cound_l = []
-while True:
-    ans = input("外れ値で除去する条件式を入力してください") 
-    if ans:
-        #　条件をいくつか設定する必要あり-----------------------------------------？・・・・・・・・・・・・・・・・・・・・
-        ans_s = ans.split()
-        if len(ans_s)==3:            
-            cound_l.append(ans_s)
+if input("外れ値を除去しますか？ : ") == "y":
+    cound_l = []    
+    while True:        
+        cound =[]
+        for xy in ["x","y"]:
+            val = input(f"{xy}軸:条件式入力 : ")
+            cound.append(val)
+          
+        cound_l.append(cound)   
+               
+        ans = input("続けて条件式を入力しますか？ : ")        
+        if not ans == "y":
+            break
+        
+
+# TODO：　外れ値除去
+# dic_l = [{"RM":["<",5],"PRICE":[">",45]},{"PTRATIO":[">",18],"PRICE":[">",40]}]
+
+for cound in cound_l:    
+    
+    temp_df = train_df    
+    for val in cound:    
+        a, b, c = val.split()
+        
+        if b =="<":
+            temp_df = temp_df[temp_df[a] < int(c)]
         else:
-            print("条件式は　カラム名、比較符号、値の3つをスペースで区切って構成してください")
-    else:
-       break
+            temp_df = temp_df[temp_df[a] > int(c)]
+            
+    if not temp_df.empty:
+        train_df = train_df.drop(temp_df.index)
+        print(f"外れ値データ削除:{temp_df.index}")
 
-if cound_l:
-
-    #TODO：　外れ値除去
-    dic_l = [{"RM":["<",5],"PRICE":[">",45]},{"PTRATIO":[">",18],"PRICE":[">",40]}]
-    
-    for dic in dic_l:    
-        temp_df = train_df    
-        for key in dic:    
-            cound = dic[key]
-            if cound[0]=="<":
-                temp_df = temp_df[temp_df[key] < cound[1]]
-            else:
-                temp_df = temp_df[temp_df[key] > cound[1]]
-        if not temp_df.empty:
-            train_df = train_df.drop(temp_df.index)
-            print(f"外れ値データ削除：{temp_df.index}")
-    
-    # 外れ値除去後の影響係数確認
-    se = train_df.corr()["PRICE"].map(abs).sort_values(ascending=False)
-    print(se)
+# 外れ値除去後の影響係数確認
+se = train_df.corr()["PRICE"].map(abs).sort_values(ascending=False)
+print(se)
 
 
 #TODO: 欠損値補完処理-------------------
-flg = 0
+flg = input("欠損値を補完する項目を入力してください。0：平均値　1：中央値 : ")
 
 if flg==0:
     naVal = train_df.mean(numeric_only=True) # 欠損値を置き換える処理
@@ -131,7 +125,7 @@ else:
     #特殊処理記述
         pass
        
-print(train_df.isnull().sum()) # nullチェック
+# print(train_df.isnull().sum()) # nullチェック
 
 
 # 学習結果を返す処理
@@ -179,7 +173,6 @@ lean(x_df, y_df)
 # sys.exit()
 
 # TODO: 最終評価処理-----------------------------
-
       
 sc_model_x2= StandardScaler()
 sc_model_y2= StandardScaler()
@@ -187,7 +180,7 @@ sc_model_y2= StandardScaler()
 sc_model_x2.fit(x_df)
 sc_model_y2.fit(y_df)
 
-sc_x_2 = sc_model_x2.transform(x_df)
+sc_x_2 = sc_model_x2.transform(x_df) # 逆変換はinverse_transform
 sc_y_2 = sc_model_y2.transform(y_df)
 
 model = LinearRegression()
@@ -218,62 +211,15 @@ t_score = model.score(sc_x_2, sc_y_2)
 v_score = model.score(sc_x_test,sc_y_test)
 
 print(f"訓練・検証データスコア={t_score} : テストデータスコア={v_score}")
-
       
 
-# model = tree.DecisionTreeClassifier(max_depth=5, random_state=0, class_weight="balanced")
-# fle_pkl = tkinter.filedialog.askopenfilename(typ=[("pkl", '.pkl')], title="モデルデータの読み込み")
-# model = None
-# if fle_pkl:
-#     with open(fle_pkl, "rb") as f:
-#         model=pickle.load(f)
-# else:
-#     model = LinearRegression()
-
-
-# def learn(x,y,x1,y1,depth=0):
-#     model = tree.DecisionTreeClassifier(max_depth=depth, random_state=0, class_weight="balanced")
-#     model.fit(x,y)    
-#     print(f"depth={depth} 訓練{model.score(x,y)} 正解{model.score(x1,y1)}") # 回帰では決定係数、分類では確率評価
-    
-# for i in range(1,15):
-#     learn(x_train, y_train, x_test, y_test, i)
-
-
-model = tree.DecisionTreeClassifier(max_depth=5, random_state=0, class_weight="balanced")
-model.fit(x_train,y_train)
-
-print(f"訓練{model.score(x_train,y_train)} 正解{model.score(x_test,y_test)}") # 回帰では決定係数、分類では確率評価
-
-# print(model.coef_)
-# print(model.intercept_)
-# print(pd.DataFrame(model.feature_importances_, index=x_train.columns))  #決定木において重要度を示す係数を表示 
-
-  
-# temp = pd.DataFrame(model.coef_) #回帰、係数確認
-# temp.index = x_train.columns
-# print(temp)
-
-# print(f"：{model.score(x_test,y_test)}") # 回帰では決定係数、分類では確率評価
-
-# pred= model.predict(x_test) # 学習データより予測
-
-# print(f"平均絶対誤差：{mean_absolute_error(y_pred=pred, y_true=y_test)}") #平均絶対誤差
-
-# print(f"決定係数：{model.score(x_test,y_test)}") # 回帰では決定係数、分類では確率評価
-
-# plt.figure(figsize=(12, 8)) # 決定木モデルを可視化
-# plot_tree(model, filled=True)
-# plt.show()
-
-
-
-save_path = tkinter.filedialog.asksaveasfilename(typ=[("pkl", '.pkl')], title="モデルデータの保存")
-if save_path:
-    with open(save_path, "wb") as f:
-        pickle.dump(model, f)
-        
-    msg.showinfo(message="モデルを保存しました")
-else:
-    msg.showinfo(message="モデルを保存しませんでした")
+if input("モデルを保存しますか？　: ") == "y":
+    save_path = tkinter.filedialog.asksaveasfilename(typ=[("pkl", '.pkl')], title="モデルデータの保存")
+    if save_path:
+        with open(save_path, "wb") as f:
+            pickle.dump(model, f)
+            
+        msg.showinfo(message="モデルを保存しました")
+    else:
+        msg.showinfo(message="モデルを保存しませんでした")
     
