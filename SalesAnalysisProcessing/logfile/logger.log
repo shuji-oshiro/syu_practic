@@ -8493,3 +8493,9 @@ DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='C:\\Windows\\Font
 DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='C:\\Windows\\Fonts\\framdit.ttf', name='Franklin Gothic Medium', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.05
 DEBUG:matplotlib.font_manager:findfont: score(FontEntry(fname='C:\\Windows\\Fonts\\sylfaen.ttf', name='Sylfaen', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.05
 DEBUG:matplotlib.font_manager:findfont: Matching meiryo:style=normal:variant=normal:weight=normal:stretch=normal:size=12.0 to Meiryo ('C:\\Windows\\Fonts\\meiryo.ttc') with score of 0.050000.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not get breakpoints from the frontend.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not get breakpoints from the frontend.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not send debugging state to the frontend.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not send Pdb state to the frontend.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not send debugging state to the frontend.
+DEBUG:spyder_kernels.customize.spyderpdb:Could not get breakpoints from the frontend.

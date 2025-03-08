@@ -9,17 +9,7 @@ import pandas as pd
 import sqlite3
 import logging
 from tkinter import messagebox as msg
-
-SUCCESS = 1
-ERROR = -1
-CANCEL = 0 
-
-TBLNAME_DAY = "sales_day"
-TBLNAME_WEEK = "sales_week"
-TBLNAME_MONTH = "sales_month"
-TBLNAME_BRAND = "mst_brand"
-TBLNAME_LINE = "mst_line"
-TBLNAME_TENPO = "mst_tenpo"
+import settings 
 
 USECOLS_WEEK = ["得意先コード", "店舗コード", "ラインコード", "商品コード", "商品名", "当年純売金額", "当年純売数量"]
 USECOLS_MONTH = ["得意先コード","ラインコード","商品コード","商品名","当年純売金額","当年純売数量"]
@@ -31,9 +21,11 @@ COL_CSVTODB_MONTH = {'得意先コード':'t_code', "ラインコード":"l_code
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.DEBUG)
 
+const = settings.Settings()
+
 
 class Process_db:    
-    def __init__(self, path):        
+    def __init__(self):        
         """
         初期処理　
 
@@ -42,15 +34,14 @@ class Process_db:
         None.
 
         """
-        self.db_path = path
-        
+        pass        
         
     def get_sales_day(self):        
         df = pd.DataFrame()        
         try:  
             # データベース接続
-            with sqlite3.connect(self.db_path) as conn:
-                df = pd.read_sql(f"SELECT * FROM {TBLNAME_DAY}", conn)
+            with sqlite3.connect(const.DB_PATH) as conn:
+                df = pd.read_sql(f"SELECT * FROM {const.TBLNAME_DAY}", conn)
             
             return df            
         except Exception:               
@@ -62,8 +53,8 @@ class Process_db:
         df = pd.DataFrame()        
         try:  
             # データベース接続
-            with sqlite3.connect(self.db_path) as conn:
-                df = pd.read_sql(f"SELECT * FROM {TBLNAME_WEEK}", conn)
+            with sqlite3.connect(const.DB_PATH) as conn:
+                df = pd.read_sql(f"SELECT * FROM {const.TBLNAME_WEEK}", conn)
             
             return df            
         except Exception:               
@@ -75,8 +66,8 @@ class Process_db:
         df = pd.DataFrame()        
         try:  
             # データベース接続
-            with sqlite3.connect(self.db_path) as conn:
-                df = pd.read_sql(f"SELECT * FROM {TBLNAME_MONTH}", conn)  
+            with sqlite3.connect(const.DB_PATH) as conn:
+                df = pd.read_sql(f"SELECT * FROM {const.TBLNAME_MONTH}", conn)  
                     
             return df            
         except Exception:               
@@ -90,10 +81,10 @@ class Process_db:
         df3 = pd.DataFrame()  
         try:  
             # データベース接続
-            with sqlite3.connect(self.db_path) as conn:
-                df1 = pd.read_sql(f"SELECT * FROM {TBLNAME_BRAND}", conn)
-                df2 = pd.read_sql(f"SELECT * FROM {TBLNAME_LINE}", conn)
-                df3 = pd.read_sql(f"SELECT * FROM {TBLNAME_TENPO}", conn)
+            with sqlite3.connect(const.DB_PATH) as conn:
+                df1 = pd.read_sql(f"SELECT * FROM {const.TBLNAME_BRAND}", conn)
+                df2 = pd.read_sql(f"SELECT * FROM {const.TBLNAME_LINE}", conn)
+                df3 = pd.read_sql(f"SELECT * FROM {const.TBLNAME_TENPO}", conn)
                           
             return df1, df2, df3            
         except Exception:               
@@ -102,7 +93,7 @@ class Process_db:
             raise
     
     
-    def __update_salesinfo(self, df_a, df_b, tblName):
+    def __update_salesinfo(df_a, df_b, tblName):
         """
         内部関数　DBの売上情報を更新する処理
 
@@ -146,7 +137,7 @@ class Process_db:
                     
             df_c = pd.concat([df_a, df_b])            
             
-            with  sqlite3.connect(self.db_path) as conn :      
+            with  sqlite3.connect(const.DB_PATH) as conn :      
                     df_c.to_sql(tblName,conn,if_exists="replace",index=None)
                     conn.commit()            
             return df_c
@@ -215,7 +206,7 @@ class Process_db:
             df_in = df_in[df_in["amount"]>0]
             
             print(f"{len(df_in)}件")            
-            return cls.__update_salesinfo(df_in, df_base, TBLNAME_DAY)    
+            return cls.__update_salesinfo(df_in, df_base, const.TBLNAME_DAY)    
             
         except Exception: 
             erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
@@ -259,7 +250,7 @@ class Process_db:
             df_in = df_in[df_in["amount"]>0]
             
             print(f"{len(df_in)}件")            
-            return cls.__update_salesinfo(df_in, df_base, TBLNAME_WEEK)
+            return cls.__update_salesinfo(df_in, df_base, const.TBLNAME_WEEK)
             
         except Exception: 
             erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
@@ -303,14 +294,14 @@ class Process_db:
             df_in = df_in[df_in["amount"]>0]
             print(f"{len(df_in)}件")
             
-            return cls.__update_salesinfo(df_in, df_base, TBLNAME_MONTH)            
+            return cls.__update_salesinfo(df_in, df_base, const.TBLNAME_MONTH)            
         except Exception: 
             erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
             logging.exception(erMsg) 
             raise
         
         
-    def update_mst_tenpo(self, f):
+    def update_mst_tenpo(f):
         """
         店舗マスタの更新処理
 
@@ -328,10 +319,10 @@ class Process_db:
         
         try:
             mst_data = pd.read_csv(f,encoding="utf-8",header=1) 
-            with  sqlite3.connect(self.db_pat) as conn :      
-                    mst_data.to_sql(TBLNAME_TENPO, conn,if_exists="replace",index=None)
+            with  sqlite3.connect(const.DB_PATH) as conn :      
+                    mst_data.to_sql(const.TBLNAME_TENPO, conn,if_exists="replace",index=None)
                     conn.commit()
-                    return pd.read_sql(f"SELECT * FROM {TBLNAME_TENPO}", conn)
+                    return pd.read_sql(f"SELECT * FROM {const.TBLNAME_TENPO}", conn)
             
         except Exception: 
             erMsg = "店舗マスタ情報更新中にエラーが発生しました"

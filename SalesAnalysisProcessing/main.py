@@ -13,6 +13,7 @@ import pandas as pd
 import openpyxl as op
 import process_db
 import process_analysis
+import settings
 import logging
 from datetime import timedelta, datetime as dt
 from dateutil.relativedelta import relativedelta  
@@ -22,33 +23,15 @@ import matplotlib.pyplot as plt
 import threading
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-        
-DB_PATH = r"\\okisvrm1\各部署\パン部門\TestDB\SalesInfo.db"
 
-process_db = process_db.Process_db(DB_PATH)
+const = settings.Settings()        
+
+process_db = process_db.Process_db()
 pro_anasys = process_analysis.ProcessAnalysis()
-
-FLG_DAY = 1
-FLG_WEEK = 2 
-FLG_MONTH = 3
-
-FLG_SUCCESS = 1
-FLG_ERROR = -1
-FLG_CANCEL = 0 
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 
-FORMAT_YMD = "%Y年%m月%d日"
-FORMAT_YM = "%Y年%m月"
-
 plt.rcParams["font.family"] = "meiryo"
-
-pre_key = ""
-pre_val = pd.DataFrame()
-
-p_x = ""
-p_y = ""
-p_label = ""
 
 
 
@@ -70,15 +53,15 @@ class SalesDataFrame:
     def get_maxdate(self):
         val = None
         
-        if self.current_date == FLG_DAY:
+        if self.current_date == const.FLG_DAY:
             if len(self.df_day["day"]) > 0:
                 val = self.df_day["day"].max()   
                 
-        elif self.current_date == FLG_WEEK:
+        elif self.current_date == const.FLG_WEEK:
             if len(self.df_week["day"]) > 0:
                 val = self.df_week["day"].max()   
                 
-        elif self.current_date == FLG_MONTH:
+        elif self.current_date == const.FLG_MONTH:
             if len(self.df_month["day"]) > 0:
                 val = self.df_month["day"].max()                
         return val    
@@ -86,15 +69,15 @@ class SalesDataFrame:
     def get_mindate(self):
         val = None
         
-        if self.current_date == FLG_DAY:
+        if self.current_date == const.FLG_DAY:
             if len(self.df_day["day"]) > 0:
                 val = self.df_day["day"].min()   
                 
-        elif self.current_date == FLG_WEEK:
+        elif self.current_date == const.FLG_WEEK:
             if len(self.df_week["day"]) > 0:
                 val = self.df_week["day"].min()   
                 
-        elif self.current_date == FLG_MONTH:
+        elif self.current_date == const.FLG_MONTH:
             if len(self.df_month["day"]) > 0:
                 val = self.df_month["day"].min()               
                 
@@ -112,10 +95,10 @@ class SalesDataFrame:
 
         """
         
-        if self.current_date == FLG_DAY:
+        if self.current_date == const.FLG_DAY:
             return self.df_day
         
-        elif self.current_date == FLG_WEEK:
+        elif self.current_date == const.FLG_WEEK:
             return self.df_week
         
         else:
@@ -148,10 +131,10 @@ class SalesDataFrame:
                             
            
         # 文字列日付⇒日付データ
-        if self.current_date == FLG_MONTH:
-            df_out["day"] = pd.to_datetime(df_out["day"], format=FORMAT_YM)
+        if self.current_date == const.FLG_MONTH:
+            df_out["day"] = pd.to_datetime(df_out["day"], format=const.FORMAT_YM)
         else:                          
-            df_out["day"] = pd.to_datetime(df_out["day"], format=FORMAT_YMD)
+            df_out["day"] = pd.to_datetime(df_out["day"], format=const.FORMAT_YMD)
         
             
         # FROM <= 抽出期間 <= TO               
@@ -190,7 +173,7 @@ class FrameInput(tk.LabelFrame):
         frame_row1 = tk.LabelFrame(self)
         frame_row1.pack(anchor=tk.W)
         tk.Label(frame_row1, text="データベースパス：").pack(side=tk.LEFT)
-        tk.Label(frame_row1, text=DB_PATH).pack(side=tk.LEFT)
+        tk.Label(frame_row1, text=const.DB_PATH).pack(side=tk.LEFT)
     
     
         btn_GetInfo = tk.Button(frame_row1, text="店舗情報更新")
@@ -249,7 +232,7 @@ class FramePeriod(tk.LabelFrame):
         frame_row2 = tk.LabelFrame(self)
         frame_row2.pack(anchor=tk.W)
             
-        tk.Radiobutton(frame_row2, text="日別", variable=self.radio_kind_period, value=FLG_DAY, command=self.choice_datekind).pack(side=tk.LEFT)
+        tk.Radiobutton(frame_row2, text="日別", variable=self.radio_kind_period, value=const.FLG_DAY, command=self.choice_datekind).pack(side=tk.LEFT)
         self.entry_from = DateEntry(frame_row2, date_pattern="yyyy年mm月dd日")
         self.entry_from.pack(side=tk.LEFT)
         tk.Label(frame_row2, text="～").pack(side=tk.LEFT)
@@ -279,7 +262,7 @@ class FramePeriod(tk.LabelFrame):
         # 2-3　週別売上抽出
         frame_row3 = tk.LabelFrame(self)
         frame_row3.pack(anchor=tk.W)        
-        tk.Radiobutton(frame_row3, text="週別", variable=self.radio_kind_period, value=FLG_WEEK, command=self.choice_datekind).pack(side=tk.LEFT)
+        tk.Radiobutton(frame_row3, text="週別", variable=self.radio_kind_period, value=const.FLG_WEEK, command=self.choice_datekind).pack(side=tk.LEFT)
         
         self.var_select_week_from = tk.StringVar()
         self.comb_week_from = ttk.Combobox(frame_row3, state="readonly", textvariable=self.var_select_week_from)
@@ -292,7 +275,7 @@ class FramePeriod(tk.LabelFrame):
         #2-4　月別売上抽出
         frame_row4 = tk.LabelFrame(self)
         frame_row4.pack(anchor=tk.W)      
-        tk.Radiobutton(frame_row4, text="月別", variable=self.radio_kind_period, value=FLG_MONTH, command=self.choice_datekind).pack(side=tk.LEFT)
+        tk.Radiobutton(frame_row4, text="月別", variable=self.radio_kind_period, value=const.FLG_MONTH, command=self.choice_datekind).pack(side=tk.LEFT)
         
         self.var_select_mont_from = tk.StringVar()
         self.comb_mont_from = ttk.Combobox(frame_row4, state="readonly", textvariable=self.var_select_mont_from)
@@ -316,19 +299,19 @@ class FramePeriod(tk.LabelFrame):
 
         """
         _from,_to = None,None
-        if self.radio_kind_period.get() == FLG_DAY:
+        if self.radio_kind_period.get() == const.FLG_DAY:
             _from = dt.combine(self.entry_from.get_date(), dt.min.time())
             _to = dt.combine(self.entry_to.get_date(), dt.min.time())
             
             
-        elif self.radio_kind_period.get() == FLG_WEEK:
-            _from = dt.strptime(self.var_select_week_from.get(), FORMAT_YMD)
-            _to = dt.strptime(self.var_select_week_to.get(), FORMAT_YMD)
+        elif self.radio_kind_period.get() == const.FLG_WEEK:
+            _from = dt.strptime(self.var_select_week_from.get(), const.FORMAT_YMD)
+            _to = dt.strptime(self.var_select_week_to.get(), const.FORMAT_YMD)
             
             
-        elif self.radio_kind_period.get() == FLG_MONTH:
-            _from = dt.strptime(self.var_select_mont_from.get(), FORMAT_YM)
-            _to = dt.strptime(self.var_select_mont_to.get(), FORMAT_YM)
+        elif self.radio_kind_period.get() == const.FLG_MONTH:
+            _from = dt.strptime(self.var_select_mont_from.get(), const.FORMAT_YM)
+            _to = dt.strptime(self.var_select_mont_to.get(), const.FORMAT_YM)
             
             # _to = _to.replace(day=calendar.monthrange(_to.year, _to.month)[1])
             
@@ -350,7 +333,7 @@ class FramePeriod(tk.LabelFrame):
         targetWeek = []
         
         # 日別の集計期間が選択されていれば曜日指定の配列を返す
-        if self.radio_kind_period.get() == FLG_DAY:
+        if self.radio_kind_period.get() == const.FLG_DAY:
             for i in range(0,7):
                 if self.week_flg[i].get():
                     targetWeek.append(i)  
@@ -381,21 +364,21 @@ class FramePeriod(tk.LabelFrame):
                 
                 fle = sorted(fle)            
                 
-                if self.radio_kind_period.get() == FLG_DAY: 
+                if self.radio_kind_period.get() == const.FLG_DAY: 
 
                     df_update = process_db.read_salesinfo_day(fle, salesDataFrame.df_day)
                     if not df_update.empty:
                         salesDataFrame.df_day = df_update
                         msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
             
-                elif self.radio_kind_period.get() == FLG_WEEK:
+                elif self.radio_kind_period.get() == const.FLG_WEEK:
                         
                     df_update = process_db.read_salesinfo_week(fle, salesDataFrame.df_week)
                     if not df_update.empty:
                         salesDataFrame.df_week = df_update
                         msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
                         
-                elif self.radio_kind_period.get() == FLG_MONTH:                    
+                elif self.radio_kind_period.get() == const.FLG_MONTH:                    
                         
                     df_update = process_db.read_salesinfo_month(fle, salesDataFrame.df_month)
                     if not df_update.empty:
@@ -460,21 +443,21 @@ class FramePeriod(tk.LabelFrame):
         """
         
         try:
-            if self.radio_kind_period.get() == FLG_DAY:                
+            if self.radio_kind_period.get() == const.FLG_DAY:                
                 if salesDataFrame.df_day.empty:
                     salesDataFrame.df_day = process_db.get_sales_day()   
                     
-                salesDataFrame.current_date=FLG_DAY
+                salesDataFrame.current_date=const.FLG_DAY
                 # 集計期間の日付を更新する
                 self.entry_from.set_date(salesDataFrame.get_mindate())
                 self.entry_to.set_date(salesDataFrame.get_maxdate())
                 
                 
-            elif self.radio_kind_period.get() == FLG_WEEK:
+            elif self.radio_kind_period.get() == const.FLG_WEEK:
                 if salesDataFrame.df_week.empty: 
                     salesDataFrame.df_week = process_db.get_sales_week() 
                 
-                salesDataFrame.current_date=FLG_WEEK
+                salesDataFrame.current_date=const.FLG_WEEK
                 
                 df = salesDataFrame.df_week.sort_values("day")
                 
@@ -486,12 +469,12 @@ class FramePeriod(tk.LabelFrame):
                 
 
                 
-            elif self.radio_kind_period.get() == FLG_MONTH:
+            elif self.radio_kind_period.get() == const.FLG_MONTH:
                 
                 if salesDataFrame.df_month.empty:
                     salesDataFrame.df_month = process_db.get_sales_month()
                 
-                salesDataFrame.current_date=FLG_MONTH
+                salesDataFrame.current_date=const.FLG_MONTH
                 
                 df = salesDataFrame.df_month.sort_values("day")
                 
@@ -554,8 +537,8 @@ class FramePeriod(tk.LabelFrame):
 
         """
         # TODO： 日、週、月単位での処理追加                
-        from_day = dt.strptime(self.entry_from.get(), FORMAT_YMD)        
-        to_day = dt.strptime(self.entry_to.get(), FORMAT_YMD)
+        from_day = dt.strptime(self.entry_from.get(), const.FORMAT_YMD)        
+        to_day = dt.strptime(self.entry_to.get(), const.FORMAT_YMD)
         
         return (to_day-from_day).days 
     
@@ -925,7 +908,7 @@ class FrameOutput(tk.LabelFrame):
             
             #TODO:現在エラー発生、 比較分析をどこまでやるか確認する必要あり
             
-            if self.cls_period.get() == FLG_MONTH:
+            if self.cls_period.get() == const.FLG_MONTH:
                 _from2 = _from - relativedelta(years=1)
                 _to2 = _to - relativedelta(years=1)
                 df_out2 = salesDataFrame.get_cound_df(_brand, _line, _items, _from2, _to2, _weeks)
@@ -1098,8 +1081,8 @@ class FrameOutput(tk.LabelFrame):
                 ax.plot(salesDataFrame.pre_timeserieschart[0], salesDataFrame.pre_timeserieschart[1], linewidth=0.5, label=salesDataFrame.pre_timeserieschart[2])
                 
             #_from _toを文字列に変換する
-            str_from = dt.strftime(_from, FORMAT_YMD)
-            str_to = dt.strftime(_to, FORMAT_YMD)
+            str_from = dt.strftime(_from, const.FORMAT_YMD)
+            str_to = dt.strftime(_to, const.FORMAT_YMD)
             ax.scatter(x, y)
             ax.set_title(f"時系列分析{str_from}～{str_to}")
             ax.set_xlabel("日付")
@@ -1211,7 +1194,7 @@ class FrameOutput(tk.LabelFrame):
             DESCRIPTION.
 
         """        
-        if self.cls_period.radio_kind_period.get() == FLG_DAY:
+        if self.cls_period.radio_kind_period.get() == const.FLG_DAY:
             msg.showwarning(msg.WARNING,"「日別」の集計処理では散布図分析はできません。")
             return "break"  
         
@@ -1258,8 +1241,8 @@ class FrameOutput(tk.LabelFrame):
             ax.scatter(salesDataFrame.pre_scatterplot[0], salesDataFrame.pre_scatterplot[1], label=salesDataFrame.pre_scatterplot[2])
         
         #_from _toを文字列に変換する
-        str_from = dt.strftime(_from, FORMAT_YMD)
-        str_to = dt.strftime(_to, FORMAT_YMD)
+        str_from = dt.strftime(_from, const.FORMAT_YMD)
+        str_to = dt.strftime(_to, const.FORMAT_YMD)
         ax.set_title(f"回帰分析：{str_from}～{str_to}")
         ax.set_xlabel(USECOLS_NAME["avg"])
         ax.set_ylabel(USECOLS_NAME[col_name])
