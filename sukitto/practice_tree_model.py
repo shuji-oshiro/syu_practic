@@ -20,6 +20,14 @@ from sklearn.preprocessing import StandardScaler
 # %matplotlib inline
 
 #TODO: データの読み取り処理----------------------
+
+
+msg.showinfo("Test","Test massage")
+
+sys.exit()
+
+
+
 fle = tkinter.filedialog.askopenfilename(typ=[("csv", '.csv')], title="学習データの読み込み")
 
 if not fle:
