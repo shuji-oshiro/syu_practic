@@ -148,6 +148,8 @@ class SalesDataFrame:
         
         return df_out        
     
+    
+# TODO:
 salesDataFrame = SalesDataFrame()
         
     
@@ -525,6 +527,7 @@ class FramePeriod(tk.LabelFrame):
         #  別スレッドでデータベース更新処理を実行
         threading.Thread(target=self.get_salesdata, daemon=True).start()
 
+    # TODO:集計期間を返す処理
               
     def get_period_day_count(self):
         """
@@ -537,10 +540,16 @@ class FramePeriod(tk.LabelFrame):
 
         """
         # TODO： 日、週、月単位での処理追加                
-        from_day = dt.strptime(self.entry_from.get(), const.FORMAT_YMD)        
-        to_day = dt.strptime(self.entry_to.get(), const.FORMAT_YMD)
+        if self.radio_kind_period.get() == const.FLG_DAY:        
+            from_day = dt.strptime(self.entry_from.get(), const.FORMAT_YMD)        
+            to_day = dt.strptime(self.entry_to.get(), const.FORMAT_YMD)
+            
+        elif self.radio_kind_period.get() == const.FLG_WEEK:
+            from_day = dt.strptime(self.var_select_week_from.get(), const.FORMAT_YMD)        
+            to_day = dt.strptime(self.var_select_week_to.get(), const.FORMAT_YMD)
         
-        return (to_day-from_day).days 
+        
+        return (to_day-from_day).days +1
     
                 
 
@@ -862,12 +871,22 @@ class FrameOutput(tk.LabelFrame):
         frame_row2.pack(anchor=tk.W)
         
         comit_btn = tk.Button(frame_row2, text="前年比較分析", command=self.out_compar_ana)
-        comit_btn.pack()    
+        comit_btn.pack(side=tk.LEFT)    
         
-        comit_btn = tk.Button(frame_row2, text="ヒストグラム分析", command=self.out_histogram)
+        self.var_select_compar = tk.IntVar(value=0)
+        tk.Radiobutton(frame_row2, text="前年", variable=self.var_select_compar, value=0).pack(side=tk.LEFT)
+        tk.Radiobutton(frame_row2, text="期間指定", variable=self.var_select_compar, value=1).pack(side=tk.LEFT)
+        self.entry_from_pre = DateEntry(frame_row2, date_pattern="yyyy年mm月dd日")
+        self.entry_from_pre.pack(side=tk.LEFT)
+        
+        
+        frame_row3 = tk.LabelFrame(self)
+        frame_row3.pack(anchor=tk.W)
+        
+        comit_btn = tk.Button(frame_row3, text="ヒストグラム分析", command=self.out_histogram)
         comit_btn.pack()               
 
-        comit_btn = tk.Button(frame_row2, text="散布図分析", command=self.out_scatterplot)
+        comit_btn = tk.Button(frame_row3, text="散布図分析", command=self.out_scatterplot)
         comit_btn.pack()  
 
         
@@ -905,20 +924,43 @@ class FrameOutput(tk.LabelFrame):
                 l_val = "{}_{}".format(_brand, _line)
                         
             df_out = salesDataFrame.get_cound_df(_brand, _line, _items, _from, _to, _weeks)
-            
-            #TODO:現在エラー発生、 比較分析をどこまでやるか確認する必要あり
-            
-            if self.cls_period.get() == const.FLG_MONTH:
-                _from2 = _from - relativedelta(years=1)
-                _to2 = _to - relativedelta(years=1)
-                df_out2 = salesDataFrame.get_cound_df(_brand, _line, _items, _from2, _to2, _weeks)
-            
             # 売上情報の存在チェック
             if df_out.empty:
                 msg.showwarning(msg.WARNING,"入力された期間の売上情報が存在しません")
-                return "break"  
-            
+                return "break"
             key_val = None
+                        
+                        
+            diff_day = self.cls_period.get_period_day_count()
+            
+            _from2, _to2 = "",""
+            if self.var_select_compar.get() == 0:
+                
+                if self.cls_period.radio_kind_period.get() == const.FLG_WEEK:
+                    
+                    # 比較先の抽出期間の開始日を月曜日に、終了日を日曜日の日付に更新する　
+                    _from2 = _from - relativedelta(years=1)
+                    delta_days = (_from2.weekday() - 0) % 7
+                    _from2 = _from2 + timedelta(days=delta_days)
+                    
+                    _to2 = _to - relativedelta(years=1)
+                    delta_days = (_to2.weekday() - 0) % 7
+                    _to2 = _to2 + timedelta(days=delta_days)
+                    
+                else:                
+                    _from2 = _from - relativedelta(years=1)
+                    _to2 = _to - relativedelta(years=1)  
+                 
+                
+            elif self.var_select_compar.get() == 1:            
+
+                _from2 = dt.strptime(self.entry_from_pre.get(), const.FORMAT_YMD) 
+                _to2 = _from2 + relativedelta(days=diff_day-1)
+                
+                
+                                            
+            df_out2 = salesDataFrame.get_cound_df(_brand, _line, _items, _from2, _to2, _weeks)
+            
             
             if self.cls_cound.radio_jyoken.get()==1:
                 if self.cls_cound.select_brand_var.get() == "全取引先":
@@ -930,38 +972,34 @@ class FrameOutput(tk.LabelFrame):
                         key_val = "i_name"
             else:
                 key_val = "i_name"
-            
-            
-            df = df_out.groupby([f"{key_val}","day"], as_index=False).sum(numeric_only=True) 
-            df2 = df_out2.groupby([f"{key_val}","day"], as_index=False).sum(numeric_only=True)  
+                
+            head_str = f"比較A期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff_day})　比較B期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff_day})　"
                         
-            df["year"]="1.当年"
-            df2["year"]="2.前年"
-                    
-            # 結合するために前年の日付を同年に戻す
-            df2["day"] = df2["day"].apply(lambda x: x + relativedelta(years=1))
-            
-            df_temp = df2.rename(columns={'count':'p_count','amount': 'p_amount'})
                         
-            df3 = pd.merge(df, df_temp[[f"{key_val}","day","p_count","p_amount"]], on=[f"{key_val}","day"], how="outer")
-            df3["amount"] = df3["amount"] / df3["p_amount"]
-            df3["count"] = df3["count"] / df3["p_count"]
-            df3["year"] = "3.前年比"
-                 
-            df4 = pd.concat([df, df2, df3])
-            pivo1 = pd.pivot_table(df4, index=[f"{key_val}","year"], columns=["day"], values=["amount"])
-            l = {}
-            l["売上金額"]= pivo1
-            l["売上数量"]= pd.pivot_table(df4, index=[f"{key_val}","year"], columns=["day"], values=["count"])
+            df = df_out.groupby([key_val], as_index=False).sum(numeric_only=True)
+            df["unit"] = df["amount"]/df["count"]
+            df["year"] = "当年"
             
-            self.out_excel(l, l_val)
+            df2 = df_out2.groupby([key_val], as_index=False).sum(numeric_only=True)
+            df2["unit"] = df2["amount"]/df2["count"]
+            df2["year"] = "前年"
+                        
+            df3 = pd.concat([df,df2])
+                  
+
+            pivo_df = pd.pivot_table(df3, index=[key_val], columns="year", values=["amount","count","unit"])
+            pivo_df["amount","前年比"] = pivo_df["amount","当年"] / pivo_df["amount","前年"]
+            pivo_df["count","前年比"] = pivo_df["count","当年"] / pivo_df["count","前年"]
+            pivo_df["unit","前年比"] = pivo_df["unit","当年"] / pivo_df["unit","前年"]
+            
+            self.out_excel(pivo_df, l_val, head_str)
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
             logging.exception(erMsg)  
             
        
-    def out_excel(self, l_out_df, book_name) -> bool:
+    def out_excel(self, pivo_df, book_name, head_str) -> bool:
         """
         Excelファイルを出力する処理
 
@@ -999,10 +1037,17 @@ class FrameOutput(tk.LabelFrame):
                            
                 #　エクセルファイルを書き込みする処理
                 with pd.ExcelWriter(file_path) as writer:
+                    pivo_df.to_excel(writer, startrow=1, na_rep=0 ,sheet_name="比較分析") 
+                    # workbook = writer.book
+                    worksheet = writer.sheets["比較分析"]
+                    # カンマ区切り（千単位）、パーセント、整数のフォーマット設定
+                    excel_col = ["B","C","D","E","F","G","H","I","J"]
+                    col_fm = ["#,##0", "#,##0", "#,##0", "#,##0", "0.0", "0.0", "0.0%", "0.0%", "0.0%"]
+                    worksheet["A1"] = head_str
                     
-                    for key in l_out_df.keys():
-                    
-                        l_out_df[key].to_excel(writer, startrow=0, na_rep=0, sheet_name=f"{key}") 
+                    for col, format_code in zip(excel_col, col_fm): 
+                        for cell in worksheet[col]:                            
+                            cell.number_format = format_code
                      
                 msg.showinfo(msg.INFO, "処理を正常に終了しました。")
             else:

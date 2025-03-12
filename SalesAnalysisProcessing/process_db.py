@@ -19,7 +19,7 @@ COL_CSVTODB_WEEK = {'得意先コード':'t_code',"店舗コード":"ten_code", 
 COL_CSVTODB_MONTH = {'得意先コード':'t_code', "ラインコード":"l_code", "商品コード":"i_code", "商品名":"i_name", "当年純売金額":"amount", "当年純売数量":"count"}
 
 
-logging.basicConfig(filename='logfile/logger.log', level=logging.DEBUG)
+logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
 const = settings.Settings()
 
