@@ -23,6 +23,8 @@ from sklearn.preprocessing import StandardScaler
 
 
 msg.showinfo("Test","Test massage")
+msg.showinfo("Test","second Test massage")
+
 
 sys.exit()
 
