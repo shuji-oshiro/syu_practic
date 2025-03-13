@@ -22,9 +22,10 @@ from sklearn.preprocessing import StandardScaler
 #TODO: データの読み取り処理----------------------
 
 
+
 msg.showinfo("Test","Test massage")
 msg.showinfo("Test","second Test massage")
-
+msg.showinfo("Test","Test massage -> remote change!!")
 
 sys.exit()
 
