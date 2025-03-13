@@ -27,6 +27,10 @@ msg.showinfo("Test","Test massage")
 msg.showinfo("Test","second Test massage")
 msg.showinfo("Test","Test massage -> remote change!!")
 
+
+msg.showinfo("Test","create file newBc")
+
+
 sys.exit()
 
 
