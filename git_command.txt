@@ -1,0 +1,87 @@
+基本コマンド
+
+###ローカルリポジトリの作成
+初期化して、現在あるファイルを追加して、コミットすればOK
+ファイルがなければgit initのみでOK
+git init
+git add *
+git commit -m "initial commit"
+
+###リモートリポジトリからプロジェクトをコピー
+ターミナルでローカルリポジトリに移動して以下のコマンド
+cd [ローカルリポジトリのパス]
+git clone [リモートリポジトリパス] 
+=https://github.com/shuji-oshiro/syu_practic.git
+
+
+###git addの使用例
+git add . //すべてのファイル・ディレクトリ
+git add *.css //すべてのCSSファイル
+git add -n //追加されるファイルを調べる
+git add -u //変更されたファイルを追加する
+git rm --cached //addしてしまったファイルを除外
+
+###git commitの使用例
+git commit -a //変更のあったファイルすべて
+git commit --amend //直前のコミットを取り消す
+git commit -v //変更点を表示してコミット
+
+###コミットの取り消し
+git reset --soft HEAD~2 // 最新のコミットから2件分をワークディレクトリの内容を保持し取り消す
+git reset --hard HEAD~2 // 最新のコミットから2件分のワークディレクトリの内容とコミットを取り消す
+
+###コミットメッセージの修正
+git rebase -i HEAD~2 // HEADから2件のコミットメッセージ
+
+###ブランチの作成/移動/削除/変更/一覧/
+ブランチは変更履歴を記録できる。
+
+git branch [branch_name]  //ブランチの作成
+git checkout [branch_name]  //ブランチの移動
+git branch -d [branch_name]  //ブランチの削除
+git branch -m [branch_name]  //現在のブランチ名の変更
+git branch // ローカルブランチの一覧
+git branch -a //リモートとローカルのブランチの一覧
+git branch -r //リモートブランチの一覧
+git checkout -b branch_name origin/branch_name //リモートブランチへチェックアウト
+
+
+###差分を確認する
+
+git diff
+git diff HEAD^ //最後のコミットからの差分を表示
+git diff --name-only HEAD^ //差分ファイルを表示
+git diff file1.txt file2.txt //特定フィイルの差分
+git diff commit1 commit2 //コミットの差分
+
+###ログの表示
+
+git log //コミットのログが見れる
+git reflog //いろいろ見れる
+git reflog origin/branch_name //pushのログが見れる
+
+
+###プルリクエスト一連の流れ
+
+# ブランチを作成
+$ git checkout -b <ブランチ名>
+
+# ファイルを変更して変更したファイルをコミットする
+$ git add .
+$ git commit -a -m "コミットメッセージ"
+
+# GitHubにPushする
+$ git push origin <ブランチ名>
+
+# GitHub上でプルリクエストを送ってマージする
+
+# ブランチをmainに変更する
+$ git checkout main
+
+# ローカルのmain(master)ブランチをリモートの最新に更新する
+$ git pull origin main --rebase
+
+# 1.で切った作業用ブランチを削除する
+$ git branch -d <ブランチ名>
+
+
