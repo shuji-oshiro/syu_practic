@@ -1,0 +1,6 @@
+# ディレクトリを無視する
+.ipynb_checkpoints/
+__pycache__/
+logfile/
+modules/
+*.ini
