@@ -4,3 +4,7 @@ __pycache__/
 logfile/
 modules/
 *.ini
+.metadata/
+.settings/
+__pycache__/
+logfile/
