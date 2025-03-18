@@ -15,12 +15,14 @@ import logging
 from datetime import timedelta, datetime as dt
 from dateutil.relativedelta import relativedelta  
 from tkcalendar import DateEntry
-from tkinter import filedialog, messagebox as msg
+from tkinter import filedialog, messagebox as msg, LabelFrame
 import matplotlib.pyplot as plt
 import threading
 import calendar
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from openpyxl.chart import label
+
 #===============================================================================
 # # from plotly.graph_objs import scatter
 #===============================================================================
@@ -134,7 +136,7 @@ class FrameInput(tk.LabelFrame):
     
     def setup_ui(self):
         """Setup UI components"""
-        self.pack(anchor=tk.NW, padx=10, pady=10)
+        self.pack(padx=10, pady=10)
         self.create_database_info_frame()
     
     def create_database_info_frame(self):
@@ -152,7 +154,7 @@ class FrameInput(tk.LabelFrame):
     def update_mst_tenpo(self):
         """Update store master data"""
         try:
-            file_path = self.get_file_path()
+            file_path = filedialog.askopenfilename(filetypes=[('', '*')]) 
             if file_path:
                 df = process_db.update_mst_tenpo(file_path)
                 salesDataFrame.df_tenpo = df
@@ -163,7 +165,7 @@ class FrameInput(tk.LabelFrame):
     
     def get_file_path(self):
         """Get file path from file dialog"""
-        return filedialog.askopenfilename(filetypes=[('', '*')])    
+        return    
 
 
 class FramePeriod(tk.LabelFrame):
@@ -765,7 +767,7 @@ class FrameCound(tk.LabelFrame):
         
 
 class FrameOutput(tk.LabelFrame):
-    def __init__(self, master, cls_period_instance, cls_cound_instance):
+    def __init__(self, master, cls_period_instance, cls_cound_instance, labelFrame):
         """
         抽出条件をベースに売上分析を行うフォーム
 
@@ -828,6 +830,27 @@ class FrameOutput(tk.LabelFrame):
         self.cls_period = cls_period_instance
         self.cls_cound = cls_cound_instance
        
+       
+        self.labelFrame = labelFrame
+       
+       
+    # TODO: 重複して表示される課題
+    def set_plotData(self, fig):
+        """
+        フレームに分析データを表示する処理
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        for widget in self.labelFrame.winfo_children():  # フレーム内の全ウィジェットを削除
+            widget.destroy()
+                      
+        canvas = FigureCanvasTkAgg(fig, master=self.labelFrame)  # Tkinter フレームに埋め込む
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack()
         
     
     def out_compar_ana(self):
@@ -1019,9 +1042,6 @@ class FrameOutput(tk.LabelFrame):
         """       
             
         try:              
-            global p_x
-            global p_y
-            global p_label
                         
             _brand = self.cls_cound.select_brand_var.get()
             _line = self.cls_cound.select_line_var.get()
@@ -1049,8 +1069,10 @@ class FrameOutput(tk.LabelFrame):
                     
             # 時系列分析図出力処理-----
             df_out = df_out[["day",use_col]].groupby(["day"], as_index=False).sum(numeric_only=True)
+                            
+            fig, ax = plt.subplots(figsize=(10, 8), dpi=100)   
             
-            fig, ax = plt.subplots(figsize=(10, 8), dpi=100)            
+                     
             x = df_out["day"]
             y = df_out[use_col]
             
@@ -1082,12 +1104,17 @@ class FrameOutput(tk.LabelFrame):
             ax.grid(True)     
                         
             
-            plot_app = tk.Tk()
-            # plot_app.geometry("600x750")         
-            canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
-            canvas_widget = canvas.get_tk_widget()
-            canvas_widget.pack()
+            #===================================================================
+            # plot_app = tk.Tk()
             # 
+            # # plot_app.geometry("600x750")         
+            # canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
+            # canvas_widget = canvas.get_tk_widget()
+            # canvas_widget.pack()
+            #===================================================================
+            # 
+            
+            self.set_plotData(fig)
             salesDataFrame.pre_charts["timeseries"] = [x, y, l_val]
                             
 
@@ -1107,8 +1134,6 @@ class FrameOutput(tk.LabelFrame):
             DESCRIPTION.
 
         """
-        global pre_val
-        global pre_key
                 
         _brand = self.cls_cound.select_brand_var.get()
         _line = self.cls_cound.select_line_var.get()
@@ -1169,12 +1194,15 @@ class FrameOutput(tk.LabelFrame):
         ax.grid(True)
         
 
-        plot_app = tk.Tk()
-        # plot_app.geometry("600x750")         
-        canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
-        canvas_widget = canvas.get_tk_widget()
-        canvas_widget.pack()
-        
+
+        #=======================================================================
+        # plot_app = tk.Tk()
+        # # plot_app.geometry("600x750")         
+        # canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
+        # canvas_widget = canvas.get_tk_widget()
+        # canvas_widget.pack()
+        #=======================================================================
+        self.set_plotData(fig)        
         salesDataFrame.pre_charts["histogram"] = [temp[use_col], l_val]
         
             
@@ -1241,7 +1269,6 @@ class FrameOutput(tk.LabelFrame):
         #     ax.scatter(scatter[0], scatter[1], label=scatter[2])
         #=======================================================================
         
-
         
         #_from _toを文字列に変換する
         str_from = dt.strftime(_from, const.FORMAT_YMD)
@@ -1254,12 +1281,15 @@ class FrameOutput(tk.LabelFrame):
         # グリッド線の追加
         ax.grid(True)
                 
-        plot_app = tk.Tk()
-        # plot_app.geometry("600x750")         
-        canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
-        canvas_widget = canvas.get_tk_widget()
-        canvas_widget.pack()
+        #=======================================================================
+        # plot_app = tk.Tk()
+        # # plot_app.geometry("600x750")         
+        # canvas = FigureCanvasTkAgg(fig, master=plot_app)  # Tkinter ウィンドウに埋め込む
+        # canvas_widget = canvas.get_tk_widget()
+        # canvas_widget.pack()
+        #=======================================================================
         
+        self.set_plotData(fig)
         salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
         
     
@@ -1271,16 +1301,28 @@ class MyApp(tk.Tk):
         Returns
         -------
         None.
-
         """
-        super().__init__()
 
+        super().__init__()
+        
+        # left side frame input data      
+        frame_main1 = tk.LabelFrame(self)
+        frame_main1.pack(side = tk.LEFT,padx=10, pady=10)
+        
+                # right side frame output data
+        self.frame_main2 = tk.Frame(self)
+        self.frame_main2.pack(side = tk.LEFT, padx=10, pady=10)
+        
         self.title("売上分析システム")
-        self.geometry("600x750")                
-        self.frame2 = FrameInput(self)
-        self.frame3 = FramePeriod(self)        
-        self.frame4 = FrameCound(self)
-        self.frame5 = FrameOutput(self, self.frame3, self.frame4)    
+        self.geometry("1600x900")                
+        self.frame2 = FrameInput(frame_main1)
+        self.frame3 = FramePeriod(frame_main1)        
+        self.frame4 = FrameCound(frame_main1)
+        self.frame5 = FrameOutput(frame_main1, self.frame3, self.frame4, self.frame_main2)    
+        
+        
+        
+        
         
 salesDataFrame = SalesDataFrame()
 app = MyApp()
