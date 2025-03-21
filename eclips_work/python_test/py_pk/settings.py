@@ -30,3 +30,8 @@ class Settings:
     SELECT_LINE = 1
     SELECT_ITEM = 2
     
+    SELECT_PREYEAR = 0
+    SELECT_PERIOD = 1
+    
+    ENTRY_DISP_FORM = "yyyy年mm月dd日"
+    

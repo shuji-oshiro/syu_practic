@@ -21,6 +21,10 @@ COL_CSVTODB_MONTH = {'得意先コード':'t_code', "ラインコード":"l_code
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
+dict_tbl = {Settings.FLG_DAY:Settings.TBLNAME_DAY,
+             Settings.FLG_WEEK:Settings.TBLNAME_WEEK,
+              Settings.FLG_MONTH:Settings.TBLNAME_MONTH} 
+
 print(Settings.DB_PATH)
 
 class Process_db:    
@@ -33,48 +37,21 @@ class Process_db:
         None.
 
         """
-        pass        
-        
-    def get_sales_day(self):        
-        df = pd.DataFrame()        
+    @classmethod      
+    def Get_salesData(cls,tbl_name) -> pd.DataFrame:
+        df = pd.DataFrame()      
         try:  
             # データベース接続
             with sqlite3.connect(Settings.DB_PATH) as conn:
-                df = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_DAY}", conn)
+                df = pd.read_sql(f"SELECT * FROM {tbl_name}", conn)
             
             return df            
         except Exception:               
-            erMsg = "売上情報取得中にエラーが発生しました。"
-            logging.exception(erMsg)
-            raise
-            
-    def get_sales_week(self):        
-        df = pd.DataFrame()        
-        try:  
-            # データベース接続
-            with sqlite3.connect(Settings.DB_PATH) as conn:
-                df = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_WEEK}", conn)
-            
-            return df            
-        except Exception:               
-            erMsg = "売上情報取得中にエラーが発生しました。"
-            logging.exception(erMsg)
-            raise
-            
-    def get_sales_month(self):        
-        df = pd.DataFrame()        
-        try:  
-            # データベース接続
-            with sqlite3.connect(Settings.DB_PATH) as conn:
-                df = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_MONTH}", conn)  
-                    
-            return df            
-        except Exception:               
-            erMsg = "売上情報取得中にエラーが発生しました。"
-            logging.exception(erMsg)
-            raise
-            
-    def get_master(self):        
+            logging.exception(Exception)
+            raise  
+
+    @classmethod
+    def Get_master(cls):        
         df1 = pd.DataFrame()  
         df2 = pd.DataFrame()  
         df3 = pd.DataFrame()  
@@ -87,12 +64,54 @@ class Process_db:
                           
             return df1, df2, df3            
         except Exception:               
-            erMsg = "売上情報取得中にエラーが発生しました。"
-            logging.exception(erMsg)
+            logging.exception(Exception)
             raise
+        
+    @classmethod
+    def Update_salesinfo(cls, fle, df_base, selectType) -> pd.DataFrame:
+        
+        df = pd.DataFrame() 
+        if selectType == Settings.TBLNAME_DAY:
+            df = cls._read_salesinfo_day(fle)
+            
+        elif selectType == Settings.TBLNAME_WEEK:
+            df = cls._read_salesinfo_week(fle)
+            
+        elif selectType == Settings.TBLNAME_MONTH:
+            df = cls._read_salesinfo_month(fle)
+
+        # 同日付の売上情報が含まれている場合
+        a = df["day"].tolist()
+        b = df_base["day"].tolist()
+        c = set(a) & set(b)
+                    
+        if len(c) > 0:                  
+            msgVal = sorted(c)                        
+            message_text = "\n".join([msgVal[0],"～",msgVal[-1]])
+            
+            flg_answer = msg.askyesnocancel(msg.INFO,f"同日付の売上情報が含まれています。更新しますか？\n{message_text}")
+            
+            if flg_answer is None:
+                msg.showinfo(msg.INFO, "売上情報の更新処理を中断しました。")
+                return pd.DataFrame()
+            
+            elif flg_answer:
+                df_base = df_base[~df_base["day"].isin(c)]     
+            else:
+                df = df[~df["day"].isin(c)] 
+                
+        
+        df_new = pd.concat([df, df_base]) 
+        
+        if cls._update_db(df, df_base, selectType):
+            pass
+        else:
+            pass
+
+        return df_new
     
-    
-    def __update_salesinfo(self, df_a, df_b, tblName):
+    @classmethod
+    def _update_db(cls, df, tblName):
         """
         内部関数　DBの売上情報を更新する処理
 
@@ -112,42 +131,21 @@ class Process_db:
 
         """
                 
-        try:
+        try:                      
             
-            # 同日付の売上情報が含まれている場合
-            a = df_a["day"].tolist()
-            b = df_b["day"].tolist()
-            c = set(a) & set(b)
-                        
-            if len(c) > 0:                  
-                msgVal = sorted(c)                        
-                message_text = "\n".join([msgVal[0],"～",msgVal[-1]])
-                
-                flg_answer = msg.askyesnocancel(msg.INFO,f"同日付の売上情報が含まれています。更新しますか？\n{message_text}")
-                
-                if flg_answer is None:
-                    msg.showinfo(msg.INFO, "売上情報の更新処理を中断しました。")
-                    return pd.DataFrame()
-                
-                elif flg_answer:
-                    df_b = df_b[~df_b["day"].isin(c)]     
-                else:
-                    df_a = df_a[~df_a["day"].isin(c)] 
-                    
-            df_c = pd.concat([df_a, df_b])            
+            with  sqlite3.connect(Settings.DB_PATH) as conn : 
+                df.to_sql(tblName, conn, if_exists="replace", index=None)
+                conn.commit()            
+            return df
             
-            with  sqlite3.connect(Settings.DB_PATH) as conn :      
-                    df_c.to_sql(tblName,conn,if_exists="replace",index=None)
-                    conn.commit()            
-            return df_c
-            
-        except Exception:               
-            erMsg = "売上情報更新中にエラーが発生しました。"
-            logging.exception(erMsg)  
+        except Exception:              
+            logging.exception(Exception)  
             raise
-        
-
-    def read_salesinfo_day(self, fle:tuple, df_base:pd.DataFrame):
+  
+  
+            
+    @classmethod
+    def _read_salesinfo_day(cls,fle):
         """
         日別売上情報の更新処理
     
@@ -163,7 +161,7 @@ class Process_db:
     
         """
         try:        
-            df_in = None             
+            df = pd.DataFrame()             
             
             for f in fle:
                 # １行目の年月情報の文字列を取得しDate型の情報に変換する
@@ -195,24 +193,22 @@ class Process_db:
                     head_data["count"] = 0
                     head_data2["amount"] = 0
                                         
-                    df_in = pd.concat([df_in,head_data.query("amount>0"),head_data2.query("amount>0")]) 
+                    df = pd.concat([df,head_data.query("amount>0"),head_data2.query("amount>0")]) 
                     
                     index += 1
                             
             #　欠損値を更新            
-            df_in = df_in.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})    
-            df_in = df_in[df_in["amount"]>0]
+            df = df.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})    
+            df = df[df["amount"]>0] 
             
-            print(f"{len(df_in)}件")            
-            return self.__update_salesinfo(df_in, df_base, Settings.TBLNAME_DAY)    
+            return df       
             
         except Exception: 
-            erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
-            logging.exception(erMsg)       
+            logging.exception(Exception)       
             raise
     
-    
-    def read_salesinfo_week(self, fle:tuple, df_base:pd.DataFrame):
+    @classmethod
+    def _read_salesinfo_week(cls, fle):
         """
         週間売上情報の更新処理
 
@@ -228,7 +224,7 @@ class Process_db:
 
         """
         try:                        
-            df_in = None
+            df = None
              
             for f in fle:
                 # １行目の年月情報の文字列を取得しDate型の情報に変換する
@@ -239,24 +235,22 @@ class Process_db:
                 temp = pd.read_csv(f ,encoding="CP932", header=1 ,usecols=USECOLS_WEEK) 
                 temp["day"] = dt_year_and_mont
                                 
-                df_in = pd.concat([df_in, temp]) 
+                df = pd.concat([df, temp]) 
                                 
-            df_in = df_in.rename(columns = COL_CSVTODB_WEEK)
+            df = df.rename(columns = COL_CSVTODB_WEEK)
         
             #　欠損値を更新            
-            df_in = df_in.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})             
-            df_in = df_in[df_in["amount"]>0]
+            df = df.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})             
+            df = df[df["amount"]>0]
             
-            print(f"{len(df_in)}件")            
-            return self.__update_salesinfo(df_in, df_base, Settings.TBLNAME_WEEK)
-            
+            return df
+        
         except Exception: 
-            erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
-            logging.exception(erMsg) 
+            logging.exception(Exception) 
             raise
 
-        
-    def read_salesinfo_month(self, fle:tuple, df_base:pd.DataFrame):
+    @classmethod   
+    def _read_salesinfo_month(cls, fle):
         """
         月間売上情報の更新処理
 
@@ -272,7 +266,7 @@ class Process_db:
 
         """
         try:                        
-            df_in = None
+            df = pd.DataFrame()
             
             for f in fle:
                 # １行目の年月情報の文字列を取得しDate型の情報に変換する
@@ -283,19 +277,17 @@ class Process_db:
                 temp = pd.read_csv(f ,encoding="CP932", header=1 , usecols=USECOLS_MONTH)
                 temp["day"] = dt_year_and_mont
                                 
-                df_in = pd.concat([df_in, temp]) 
+                df = pd.concat([df, temp]) 
                                 
-            df_in = df_in.rename(columns = COL_CSVTODB_MONTH)
+            df = df.rename(columns = COL_CSVTODB_MONTH)
         
             #　欠損値を更新            
-            df_in = df_in.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})    
-            df_in = df_in[df_in["amount"]>0]
-            print(f"{len(df_in)}件")
+            df = df.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})    
+            df = df[df["amount"]>0]
             
-            return self.__update_salesinfo(df_in, df_base, Settings.TBLNAME_MONTH)            
+            return df            
         except Exception: 
-            erMsg = f"{f}売上情報読み込み中にエラーが発生しました"
-            logging.exception(erMsg) 
+            logging.exception(Exception) 
             raise
         
         
@@ -323,8 +315,7 @@ class Process_db:
                     return pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_TENPO}", conn)
             
         except Exception: 
-            erMsg = "店舗マスタ情報更新中にエラーが発生しました"
-            logging.exception(erMsg)   
+            logging.exception(Exception)   
             raise
         
         
