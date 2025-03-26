@@ -16,9 +16,9 @@ git clone [リモートリポジトリパス]
 
 ###git addの使用例
 git add . //すべてのファイル・ディレクトリ
-git add *.css //すべてのCSSファイル
+git add *.css //すべてのCSSファイル *ファイルパターンも同様
 git add -n //追加されるファイルを調べる
-git add -u //変更されたファイルを追加する
+git add -u //更新、削除のファイルが対象になり、新規追加のファイルは対象にならない
 git rm --cached //addしてしまったファイルを除外
 
 ###git commitの使用例
