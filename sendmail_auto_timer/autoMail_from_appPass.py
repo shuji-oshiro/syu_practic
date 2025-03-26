@@ -11,7 +11,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 #Googleアプリパスワード
-app_pass="wlwd pqbk ucjq orld"
+app_pass=""
 
 #本文
 body="""これはPython学習帳のテスト3です。
@@ -24,10 +24,10 @@ msg=MIMEText(body)
 msg["Subject"]="Python学習帳のテスト3"
 
 #あなたのGmailアドレス
-msg["From"]="okiko5020@gmail.com"
+msg["From"]=""
 
 #メールの送信先
-msg["To"]="syutv117@gmail.com"
+msg["To"]=""
 
 smtp=smtplib.SMTP("smtp.gmail.com",587)
 smtp.ehlo()
@@ -35,6 +35,6 @@ smtp.starttls()
 smtp.ehlo()
 
 #あなたのGmailアドレス,あなたのGmailアプリパスワード
-smtp.login("okiko5020@gmail.com",app_pass)
+smtp.login("",app_pass)
 smtp.send_message(msg)
 smtp.close()
