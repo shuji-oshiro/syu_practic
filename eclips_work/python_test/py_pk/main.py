@@ -97,7 +97,7 @@ class FramePeriod(tk.LabelFrame):
         btn_GetInfo = tk.Button(frame_row1, text="売上情報入力", command=self._push_inoputData)
         btn_GetInfo.pack()
 
-        #売上情報のDB更新で使用する期間判別
+        #売上情報ので使用する日付区間の設定値　-＞DataBaseName
         self.radio_kind_period = tk.StringVar(value="")               
                 
         # 2-2 日別売上抽出
@@ -217,8 +217,7 @@ class FramePeriod(tk.LabelFrame):
             _to = self.var_select_mont_to.get()
             
         return _from, _to
-    
-    
+        
         
     def get_select_dayofweeks(self):
         """
@@ -241,8 +240,7 @@ class FramePeriod(tk.LabelFrame):
                 
         return targetWeek
         
-
-    def _update_database(self, fle):          
+    def _update_database(self, fle): #売上情報を更新する処理
         """
         売上情報を更新する処理-＞マルチスレッド
         
@@ -261,16 +259,11 @@ class FramePeriod(tk.LabelFrame):
         
         try:                    
             #ファイルが読み込まれていない場合処理を中断
-            if len(fle) > 0:    
-                fle = sorted(fle) 
+            if salesDataFrame.update_salesData(fle):
+                msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
                 
-                # エラー発生
-                #update_df = process_db.read_salesinfo(fle, salesDataFrame.current_df, self.radio_kind_period.get())
-                if salesDataFrame.update_salesData(fle):
-                    msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
-                    
-                else:
-                    msg.showerror(msg.ERROR, "売上情報の更新処理に失敗しました")
+            else:
+                msg.showerror(msg.ERROR, "売上情報の更新処理に失敗しました")
                     
         except Exception: 
             msg.showerror(msg.ERROR, "売上情報の更新処理に失敗しました")            
@@ -279,44 +272,6 @@ class FramePeriod(tk.LabelFrame):
             # スレッド処理終了
             app.after(0, loading_window.destroy)
             return "break" 
-        #=======================================================================
-        # try:                    
-        #     
-        #     #ファイルが読み込まれていない場合処理を中断
-        #     if len(fle) > 0:               
-        #         
-        #         fle = sorted(fle)            
-        #         
-        #         if self.radio_kind_period.get() == const.FLG_DAY: 
-        #             df_update = process_db.read_salesinfo_day(fle, salesDataFrame.dataframes["day"])
-        #             if not df_update.empty:
-        #                 salesDataFrame.dataframes["day"] = df_update
-        #                 msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
-        #     
-        #         elif self.radio_kind_period.get() == const.FLG_WEEK:
-        #                 
-        #             df_update = process_db.read_salesinfo_week(fle, salesDataFrame.dataframes["week"])
-        #             if not df_update.empty:
-        #                 salesDataFrame.dataframes["week"] = df_update
-        #                 msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
-        #                 
-        #         elif self.radio_kind_period.get() == const.FLG_MONTH:                    
-        #                 
-        #             df_update = process_db.read_salesinfo_month(fle, salesDataFrame.dataframes["month"])
-        #             if not df_update.empty:
-        #                 salesDataFrame.dataframes["month"] = df_update
-        #                 msg.showinfo(msg.INFO,"売上情報の更新処理に成功しました")
-        #         
-        #         
-        # except Exception: 
-        #     msg.showerror(msg.ERROR, "売上情報の更新処理に失敗しました")            
-        # 
-        # finally:
-        #     # スレッド処理終了
-        #     app.after(0, loading_window.destroy)
-        #     return "break" 
-        #=======================================================================
-              
         
     def _push_inoputData(self):
         """
@@ -336,7 +291,11 @@ class FramePeriod(tk.LabelFrame):
             return "break"
         
         typ = [('CSVファイル', '*.csv')]            
-        fle = filedialog.askopenfilenames(filetypes = typ)    
+        fle = filedialog.askopenfilenames(filetypes = typ)  
+        if len(fle) > 0:    
+            fle = sorted(fle)    
+        else:
+            return "break"
         
         global loading_window
         loading_window = tk.Toplevel(app)  # 新しいウィンドウ
@@ -351,7 +310,7 @@ class FramePeriod(tk.LabelFrame):
         threading.Thread(target=lambda:self._update_database(fle), daemon=True).start()
 
 
-    def _get_salesdata(self):     
+    def _get_salesdata(self):
         """
         選択した売上集計区分の売上情報を取得する処理-＞マルチスレッド
 
@@ -366,13 +325,8 @@ class FramePeriod(tk.LabelFrame):
             
             df = salesDataFrame.get_currentData()
             if df.empty:                
-                if not salesDataFrame.set_salesData():
-                    msg.showerror(msg.ERROR,"売上情報読み込み中にエラーが発生しました。")
-                    return
-                else:
-                    df = salesDataFrame.get_currentData()
-                                  
-                             
+                df = salesDataFrame.get_salesData()
+                                                               
             if self.radio_kind_period.get() == const.TBLNAME_DAY:                
                 self.entry_from.set_date(salesDataFrame.get_mindate())
                 self.entry_to.set_date(salesDataFrame.get_maxdate())
@@ -693,13 +647,16 @@ class FrameCound(tk.LabelFrame):
             DESCRIPTION.
 
         """
-        target_df = salesDataFrame.get_currentData()
-        if target_df.empty:        
+        df = salesDataFrame.get_currentData()
+        if df.empty:        
             msg.showwarning(msg.WARNING, "売上情報が存在しません")
-                
-        else:       
-            itemNames = target_df[target_df["i_name"].str.contains(self.var_tname.get(),na=False)]["i_name"].unique().tolist()
-            
+        
+        # TODO:商品コードと商品名をペアで表示する処理を追加
+        else:       #unique().tolist()
+            df = df[df["i_name"].str.contains(self.var_tname.get(),na=False)].loc[:,["i_code","i_name"]]
+            result_list = [x for pair in zip(df["i_code"], df["i_name"]) for x in pair]
+
+            itemNames = []
             if len(itemNames) > 0:
                 self.var_foudlist.set(itemNames) 
             else:
@@ -745,20 +702,17 @@ class FrameOutput(tk.LabelFrame):
         self.var_radio_select_vals = tk.StringVar(value="amount")    
         tk.Radiobutton(frame_row0, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
         tk.Radiobutton(frame_row0, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
+        tk.Button(frame_row0, text="CSVデータ出力", bg="white", command=lambda:self._push_buttons(0)).pack(side=tk.LEFT)
+        
         
         # 3-1        
         frame_row1 = tk.LabelFrame(self)
         frame_row1.pack(anchor=tk.W)
-        comit_btn = tk.Button(frame_row1, text="集計表出力", command=lambda:self._testbutton(1))
-        comit_btn.pack(side=tk.LEFT)
-        comit_btn = tk.Button(frame_row1, text="時系列分析", command=lambda:self._testbutton(2))
-        comit_btn.pack(side=tk.LEFT)       
-        comit_btn = tk.Button(frame_row1, text="ヒストグラム分析", command=lambda:self._testbutton(3))
-        comit_btn.pack(side=tk.LEFT)               
-        comit_btn = tk.Button(frame_row1, text="散布図分析", command=lambda:self._testbutton(4))
-        comit_btn.pack(side=tk.LEFT)  
+        tk.Button(frame_row1, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
+        tk.Button(frame_row1, text="時系列分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)       
+        tk.Button(frame_row1, text="ヒストグラム分析", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)               
+        tk.Button(frame_row1, text="散布図分析", command=lambda:self._push_buttons(4)).pack(side=tk.LEFT)  
         
-        # TODO: 移動平均算出用　チェックにより有効フラグ
         frame_avg = tk.Frame(frame_row1)
         frame_avg.pack(side=tk.LEFT, padx=10)
         tk.Label(frame_avg, text="移動平均集計").pack(side=tk.LEFT)
@@ -777,7 +731,7 @@ class FrameOutput(tk.LabelFrame):
         self.entry_from_pre = DateEntry(frame_comper, date_pattern=const.ENTRY_DISP_FORM).pack(side=tk.LEFT)
                
        
-    def _set_plotData(self, fig=None, pivo_df=pd.DataFrame):
+    def _show_plotData(self, fig=None, pivo_df=pd.DataFrame):
         """
         フレームに分析データを表示する処理
 
@@ -795,14 +749,14 @@ class FrameOutput(tk.LabelFrame):
             # スタイルの設定
             style = ttk.Style()
             # TreeViewの全部に対して、フォントサイズの変更
-            style.configure("Treeview",font=("",12))
+            style.configure("Treeview",font=("",11))
             # TreeViewのHeading部分に対して、フォントサイズの変更と太字の設定
             # style.configure("Treeview.Heading",font=("",14,"bold"))
             
             tree_col = ["_".join(col) for col in pivo_df.columns.to_flat_index()]
             tree_col.insert(0, "keyval")
                         
-            tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings")
+            tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings", height=25)
             # ヘッダーの設定
             for col in tree_col:
                 tree.heading(col, text=col)  # ヘッダーのラベル
@@ -817,23 +771,38 @@ class FrameOutput(tk.LabelFrame):
             # DataFrame のデータを一括設定
             for row in pivo_df.itertuples(index=True):
                 tree.insert("", "end", values=format_values(row))
-                #tree.insert("", "end", values=row)  # 各行を Treeview に挿入
                 
             # スクロールバーを追加
-            scroll_y = ttk.Scrollbar(self.labelFrame_out, orient="vertical", command=tree.yview)
+            scroll_y = ttk.Scrollbar(self.labelFrame_out, orient=tk.VERTICAL, command=tree.yview)
+            scroll_x = ttk.Scrollbar(self.labelFrame_out, orient=tk.HORIZONTAL, command=tree.xview)
+
             tree.configure(yscrollcommand=scroll_y.set)
-            scroll_y.pack(side="right", fill="y")    
+            tree.configure(xscrollcommand=scroll_x.set)
             
-            tree.pack(expand=True, fill="both")  
+            # レイアウト配置（grid を使用）
+            tree.grid(row=0, column=0, sticky="nsew")
+            scroll_y.grid(row=0, column=1, sticky="ns")
+            scroll_x.grid(row=1, column=0, sticky="ew")
+            
+            # `frame` の中で `Treeview` が自動拡張するように設定
+            self.labelFrame_out.grid_rowconfigure(0, weight=1)
+            self.labelFrame_out.grid_columnconfigure(0, weight=1)
+            
+                        
+            #===================================================================
+            # scroll_y.pack(side="right", fill="y")    
+            # scroll_x.pack(side="bottom", fill="x")  
+            # 
+            # tree.pack(expand=True, fill="both")  
+            #===================================================================
             
         else:                                  
             canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack()
         
-    
-        
-    def _testbutton(self, out_typ):
+            
+    def _push_buttons(self, out_typ):
         # 商品名抽出        
         _brand = self.cls_cound.select_brand_var.get()
         _line = self.cls_cound.select_line_var.get()
@@ -888,14 +857,19 @@ class FrameOutput(tk.LabelFrame):
         df_out2 = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
-                                                     _from,
-                                                      _to,
+                                                     _from2,
+                                                      _to2,
                                                        _weeks)
         
-        diff_day2 = (_to2 -_from2).days +1 #期間取得        
+        diff_day2 = (_to2 -_from2).days +1 #期間取得    
+                
+        df_list = {"now":[df_out,_from,_to,diff_day],"past":[df_out2, _from2, _to2, diff_day2]}     
         
-        if out_typ == 1:
-            self._out_compar_ana(df_out, df_out2, l_val, _line, _items, _brand)
+        if out_typ == 0:
+            self._out_compar_ana(df_list, l_val, _line, _items, _brand, True)
+        
+        elif out_typ == 1:
+            self._out_compar_ana(df_list, l_val, _line, _items, _brand)
              
         elif out_typ == 2: 
             self._out_timeseries_chart(df_out, l_val)
@@ -907,7 +881,7 @@ class FrameOutput(tk.LabelFrame):
             self._out_scatterplot(df_out, l_val)
     
     
-    def _out_compar_ana(self, df_out, df_out2, l_val, _line, _items, _brand):
+    def _out_compar_ana(self, df_list, l_val, _line, _items, _brand, csv_flg=False):
         """
         売上比較分析処理
 
@@ -940,11 +914,12 @@ class FrameOutput(tk.LabelFrame):
                 else:
                     key_val = "i_name"  
                     sheetName = _brand
-                    
-            # TODO: 後日編集   
-            #head_str = f"比較A期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff_day})　比較B期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff_day2})　"
-            head_str = "Sheet"
-                        
+            
+            #TODO: 日付期間をどのように取得するか考える           
+            df_out, _from, _to, diff_day = df_list["now"] 
+            df_out2, _from2, _to2, diff_day2 = df_list["past"] 
+                       
+            head_str = f"比較A期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff_day})　比較B期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff_day2})　"
                         
             df = df_out.groupby([key_val], as_index=False).sum(numeric_only=True)
             df["unit"] = df["amount"]/df["count"]
@@ -961,12 +936,12 @@ class FrameOutput(tk.LabelFrame):
             pivo_df["unit","前年比"] = pivo_df["unit","当年"] / pivo_df["unit","前年"]
             
             pivo_df = pivo_df.fillna(0)
-            
-            self._set_plotData(pivo_df=pivo_df)
-            
-            #===================================================================
-            # self._out_excel(pivo_df, l_val, sheetName, head_str)
-            #===================================================================
+                     
+            self._show_plotData(pivo_df=pivo_df)  
+             
+            if csv_flg:
+                self._out_excel(pivo_df, l_val, sheetName, head_str)                
+                
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
@@ -1081,7 +1056,7 @@ class FrameOutput(tk.LabelFrame):
             # グリッド線の追加
             ax.grid(True)                             
             
-            self._set_plotData(fig=fig)
+            self._show_plotData(fig=fig)
             salesDataFrame.pre_charts["timeseries"] = [x, y, l_val]
 
         except Exception: 
@@ -1127,7 +1102,7 @@ class FrameOutput(tk.LabelFrame):
         # グリッド線の追加
         ax.grid(True)
     
-        self._set_plotData(fig=fig)        
+        self._show_plotData(fig=fig)        
         salesDataFrame.pre_charts["histogram"] = [temp[use_col], l_val]
         
             
@@ -1171,11 +1146,11 @@ class FrameOutput(tk.LabelFrame):
         # グリッド線の追加
         ax.grid(True)
                 
-        self._set_plotData(fig=fig)
+        self._show_plotData(fig=fig)
         salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
         
     
-class MyApp(tk.Tk):    
+class MyApp(tk.Tk):
     def __init__(self):
         """
         システムのメイン処理

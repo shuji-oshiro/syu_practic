@@ -8,7 +8,6 @@ Created on Sat Feb  8 16:55:47 2025
 import pandas as pd
 import sqlite3
 import logging
-from tkinter import messagebox as msg
 from py_pk.settings import Settings
 
 USECOLS_WEEK = ["得意先コード", "店舗コード", "ラインコード", "商品コード", "商品名", "当年純売金額", "当年純売数量"]
@@ -26,6 +25,7 @@ dict_tbl = {Settings.FLG_DAY:Settings.TBLNAME_DAY,
               Settings.FLG_MONTH:Settings.TBLNAME_MONTH} 
 
 print(Settings.DB_PATH)
+
 
 class Process_db:    
     def __init__(self):        
@@ -51,67 +51,66 @@ class Process_db:
             raise  
 
     @classmethod
-    def Get_master(cls):        
-        df1 = pd.DataFrame()  
-        df2 = pd.DataFrame()  
-        df3 = pd.DataFrame()  
+    def Get_master(cls,tbl_name):        
+        df = pd.DataFrame()  
+
         try:  
             # データベース接続
             with sqlite3.connect(Settings.DB_PATH) as conn:
-                df1 = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_BRAND}", conn)
-                df2 = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_LINE}", conn)
-                df3 = pd.read_sql(f"SELECT * FROM {Settings.TBLNAME_TENPO}", conn)
+                df = pd.read_sql(f"SELECT * FROM {tbl_name}", conn)
                           
-            return df1, df2, df3            
+            return df            
         except Exception:               
             logging.exception(Exception)
             raise
         
-    @classmethod
-    def Update_salesinfo(cls, fle, df_base, selectType) -> pd.DataFrame:
-        
-        df = pd.DataFrame() 
-        if selectType == Settings.TBLNAME_DAY:
-            df = cls._read_salesinfo_day(fle)
-            
-        elif selectType == Settings.TBLNAME_WEEK:
-            df = cls._read_salesinfo_week(fle)
-            
-        elif selectType == Settings.TBLNAME_MONTH:
-            df = cls._read_salesinfo_month(fle)
-
-        # 同日付の売上情報が含まれている場合
-        a = df["day"].tolist()
-        b = df_base["day"].tolist()
-        c = set(a) & set(b)
-                    
-        if len(c) > 0:                  
-            msgVal = sorted(c)                        
-            message_text = "\n".join([msgVal[0],"～",msgVal[-1]])
-            
-            flg_answer = msg.askyesnocancel(msg.INFO,f"同日付の売上情報が含まれています。更新しますか？\n{message_text}")
-            
-            if flg_answer is None:
-                msg.showinfo(msg.INFO, "売上情報の更新処理を中断しました。")
-                return pd.DataFrame()
-            
-            elif flg_answer:
-                df_base = df_base[~df_base["day"].isin(c)]     
-            else:
-                df = df[~df["day"].isin(c)] 
-                
-        
-        df_new = pd.concat([df, df_base]) 
-        
-        if cls._update_db(df, df_base, selectType):
-            pass
-        else:
-            pass
-
-        return df_new
+#===============================================================================
+#     @classmethod
+#     def Update_salesinfo(cls, fle, df_base, selectType) -> pd.DataFrame:
+#         
+#         df = pd.DataFrame() 
+#         if selectType == Settings.TBLNAME_DAY:
+#             df = cls._read_salesinfo_day(fle)
+#             
+#         elif selectType == Settings.TBLNAME_WEEK:
+#             df = cls._read_salesinfo_week(fle)
+#             
+#         elif selectType == Settings.TBLNAME_MONTH:
+#             df = cls._read_salesinfo_month(fle)
+# 
+#         # 同日付の売上情報が含まれている場合
+#         a = df["day"].tolist()
+#         b = df_base["day"].tolist()
+#         c = set(a) & set(b)
+#                     
+#         if len(c) > 0:                  
+#             msgVal = sorted(c)                        
+#             message_text = "\n".join([msgVal[0],"～",msgVal[-1]])
+#             
+#             flg_answer = msg.askyesnocancel(msg.INFO,f"同日付の売上情報が含まれています。更新しますか？\n{message_text}")
+#             
+#             if flg_answer is None:
+#                 msg.showinfo(msg.INFO, "売上情報の更新処理を中断しました。")
+#                 return pd.DataFrame()
+#             
+#             elif flg_answer:
+#                 df_base = df_base[~df_base["day"].isin(c)]     
+#             else:
+#                 df = df[~df["day"].isin(c)] 
+#                 
+#         
+#         df_new = pd.concat([df, df_base]) 
+#         
+#         if cls._update_db(df, df_base, selectType):
+#             pass
+#         else:
+#             pass
+# 
+#         return df_new
+#===============================================================================
     
     @classmethod
-    def _update_db(cls, df, tblName):
+    def Update_db(cls, df, tblName):
         """
         内部関数　DBの売上情報を更新する処理
 

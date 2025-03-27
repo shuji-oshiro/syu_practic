@@ -14,6 +14,8 @@ git clone [リモートリポジトリパス]
 =https://github.com/shuji-oshiro/syu_practic.git
 
 
+
+
 ###git addの使用例
 git add . //すべてのファイル・ディレクトリ
 git add *.css //すべてのCSSファイル *ファイルパターンも同様
@@ -29,6 +31,15 @@ git commit -v //変更点を表示してコミット
 ###コミットの取り消し
 git reset --soft HEAD~2 // 最新のコミットから2件分をワークディレクトリの内容を保持し取り消す
 git reset --hard HEAD~2 // 最新のコミットから2件分のワークディレクトリの内容とコミットを取り消す
+git restore . // commitしていない場合の削除したファイルを復元
+git checkout HEAD -- . or filename　//restoreで復元できない場合
+
+
+###git commit してしまった後に削除した場合、リモートの最新状態を取得する必要があります
+git fetch origin  # 最新のリモート情報を取得
+git reset --hard origin/master  # リモートリポジトリの状態に完全に戻す
+
+
 
 ###コミットメッセージの修正
 git rebase -i HEAD~2 // HEADから2件のコミットメッセージ
