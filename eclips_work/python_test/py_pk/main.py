@@ -20,6 +20,7 @@ from tkinter import filedialog, messagebox as msg
 import threading
 import calendar
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 const = settings.Settings()        
@@ -27,7 +28,18 @@ const = settings.Settings()
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
 
-        
+control_list =[DateEntry, tk.Checkbutton, ttk.Combobox]
+
+def set_widget_status(wg_frame, status):                       
+    for widget in wg_frame.winfo_children():  
+        if isinstance(widget, tk.Frame) or isinstance(widget, tk.LabelFrame):
+            set_widget_status(widget, status)           
+           
+        for target_wg in control_list:
+            if isinstance(widget, target_wg):
+                widget.config(state=status)
+                break    
+      
 class FrameInput(tk.LabelFrame):
     def __init__(self, master):
         super().__init__(master, text="売上情報入力", bd=2)
@@ -50,7 +62,7 @@ class FrameInput(tk.LabelFrame):
     
     def _update_mst_tenpo(self):
         
-        # TODO:
+        # TODO:Update store master data
         #=======================================================================
         # """Update store master data"""
         # try:
@@ -101,20 +113,21 @@ class FramePeriod(tk.LabelFrame):
         self.radio_kind_period = tk.StringVar(value="")               
                 
         # 2-2 日別売上抽出
-        frame_row2 = tk.LabelFrame(self)
-        frame_row2.pack(anchor=tk.W)
-            
-        tk.Radiobutton(frame_row2, text="日別", variable=self.radio_kind_period, value=const.TBLNAME_DAY, command=self._choice_datekind).pack(side=tk.LEFT)
-        self.entry_from = DateEntry(frame_row2, date_pattern=const.ENTRY_DISP_FORM)
+        self.frame_row2 = tk.LabelFrame(self)
+        self.frame_row2.pack(anchor=tk.W)
+        frame_1 = tk.Frame(self.frame_row2)
+        frame_1.pack(anchor=tk.W)            
+        tk.Radiobutton(frame_1, text="日別", variable=self.radio_kind_period, value=const.TBLNAME_DAY, command=self._choice_datekind).pack(side=tk.LEFT)
+        self.entry_from = DateEntry(frame_1, date_pattern=const.ENTRY_DISP_FORM)
         self.entry_from.pack(side=tk.LEFT)
-        tk.Label(frame_row2, text="～").pack(side=tk.LEFT)
+        tk.Label(frame_1, text="～").pack(side=tk.LEFT)
         #　集計終了日
-        self.entry_to = DateEntry(frame_row2, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_to = DateEntry(frame_1, date_pattern=const.ENTRY_DISP_FORM)
         self.entry_to.pack(side=tk.LEFT)
         
         # 2-2 日別売上抽出 曜日指定
-        frame_row2_week = tk.LabelFrame(self)
-        frame_row2_week.pack(anchor=tk.W)
+        frame_2 = tk.Frame(self.frame_row2)
+        frame_2.pack()
                 
         self.week_flg = []
         for _ in range(0,7):
@@ -123,38 +136,38 @@ class FramePeriod(tk.LabelFrame):
             self.week_flg.append(flg)
             
         # チェックボックスの作成
-        tk.Checkbutton(frame_row2_week, text="月", variable=self.week_flg[0]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="火", variable=self.week_flg[1]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="水", variable=self.week_flg[2]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="木", variable=self.week_flg[3]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="金", variable=self.week_flg[4]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="土", variable=self.week_flg[5]).pack(side=tk.LEFT)
-        tk.Checkbutton(frame_row2_week, text="日", variable=self.week_flg[6]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="月", variable=self.week_flg[0]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="火", variable=self.week_flg[1]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="水", variable=self.week_flg[2]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="木", variable=self.week_flg[3]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="金", variable=self.week_flg[4]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="土", variable=self.week_flg[5]).pack(side=tk.LEFT)
+        tk.Checkbutton(frame_2, text="日", variable=self.week_flg[6]).pack(side=tk.LEFT)
         
         # 2-3　週別売上抽出
-        frame_row3 = tk.LabelFrame(self)
-        frame_row3.pack(anchor=tk.W)        
-        tk.Radiobutton(frame_row3, text="週別", variable=self.radio_kind_period, value=const.TBLNAME_WEEK, command=self._choice_datekind).pack(side=tk.LEFT)
+        self.frame_row3 = tk.LabelFrame(self)
+        self.frame_row3.pack(anchor=tk.W)        
+        tk.Radiobutton(self.frame_row3, text="週別", variable=self.radio_kind_period, value=const.TBLNAME_WEEK, command=self._choice_datekind).pack(side=tk.LEFT)
         
         self.var_select_week_from = tk.StringVar()
-        self.comb_week_from = ttk.Combobox(frame_row3, state="readonly", textvariable=self.var_select_week_from)
+        self.comb_week_from = ttk.Combobox(self.frame_row3, state="readonly", textvariable=self.var_select_week_from)
         self.comb_week_from.pack(side=tk.LEFT)
-        tk.Label(frame_row3, text="～").pack(side=tk.LEFT)
+        tk.Label(self.frame_row3, text="～").pack(side=tk.LEFT)
         self.var_select_week_to = tk.StringVar()
-        self.comb_week_to = ttk.Combobox(frame_row3, state="readonly", textvariable=self.var_select_week_to)
+        self.comb_week_to = ttk.Combobox(self.frame_row3, state="readonly", textvariable=self.var_select_week_to)
         self.comb_week_to.pack(side=tk.LEFT)
         
         #2-4　月別売上抽出
-        frame_row4 = tk.LabelFrame(self)
-        frame_row4.pack(anchor=tk.W)      
-        tk.Radiobutton(frame_row4, text="月別", variable=self.radio_kind_period, value=const.TBLNAME_MONTH, command=self._choice_datekind).pack(side=tk.LEFT)
+        self.frame_row4 = tk.LabelFrame(self)
+        self.frame_row4.pack(anchor=tk.W)      
+        tk.Radiobutton(self.frame_row4, text="月別", variable=self.radio_kind_period, value=const.TBLNAME_MONTH, command=self._choice_datekind).pack(side=tk.LEFT)
         
         self.var_select_mont_from = tk.StringVar()
-        self.comb_mont_from = ttk.Combobox(frame_row4, state="readonly", textvariable=self.var_select_mont_from)
+        self.comb_mont_from = ttk.Combobox(self.frame_row4, state="readonly", textvariable=self.var_select_mont_from)
         self.comb_mont_from.pack(side=tk.LEFT)
-        tk.Label(frame_row4, text="～").pack(side=tk.LEFT)
+        tk.Label(self.frame_row4, text="～").pack(side=tk.LEFT)
         self.var_select_mont_to = tk.StringVar()
-        self.comb_mont_to = ttk.Combobox(frame_row4, state="readonly", textvariable=self.var_select_mont_to)
+        self.comb_mont_to = ttk.Combobox(self.frame_row4, state="readonly", textvariable=self.var_select_mont_to)
         self.comb_mont_to.pack(side=tk.LEFT)
         
         
@@ -327,11 +340,10 @@ class FramePeriod(tk.LabelFrame):
             if df.empty:                
                 df = salesDataFrame.get_salesData()
                                                                
-            if self.radio_kind_period.get() == const.TBLNAME_DAY:                
-                self.entry_from.set_date(salesDataFrame.get_mindate())
+            if self.radio_kind_period.get() == const.TBLNAME_DAY:  
                 self.entry_to.set_date(salesDataFrame.get_maxdate())
-                 
-                                      
+                self.entry_from.set_date(salesDataFrame.get_mindate())
+ 
             elif self.radio_kind_period.get() == const.TBLNAME_WEEK:                     
                 # 集計期間の日付を更新する            
                 u_day = df["day"].unique().tolist().sorted()
@@ -391,7 +403,29 @@ class FramePeriod(tk.LabelFrame):
     
         #  別スレッドでデータベース更新処理を実行
         threading.Thread(target=self._get_salesdata, daemon=True).start()
-                
+                        
+        if self.radio_kind_period.get() == const.TBLNAME_DAY: 
+            set_widget_status(self.frame_row2, tk.NORMAL)
+            set_widget_status(self.frame_row3, tk.DISABLED)
+            set_widget_status(self.frame_row4, tk.DISABLED)                                 
+            #===================================================================
+            # for widget in self.frame_row2.winfo_children():  
+            #     if isinstance(widget, tk.Frame):
+            #         continue           
+            #     if not isinstance(widget, tk.Radiobutton):
+            #         widget.config(state=tk.DISABLED)
+            #===================================================================
+                    
+        elif self.radio_kind_period.get() == const.TBLNAME_WEEK:
+            set_widget_status(self.frame_row2, tk.DISABLED)
+            set_widget_status(self.frame_row3, tk.NORMAL)
+            set_widget_status(self.frame_row4, tk.DISABLED)  
+        
+        elif self.radio_kind_period.get() == const.TBLNAME_MONTH:
+            set_widget_status(self.frame_row2, tk.DISABLED)
+            set_widget_status(self.frame_row3, tk.DISABLED)
+            set_widget_status(self.frame_row4, tk.NORMAL)  
+                              
 
 class FrameCound(tk.LabelFrame):
     def __init__(self, master):
@@ -428,9 +462,8 @@ class FrameCound(tk.LabelFrame):
         cp_comb.current(0)
         cp_comb.pack(side=tk.LEFT)
         
-        # TODO:和洋菓子課除処理実装予定
-        self.var_checked_expectLine = tk.BooleanVar()
-        tk.Checkbutton(frame_row1, text="和洋菓子課除外", variable=self.var_checked_expectLine).pack(side=tk.LEFT)
+        self.var_checked_without = tk.BooleanVar()
+        tk.Checkbutton(frame_row1, text="和洋菓子課除外", variable=self.var_checked_without).pack(side=tk.LEFT)
         
         self.radio_jyoken = tk.IntVar(value=1)
         # 3-2
@@ -457,14 +490,14 @@ class FrameCound(tk.LabelFrame):
         # 商品コードを入力するフォーム
         self.var_icode = tk.IntVar(value=0)
         entry_icode = tk.Spinbox(self.frame_row3, width=5, from_=0, to=9999, textvariable=self.var_icode)
-        entry_icode.bind("<Return>", self._press_key)
+        entry_icode.bind("<Return>", lambda event: self._setfindItems())
         entry_icode.pack(side=tk.LEFT) 
         
         
         # 商品名のキーワードを入力するフォーム
         self.var_tname = tk.StringVar()
         entry_name = tk.Entry(self.frame_row3, textvariable=self.var_tname)
-        entry_name.bind("<Return>", self.setfindItems)
+        entry_name.bind("<Return>", lambda event: self._setfindItems(True))
         entry_name.pack(side=tk.LEFT)
         
                 
@@ -480,13 +513,13 @@ class FrameCound(tk.LabelFrame):
         self.var_foudlist = tk.StringVar()
         self.lbox_findItems = tk.Listbox(self.frame_row4, listvariable=self.var_foudlist, width=25, height=12, selectmode=tk.MULTIPLE)
         self.lbox_findItems.pack(side=tk.LEFT)
-        self.lbox_findItems.bind("<Double-Button-1>",self._set_listItems)
+        self.lbox_findItems.bind("<Double-Button-1>", self._setfindItems)
         self.lbox_findItems.config(state=tk.DISABLED)
         
-    
-    def _press_key(self, _):
+        
+    def _setfindItems(self, flg=False):
         """
-        商品コードを入力した後エンターキーを押下した時の処理
+        # 商品名で検索するエントリーフォームでエンターした時の処理　-＞条件に合致する商品名をリストに表示
 
         Parameters
         ----------
@@ -495,31 +528,36 @@ class FrameCound(tk.LabelFrame):
 
         Returns
         -------
-        None.
+        str
+            DESCRIPTION.
 
         """
+        df = salesDataFrame.get_currentData()
+        if df.empty:        
+            msg.showwarning(msg.WARNING, "売上情報が存在しません")
         
-        target_df = salesDataFrame.get_currentData()  
-        try:
-            if target_df.empty: 
-                msg.showwarning(msg.WARNING, "抽出する売上情報を選択してください")               
+        
+        if flg:
+            # 商品名による抽出
+            df = df[df["i_name"].str.contains(self.var_tname.get())]
+        else:
+            # 商品コードによる抽出
+            df = df[df["i_code"]==self.var_icode.get()]
                     
-            else:       
-                itemNames = target_df[target_df["i_code"]==self.var_icode.get()]["i_name"].unique().tolist()
-                
-                if len(itemNames) > 0:
-                    self.var_foudlist.set(itemNames) 
-                else:
-                    msg.showwarning(msg.WARNING, "検索条件に合致する商品情報がありません。")
-        
-        except Exception: 
-            msg.showerror(Exception)
-        
+        ls = df['i_code'].astype(str).str.cat(df['i_name'], sep=',')
+        ls = ls.unique().tolist()
+
+        if len(ls) > 0:
+            self.var_foudlist.set(ls) 
+        else:
+            msg.showwarning(msg.WARNING, "検索条件に合致する商品情報がありません。")
+                        
+        return "break"
     
     
-    def get_finditems(self):
+    def get_selectitems(self):
         """
-        売上情報の集計を商品単位で行う際に、選択された商品名を返す処理
+        一覧表示されている商品リストから選択された商品名を返す
 
         Returns
         -------
@@ -539,61 +577,7 @@ class FrameCound(tk.LabelFrame):
 
         return select_Items
         
-    
-    def _set_listItems(self,event):
-        """
-        抽出条件の商品名を表示するリストをダブルクリックした時の処理
-
-        Parameters
-        ----------
-        event : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        str
-            DESCRIPTION.
-
-        """
-        
-        try:
-            
-            if event.widget["state"] == tk.DISABLED:
-                return "break"
-                
-            fle = ()        
-            typ = [('CSVファイル', '*.csv')]     
-            iDir = os.path.abspath(os.path.dirname(__file__))       
-            fle = filedialog.askopenfilename(filetypes = typ, initialdir=iDir)                             
-            
-            #ファイルが読み込まれていない場合処理を中断
-            if len(fle)>0 :          
-                
-                temp = pd.read_csv(fle ,encoding="CP932",header=None)                 
-                a = temp[0].tolist()     
-                
-                target_df = salesDataFrame.get_currentData()
-                
-                if target_df.empty:
-                    msg.showwarning("売上情報が存在しません")
-                    return "break"
-                
-                
-                b =target_df[target_df["i_code"].isin(a)]
-                c = b["i_name"].unique().tolist()
-                
-                self.var_foudlist.set(c)
-                
-                for i in range(0,event.widget.size()):
-                    event.widget.select_set(i)        
-                
-                return "break"
-            
-        except Exception: 
-            msg.showwarning(Exception)
-            return "break"
-        
-        
+         
     def chang_coundkbn(self):
         """
         抽出条件ボタン選択時の処理
@@ -603,7 +587,7 @@ class FrameCound(tk.LabelFrame):
         None.
     
         """
-             
+        # TODO:コントロール制御追加
         if self.radio_jyoken.get() == const.SELECT_LINE:
             
             for widget in self.frame_row2.winfo_children():
@@ -630,40 +614,7 @@ class FrameCound(tk.LabelFrame):
             for widget in self.frame_row4.winfo_children():
                 if not isinstance(widget, tk.Radiobutton):
                     widget.config(state=tk.NORMAL)
-            
-    
-    def setfindItems(self, _):
-        """
-        # 商品名で検索するエントリーフォームでエンターした時の処理　-＞条件に合致する商品名をリストに表示
-
-        Parameters
-        ----------
-        event : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        str
-            DESCRIPTION.
-
-        """
-        df = salesDataFrame.get_currentData()
-        if df.empty:        
-            msg.showwarning(msg.WARNING, "売上情報が存在しません")
-        
-        # TODO:商品コードと商品名をペアで表示する処理を追加
-        else:       #unique().tolist()
-            df = df[df["i_name"].str.contains(self.var_tname.get(),na=False)].loc[:,["i_code","i_name"]]
-            result_list = [x for pair in zip(df["i_code"], df["i_name"]) for x in pair]
-
-            itemNames = []
-            if len(itemNames) > 0:
-                self.var_foudlist.set(itemNames) 
-            else:
-                msg.showwarning(msg.WARNING, "検索条件に合致する商品情報がありません。")
-                            
-        return "break"
-        
+                   
 
 class FrameOutput(tk.LabelFrame):
     def __init__(self, master, cls_period_instance, cls_cound_instance):
@@ -724,6 +675,7 @@ class FrameOutput(tk.LabelFrame):
         frame_comper.pack(side=tk.LEFT, padx=10)
         
         self.var_checked_comper = tk.BooleanVar()
+        
         tk.Checkbutton(frame_comper, text="比較", variable=self.var_checked_comper).pack(side=tk.LEFT)
         self.var_select_compar = tk.IntVar(value=0)
         tk.Radiobutton(frame_comper, text="前年", variable=self.var_select_compar, value=const.SELECT_PREYEAR).pack(side=tk.LEFT)
@@ -731,7 +683,7 @@ class FrameOutput(tk.LabelFrame):
         self.entry_from_pre = DateEntry(frame_comper, date_pattern=const.ENTRY_DISP_FORM).pack(side=tk.LEFT)
                
        
-    def _show_plotData(self, fig=None, pivo_df=pd.DataFrame):
+    def _show_plotData(self, fig=None, df=pd.DataFrame):
         """
         フレームに分析データを表示する処理
 
@@ -744,7 +696,7 @@ class FrameOutput(tk.LabelFrame):
         for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
             widget.destroy()
         
-        if not pivo_df.empty :
+        if not df.empty :
             
             # スタイルの設定
             style = ttk.Style()
@@ -753,7 +705,7 @@ class FrameOutput(tk.LabelFrame):
             # TreeViewのHeading部分に対して、フォントサイズの変更と太字の設定
             # style.configure("Treeview.Heading",font=("",14,"bold"))
             
-            tree_col = ["_".join(col) for col in pivo_df.columns.to_flat_index()]
+            tree_col = ["_".join(col) for col in df.columns.to_flat_index()]
             tree_col.insert(0, "keyval")
                         
             tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings", height=25)
@@ -769,7 +721,7 @@ class FrameOutput(tk.LabelFrame):
                          f"{row[7]:.1%}", f"{row[8]:.1%}", f"{row[9]:.1%}")
              
             # DataFrame のデータを一括設定
-            for row in pivo_df.itertuples(index=True):
+            for row in df.itertuples(index=True):
                 tree.insert("", "end", values=format_values(row))
                 
             # スクロールバーを追加
@@ -806,9 +758,10 @@ class FrameOutput(tk.LabelFrame):
         # 商品名抽出        
         _brand = self.cls_cound.select_brand_var.get()
         _line = self.cls_cound.select_line_var.get()
-        _items = self.cls_cound.get_finditems()
+        _items = self.cls_cound.get_selectitems()
         _from, _to = self.cls_period.get_cound_perid_formaｎdto()
         _weeks = self.cls_period.get_select_dayofweeks()
+        _without = self.cls_cound.var_checked_without.get()
                                 
         # 商品名抽出
         if self.cls_cound.radio_jyoken.get()==const.SELECT_ITEM:
@@ -824,12 +777,15 @@ class FrameOutput(tk.LabelFrame):
                                                     _items,
                                                      _from,
                                                       _to,
-                                                       _weeks)
+                                                       _weeks,
+                                                       _without)
         # 売上情報の存在チェック
         if df_out.empty:
             msg.showwarning(msg.WARNING,"入力された期間の売上情報が存在しません")
             return "break"
                       
+                      
+        #TODO:期間指定をするとエラー発生する
         diff_day = (_to -_from).days +1 #期間取得
         
         _from2, _to2 = "",""
@@ -859,7 +815,8 @@ class FrameOutput(tk.LabelFrame):
                                                     _items,
                                                      _from2,
                                                       _to2,
-                                                       _weeks)
+                                                       _weeks,
+                                                       _without)
         
         diff_day2 = (_to2 -_from2).days +1 #期間取得    
                 
@@ -914,8 +871,7 @@ class FrameOutput(tk.LabelFrame):
                 else:
                     key_val = "i_name"  
                     sheetName = _brand
-            
-            #TODO: 日付期間をどのように取得するか考える           
+                      
             df_out, _from, _to, diff_day = df_list["now"] 
             df_out2, _from2, _to2, diff_day2 = df_list["past"] 
                        
@@ -937,7 +893,7 @@ class FrameOutput(tk.LabelFrame):
             
             pivo_df = pivo_df.fillna(0)
                      
-            self._show_plotData(pivo_df=pivo_df)  
+            self._show_plotData(df=pivo_df)  
              
             if csv_flg:
                 self._out_excel(pivo_df, l_val, sheetName, head_str)                
@@ -1032,14 +988,13 @@ class FrameOutput(tk.LabelFrame):
             # 時系列分析図出力処理-----
             df_out = df_out[["day",use_col]].groupby(["day"], as_index=False).sum(numeric_only=True)
                             
-            fig, ax = plt.subplots(figsize=(8, 6), dpi=100)   
+            fig, ax = plt.subplots(figsize=(8, 6))                  
             
-                     
             x = df_out["day"]
             y = df_out[use_col]
-            
-            ax.plot(x, y, linewidth=0.5, label=l_val)
-                         
+            #TODO: 比較分析を行う際の処理を追加、df_listを引数に、self.var_checked_comper
+            ax.plot(x, y, linewidth=0.5, label=l_val)            
+            #ax.xmargin = 5.0             
             # 移動平均算出用処理
             val = self.var_avgCount.get() 
             if val > 0:                    
@@ -1050,6 +1005,16 @@ class FrameOutput(tk.LabelFrame):
             ax.scatter(x, y)
             ax.set_title(f"時系列分析{str_from}～{str_to}")
             ax.set_xlabel("日付")
+            #ax.set_xlim(0,100) # X軸の幅指定　件数
+            #ax.set_ylim(0,100) # X軸の幅指定　件数     
+                          
+            #等間隔の数を設定する処理
+            step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
+            step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
+            ax.set_xticks(step_idx,step_xval) #ラベルに設定する
+            
+            ax.minorticks_on() #補助目盛を追加
+            
             ax.set_ylabel(USECOLS_NAME[use_col])
             #　データラベルの追加
             ax.legend()        
@@ -1171,16 +1136,14 @@ class MyApp(tk.Tk):
               
         self.frame2 = FrameInput(frame_main1)
         self.frame3 = FramePeriod(frame_main1)        
-        self.frame4 = FrameCound(frame_main1)
+        self.frame4 = FrameCound(frame_main1)        
         
-        
-                # right side frame output data
+        # right side frame output data
         frame_main2 = tk.Frame(self)
         frame_main2.pack(anchor=tk.NW, side=tk.LEFT,  padx=10, pady=10)
         
         self.frame5 = FrameOutput(frame_main2, self.frame3, self.frame4)    
-        
-        
+                
         
 salesDataFrame = analysis_data.Analysis_data()
 #salesDataFrame = SalesDataFrame()

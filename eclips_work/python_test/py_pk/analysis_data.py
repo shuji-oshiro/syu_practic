@@ -8,7 +8,6 @@ import pandas as pd
 from py_pk.settings import Settings
 from py_pk.process_db import Process_db
 import logging
-from datetime import datetime as dt
 from tkinter import messagebox as msg
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
@@ -58,7 +57,7 @@ class Analysis_data:
         return df['day'].min()        
            
             
-    def get_datacondition(self, brand=None, line=None, items=None, from_date=None, to_date=None, target_week=None):
+    def get_datacondition(self, brand=None, line=None, items=None, from_date=None, to_date=None, target_week=None, flg_without=False):
         """
         Filter and process sales data based on various criteria.
         
@@ -88,9 +87,14 @@ class Analysis_data:
             
             if line:
                 df_out = df_out[df_out["l_name"] == line]
-            
+                        
+            if flg_without:
+                df_out = df_out[~df_out["l_code"].isin([Settings.CODE_WAGASHI])]               
+                
             if items:
-                df_out = df_out[df_out["i_name"].isin(items)]
+                # 商品コードと商品名が一致していない状況があるので、組み合わせで抽出する
+                df_out["i_name_and_i_code"] = df_out['i_code'].astype(str).str.cat(df_out['i_name'], sep=',')
+                df_out = df_out[df_out["i_name_and_i_code"].isin(items)]                
                        
 
             # 日付文字列データをDateTimeに変換

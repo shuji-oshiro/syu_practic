@@ -35,3 +35,6 @@ class Settings:
     
     ENTRY_DISP_FORM = "yyyy年mm月dd日"
     
+    CODE_WAGASHI = 9
+    CODE_YOUGASHI = 5
+    
