@@ -88,7 +88,7 @@ class Analysis_data:
             if line:
                 df_out = df_out[df_out["l_name"] == line]
                         
-            if flg_without:
+            if flg_without: #和菓子の売上を除く処理
                 df_out = df_out[~df_out["l_code"].isin([Settings.CODE_WAGASHI])]               
                 
             if items:
@@ -103,11 +103,10 @@ class Analysis_data:
                 
             else:
                 df_out["day_DateTime"] = pd.to_datetime(df_out["day"], format=Settings.FORMAT_YMD)
-                
-                            
-            # Date range filter
+                                            
+            # Date range filter    
             df_out = df_out[(df_out["day_DateTime"] >= from_date) & (df_out["day_DateTime"] <= to_date)]
-        
+                        
             # Week filter
             if target_week:
                 df_out = df_out.set_index("day_DateTime")
@@ -153,10 +152,8 @@ class Analysis_data:
                 else:
                     df = df[~df["day"].isin(c)] 
                     
-            use_cools = [""]
-            df_new = pd.concat([df, df_base]).loc[:,use_cools]
-            
-            
+
+            df_new = pd.concat([df, df_base])            
             
             self.dataframes[self.current_df_type] = Process_db.Update_db(df_new, self.current_df_type)
                         
