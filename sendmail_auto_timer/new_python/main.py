@@ -12,6 +12,7 @@ from tkinter import messagebox
 import json
 from datetime import datetime
 from tkcalendar import DateEntry
+import autoMail_from_appPass
 
 TASKS_FILE = "tasks.json"
 user_l = {"user_1":"user_1@gmail.com","user_2":"user_2@gmail.com","user_3":"user_3@gmail.com"}
@@ -33,7 +34,7 @@ def add_task():
     if task:
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         task_list.insert(tk.END, f"{day_val} - {task}")
-        tasks.append({"id":now, "datetime": day_val, "task": task, "users":user_l})
+        tasks.append({"id":now, "datetime": day_val, "task": task, "users":user_l.copy()})
         save_tasks(tasks)
         task_entry.delete(0, tk.END)
     else:
@@ -43,9 +44,11 @@ def delete_task():
     selected_index = task_list.curselection()
     if selected_index:
         index = selected_index[0]
-        task_list.delete(index)
         del tasks[index]
         save_tasks(tasks)
+        
+        task_list.delete(index)
+        user_list.delete(0, tk.END)
     else:
         messagebox.showwarning("削除エラー", "削除するタスクを選択してください。")
         
