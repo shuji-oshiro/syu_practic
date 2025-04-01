@@ -75,11 +75,13 @@ class Analysis_data:
         try:
             
             df_out = self.dataframes[self.current_df_type] 
+            
+            if df_out.empty:
+                return df_out
+            
             df_out = df_out.merge(self.dataframes[Settings.TBLNAME_BRAND],on='t_code', how='left').fillna("その他取引先")
             df_out = df_out.merge(self.dataframes[Settings.TBLNAME_LINE],on='l_code', how='left').fillna("その他ライン")
          
-            if df_out.empty:
-                return df_out
     
             # Apply filters
             if brand:

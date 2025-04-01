@@ -28,17 +28,24 @@ const = settings.Settings()
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
 
-control_list =[DateEntry, tk.Checkbutton, ttk.Combobox, tk.Listbox, tk.Entry, tk.Spinbox]
+control_list =[DateEntry, tk.Checkbutton, ttk.Combobox, tk.Listbox, tk.Entry, tk.Spinbox, tk.Button]
 
-def set_widget_status(wg_frame, state):                       
+def set_widget_status(wg_frame, state, l=[]):
     for widget in wg_frame.winfo_children():  
         if isinstance(widget, tk.Frame) or isinstance(widget, tk.LabelFrame):
-            set_widget_status(widget, state)           
-           
-        for target_wg in control_list:
-            if isinstance(widget, target_wg):
-                widget.config(state=state)
-                break    
+            set_widget_status(widget, state, l)           
+        
+        if l:
+            for target_wg in l:
+                if isinstance(widget, target_wg):
+                    widget.config(state=state)
+                    break  
+        else:            
+            for target_wg in control_list:
+                if isinstance(widget, target_wg):
+                    widget.config(state=state)
+                    break    
+     
       
 class FrameInput(tk.LabelFrame):
     def __init__(self, master):
@@ -78,6 +85,7 @@ class FrameInput(tk.LabelFrame):
         pass
 
 
+
 class FramePeriod(tk.LabelFrame):
     def __init__(self, master):
         """
@@ -109,8 +117,8 @@ class FramePeriod(tk.LabelFrame):
         btn_GetInfo = tk.Button(frame_row1, text="売上情報入力", command=self._push_inoputData)
         btn_GetInfo.pack()
 
-        #売上情報ので使用する日付区間の設定値　-＞DataBaseName
-        self.radio_kind_period = tk.StringVar(value="")               
+        #売上情報で使用する日付区間の設定値　-＞DataBaseName
+        self.radio_kind_period = tk.StringVar(value=const.TBLNAME_MONTH)             
                 
         # 2-2 日別売上抽出
         self.frame_row2 = tk.LabelFrame(self)
@@ -119,6 +127,7 @@ class FramePeriod(tk.LabelFrame):
         frame_1.pack(anchor=tk.W)            
         tk.Radiobutton(frame_1, text="日別", variable=self.radio_kind_period, value=const.TBLNAME_DAY, command=self._choice_datekind).pack(side=tk.LEFT)
         self.entry_from = DateEntry(frame_1, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_from.bind("<<DateEntrySelected>>", self.on_date_selected)
         self.entry_from.pack(side=tk.LEFT)
         tk.Label(frame_1, text="～").pack(side=tk.LEFT)
         #　集計終了日
@@ -151,24 +160,103 @@ class FramePeriod(tk.LabelFrame):
         
         self.var_select_week_from = tk.StringVar()
         self.comb_week_from = ttk.Combobox(self.frame_row3, state="readonly", textvariable=self.var_select_week_from)
+        self.comb_week_from.bind("<<ComboboxSelected>>", self.on_date_selected)
         self.comb_week_from.pack(side=tk.LEFT)
         tk.Label(self.frame_row3, text="～").pack(side=tk.LEFT)
         self.var_select_week_to = tk.StringVar()
         self.comb_week_to = ttk.Combobox(self.frame_row3, state="readonly", textvariable=self.var_select_week_to)
-        self.comb_week_to.pack(side=tk.LEFT)
+        
         
         #2-4　月別売上抽出
         self.frame_row4 = tk.LabelFrame(self)
         self.frame_row4.pack(anchor=tk.W)      
-        tk.Radiobutton(self.frame_row4, text="月別", variable=self.radio_kind_period, value=const.TBLNAME_MONTH, command=self._choice_datekind).pack(side=tk.LEFT)
+        tk.Radiobutton(self.frame_row4, text="月別", variable=self.radio_kind_period, value=const.TBLNAME_MONTH, command=self._choice_datekind ).pack(side=tk.LEFT)
         
         self.var_select_mont_from = tk.StringVar()
         self.comb_mont_from = ttk.Combobox(self.frame_row4, state="readonly", textvariable=self.var_select_mont_from)
+        self.comb_mont_from.bind("<<ComboboxSelected>>", self.on_date_selected)
         self.comb_mont_from.pack(side=tk.LEFT)
         tk.Label(self.frame_row4, text="～").pack(side=tk.LEFT)
         self.var_select_mont_to = tk.StringVar()
         self.comb_mont_to = ttk.Combobox(self.frame_row4, state="readonly", textvariable=self.var_select_mont_to)
         self.comb_mont_to.pack(side=tk.LEFT)
+        
+        #2-5　月別売上抽出
+        self.frame_row5 = tk.LabelFrame(self)
+        self.frame_row5.pack(anchor=tk.W)   
+        
+        # TODO: 日付操作処理の検証必要
+        self.var_checked_comper = tk.BooleanVar()
+        tk.Checkbutton(self.frame_row5, text="比較", variable=self.var_checked_comper, command=self.comper_checked).pack(side=tk.LEFT)
+        self.var_select_compar = tk.IntVar(value=0)
+        tk.Radiobutton(self.frame_row5, text="前年", variable=self.var_select_compar, value=0, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        tk.Radiobutton(self.frame_row5, text="前月", variable=self.var_select_compar, value=1, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        tk.Radiobutton(self.frame_row5, text="前週", variable=self.var_select_compar, value=2, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        self.entry_from_pre = DateEntry(self.frame_row5, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_from_pre.pack(side=tk.LEFT)
+                
+        
+        # 初期処理　月間売上データを取得する
+        df = salesDataFrame.get_salesData()
+        u_day = df["day"].unique().tolist()
+        u_day = sorted(u_day)
+        self.comb_mont_from["values"] = u_day
+        self.comb_mont_to["values"] = u_day
+        self.var_select_mont_from.set(min(u_day))               
+        self.var_select_mont_to.set(max(u_day)) 
+        
+        set_widget_status(self.frame_row2, tk.DISABLED)
+        set_widget_status(self.frame_row3, tk.DISABLED)
+        set_widget_status(self.frame_row5, tk.DISABLED, [tk.Radiobutton, DateEntry])
+        
+        self.chang_coundkbn() #比較日付の値も更新する
+    
+    def on_date_selected(self, _):
+        self.chang_coundkbn() 
+    
+    
+    def comper_checked(self):
+        """
+        比較チェックボックス選択時の処理
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.var_checked_comper.get():
+            set_widget_status(self.frame_row5, tk.NORMAL, [tk.Radiobutton, DateEntry])
+            self.chang_coundkbn()
+        else:
+            set_widget_status(self.frame_row5, tk.DISABLED, [tk.Radiobutton, DateEntry])
+            self.chang_coundkbn()
+    
+        
+        
+    def chang_coundkbn(self):
+        """
+        前月比較の条件ボタン選択時 or 日付の抽出条件選択時の処理
+
+        Returns
+        -------
+        None.
+
+        """
+        _from, _ = self.get_cound_perid_formaｎdto()
+        
+        
+        if self.var_select_compar.get() == 0: #前年          
+            _from_pre = _from - relativedelta(years=1)
+            
+        elif self.var_select_compar.get() == 1: #前月
+            _from_pre = _from - relativedelta(months=1)
+            
+        elif self.var_select_compar.get() == 2: #前週
+            _from_pre = _from - relativedelta(weeks=1)
+            delta_days = (_from_pre.weekday() - 0) % 7
+            _from_pre = _from_pre - timedelta(days=delta_days)
+        
+        self.entry_from_pre.set_date(_from_pre)  
         
         
     def get_cound_perid_formaｎdto(self) -> (dt, dt):
@@ -333,14 +421,7 @@ class FramePeriod(tk.LabelFrame):
                 self.var_select_mont_from.set(min(u_day))               
                 self.var_select_mont_to.set(max(u_day))                         
 
-            # TODO：後日機能追加
-            # # 集計期間の選択によって曜日選択の有効無効を設定する
-            # if not self.radio_kind_period.get() == FLG_DAY:
-            #     for widget in self.frame_row3.winfo_children():       
-            #         widget.config(state=tk.DISABLED)
-            # else:
-            #     for widget in self.frame_row3.winfo_children():       
-            #         widget.config(state=tk.NORMAL)
+            self.chang_coundkbn() #比較日付の値も更新する
                                     
         except Exception: 
             msg.showerror(msg.ERROR, Exception)
@@ -397,7 +478,8 @@ class FramePeriod(tk.LabelFrame):
             set_widget_status(self.frame_row2, tk.DISABLED)
             set_widget_status(self.frame_row3, tk.DISABLED)
             set_widget_status(self.frame_row4, tk.NORMAL)  
-                              
+                            
+        
 
 class FrameCound(tk.LabelFrame):
     def __init__(self, master):
@@ -587,6 +669,7 @@ class FrameCound(tk.LabelFrame):
             set_widget_status(self.frame_row4, tk.NORMAL)
                    
 
+
 class FrameOutput(tk.LabelFrame):
     def __init__(self, master, cls_period_instance, cls_cound_instance):
         """
@@ -641,120 +724,54 @@ class FrameOutput(tk.LabelFrame):
         self.var_avgCount = tk.IntVar(value=0)
         tk.Spinbox(frame_avg, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
         
-        # TODO：前年、期間指定
-        frame_comper = tk.Frame(frame_row1)
-        frame_comper.pack(side=tk.LEFT, padx=10)
         
-        # TODO: 日付操作処理の検証必要
-        self.var_checked_comper = tk.BooleanVar()
-        tk.Checkbutton(frame_comper, text="比較", variable=self.var_checked_comper).pack(side=tk.LEFT)
-        self.var_select_compar = tk.IntVar(value=0)
-        tk.Radiobutton(frame_comper, text="前年", variable=self.var_select_compar, value=0, command=self.chang_coundkbn).pack(side=tk.LEFT)
-        tk.Radiobutton(frame_comper, text="前月", variable=self.var_select_compar, value=1, command=self.chang_coundkbn).pack(side=tk.LEFT)
-        tk.Radiobutton(frame_comper, text="前週", variable=self.var_select_compar, value=2, command=self.chang_coundkbn).pack(side=tk.LEFT)
-        self.entry_from_pre = DateEntry(frame_comper, date_pattern=const.ENTRY_DISP_FORM)
-        self.entry_from_pre.pack(side=tk.LEFT)
+        #=======================================================================
+        # # TODO：前年、期間指定
+        # frame_comper = tk.Frame(frame_row1)
+        # frame_comper.pack(side=tk.LEFT, padx=10)
+        # 
+        # # TODO: 日付操作処理の検証必要
+        # self.var_checked_comper = tk.BooleanVar()
+        # tk.Checkbutton(frame_comper, text="比較", variable=self.var_checked_comper).pack(side=tk.LEFT)
+        # self.var_select_compar = tk.IntVar(value=0)
+        # tk.Radiobutton(frame_comper, text="前年", variable=self.var_select_compar, value=0, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        # tk.Radiobutton(frame_comper, text="前月", variable=self.var_select_compar, value=1, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        # tk.Radiobutton(frame_comper, text="前週", variable=self.var_select_compar, value=2, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        # self.entry_from_pre = DateEntry(frame_comper, date_pattern=const.ENTRY_DISP_FORM)
+        # self.entry_from_pre.pack(side=tk.LEFT)
+        # 
+        # self.chang_coundkbn()
+        #=======================================================================
     
-    def chang_coundkbn(self):
-        """
-        抽出条件ボタン選択時の処理
-
-        Returns
-        -------
-        None.
-
-        """
-        _from, _ = self.cls_period.get_cound_perid_formaｎdto()
-        
-        if not _from:
-            msg.showwarning(msg.WARNING, "集計期間を選択してください")
-            return "break"
-        
-        if self.var_select_compar.get() == 0: #前年          
-            _from_pre = _from - relativedelta(years=1)
-            
-        elif self.var_select_compar.get() == 1: #前月
-            _from_pre = _from - relativedelta(months=1)
-          
-            
-        elif self.var_select_compar.get() == 2: #前週
-            _from_pre = _from - relativedelta(weeks=1)
-            delta_days = (_from_pre.weekday() - 0) % 7
-            _from_pre = _from_pre - timedelta(days=delta_days)
-        
-        self.entry_from_pre.set_date(_from_pre)               
+#===============================================================================
+#     def chang_coundkbn(self):
+#         """
+#         抽出条件ボタン選択時の処理
+# 
+#         Returns
+#         -------
+#         None.
+# 
+#         """
+#         _from, _ = self.cls_period.get_cound_perid_formaｎdto()
+#         
+#         
+#         if self.var_select_compar.get() == 0: #前年          
+#             _from_pre = _from - relativedelta(years=1)
+#             
+#         elif self.var_select_compar.get() == 1: #前月
+#             _from_pre = _from - relativedelta(months=1)
+#           
+#             
+#         elif self.var_select_compar.get() == 2: #前週
+#             _from_pre = _from - relativedelta(weeks=1)
+#             delta_days = (_from_pre.weekday() - 0) % 7
+#             _from_pre = _from_pre - timedelta(days=delta_days)
+#         
+#         self.entry_from_pre.set_date(_from_pre)               
+#===============================================================================
        
 
-    def _show_plotData(self, fig=None, df=pd.DataFrame):
-        """
-        フレームに分析データを表示する処理
-
-        Returns
-        -------
-        None.
-
-        """
-                       
-        for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
-            widget.destroy()
-        
-        if not df.empty :
-            
-            # スタイルの設定
-            style = ttk.Style()
-            # TreeViewの全部に対して、フォントサイズの変更
-            style.configure("Treeview",font=("",11))
-            # TreeViewのHeading部分に対して、フォントサイズの変更と太字の設定
-            # style.configure("Treeview.Heading",font=("",14,"bold"))
-            
-            tree_col = ["_".join(col) for col in df.columns.to_flat_index()]
-            tree_col.insert(0, "keyval")
-                        
-            tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings", height=25)
-            # ヘッダーの設定
-            for col in tree_col:
-                tree.heading(col, text=col)  # ヘッダーのラベル
-                tree.column(col, anchor="center", width=100)  # カラム幅
-            
-            def format_values(row):                
-                return (row[0],
-                         f"{round(row[1]):,}", f"{round(row[2]):,}",f"{round(row[3]):,}",
-                         f"{round(row[4]):,}", round(row[5],1), round(row[6],1),
-                         f"{row[7]:.1%}", f"{row[8]:.1%}", f"{row[9]:.1%}")
-             
-            # DataFrame のデータを一括設定
-            for row in df.itertuples(index=True):
-                tree.insert("", "end", values=format_values(row))
-                
-            # スクロールバーを追加
-            scroll_y = ttk.Scrollbar(self.labelFrame_out, orient=tk.VERTICAL, command=tree.yview)
-            scroll_x = ttk.Scrollbar(self.labelFrame_out, orient=tk.HORIZONTAL, command=tree.xview)
-
-            tree.configure(yscrollcommand=scroll_y.set)
-            tree.configure(xscrollcommand=scroll_x.set)
-            
-            # レイアウト配置（grid を使用）
-            tree.grid(row=0, column=0, sticky="nsew")
-            scroll_y.grid(row=0, column=1, sticky="ns")
-            scroll_x.grid(row=1, column=0, sticky="ew")
-            
-            # `frame` の中で `Treeview` が自動拡張するように設定
-            self.labelFrame_out.grid_rowconfigure(0, weight=1)
-            self.labelFrame_out.grid_columnconfigure(0, weight=1)
-            
-                        
-            #===================================================================
-            # scroll_y.pack(side="right", fill="y")    
-            # scroll_x.pack(side="bottom", fill="x")  
-            # 
-            # tree.pack(expand=True, fill="both")  
-            #===================================================================
-            
-        else:                                  
-            canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
-            canvas_widget = canvas.get_tk_widget()
-            canvas_widget.pack()
-        
             
     def _push_buttons(self, out_typ):
         # 商品名抽出        
@@ -788,7 +805,7 @@ class FrameOutput(tk.LabelFrame):
                       
         diff_day = (_to -_from).days #期間取得               
         
-        _from2 = dt.strptime(self.entry_from_pre.get(), const.FORMAT_YMD)                
+        _from2 = dt.strptime(self.cls_period.entry_from_pre.get(), const.FORMAT_YMD)                
         _to2 = _from2 + relativedelta(days=diff_day) 
                  
         df_out2 = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
@@ -802,7 +819,7 @@ class FrameOutput(tk.LabelFrame):
         #diff_day2 = (_to2 -_from2).days #期間取得    
             
         df_list = {"now":[df_out,_from,_to, len(df_out["day"].unique())]}  
-        if out_typ == 0 or out_typ == 1 or self.var_checked_comper.get():
+        if out_typ == 0 or out_typ == 1 or self.cls_period.var_checked_comper.get():
             df_list["past"]=[df_out2, _from2, _to2, len(df_out2["day"].unique())]        
              
         
@@ -820,6 +837,78 @@ class FrameOutput(tk.LabelFrame):
               
         elif out_typ == 4: 
             self._out_scatterplot(df_list, l_val)
+            
+    
+    def _show_plotData(self, fig=None, df=pd.DataFrame):
+            """
+            フレームに分析データを表示する処理
+    
+            Returns
+            -------
+            None.
+    
+            """
+                           
+            for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
+                widget.destroy()
+            
+            if not df.empty :
+                
+                # スタイルの設定
+                style = ttk.Style()
+                # TreeViewの全部に対して、フォントサイズの変更
+                style.configure("Treeview",font=("",11))
+                # TreeViewのHeading部分に対して、フォントサイズの変更と太字の設定
+                # style.configure("Treeview.Heading",font=("",14,"bold"))
+                
+                tree_col = ["_".join(col) for col in df.columns.to_flat_index()]
+                tree_col.insert(0, "keyval")
+                            
+                tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings", height=25)
+                # ヘッダーの設定
+                for col in tree_col:
+                    tree.heading(col, text=col)  # ヘッダーのラベル
+                    tree.column(col, anchor="center", width=100)  # カラム幅
+                
+                def format_values(row):                
+                    return (row[0],
+                             f"{round(row[1]):,}", f"{round(row[2]):,}",f"{round(row[3]):,}",
+                             f"{round(row[4]):,}", round(row[5],1), round(row[6],1),
+                             f"{row[7]:.1%}", f"{row[8]:.1%}", f"{row[9]:.1%}")
+                 
+                # DataFrame のデータを一括設定
+                for row in df.itertuples(index=True):
+                    tree.insert("", "end", values=format_values(row))
+                    
+                # スクロールバーを追加
+                scroll_y = ttk.Scrollbar(self.labelFrame_out, orient=tk.VERTICAL, command=tree.yview)
+                scroll_x = ttk.Scrollbar(self.labelFrame_out, orient=tk.HORIZONTAL, command=tree.xview)
+    
+                tree.configure(yscrollcommand=scroll_y.set)
+                tree.configure(xscrollcommand=scroll_x.set)
+                
+                # レイアウト配置（grid を使用）
+                tree.grid(row=0, column=0, sticky="nsew")
+                scroll_y.grid(row=0, column=1, sticky="ns")
+                scroll_x.grid(row=1, column=0, sticky="ew")
+                
+                # `frame` の中で `Treeview` が自動拡張するように設定
+                self.labelFrame_out.grid_rowconfigure(0, weight=1)
+                self.labelFrame_out.grid_columnconfigure(0, weight=1)
+                
+                            
+                #===================================================================
+                # scroll_y.pack(side="right", fill="y")    
+                # scroll_x.pack(side="bottom", fill="x")  
+                # 
+                # tree.pack(expand=True, fill="both")  
+                #===================================================================
+                
+            else:                                  
+                canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
+                canvas_widget = canvas.get_tk_widget()
+                canvas_widget.pack()
+        
     
     
     def _out_compar_ana(self, df_list, l_val, _line, _items, _brand, csv_flg=False):
@@ -1118,6 +1207,7 @@ class FrameOutput(tk.LabelFrame):
         self._show_plotData(fig=fig)
         salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
         
+
     
 class MyApp(tk.Tk):
     def __init__(self):
@@ -1147,11 +1237,16 @@ class MyApp(tk.Tk):
         frame_main2.pack(anchor=tk.NW, side=tk.LEFT,  padx=10, pady=10)
         
         self.frame5 = FrameOutput(frame_main2, self.frame3, self.frame4)    
-                
+        
+                        
         
 salesDataFrame = analysis_data.Analysis_data()
 #salesDataFrame = SalesDataFrame()
 app = MyApp()
+    
 app.mainloop()
+
+
+
 
 
