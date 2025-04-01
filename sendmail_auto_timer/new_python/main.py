@@ -115,4 +115,6 @@ tasks = load_tasks()
 for task in tasks:
     task_list.insert(tk.END, f"{task['datetime']} - {task['task']}")
 
-app.mainloop()
+
+if __name__ == "__main__":
+    app.mainloop()

@@ -11,6 +11,7 @@ def on_exit(icon, item):
     icon.stop()
 
 def on_mg():
+    main()
     pass
 
 def show_message():
