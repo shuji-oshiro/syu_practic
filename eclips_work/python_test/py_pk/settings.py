@@ -16,10 +16,7 @@ class Settings:
     FLG_MONTH = 3
     
     DB_PATH = r"\\okisvrm1\各部署\パン部門\TestDB\SalesInfo.db"
-    
-    FORMAT_YMD = "%Y年%m月%d日"
-    FORMAT_YM = "%Y年%m月"
-    
+        
     TBLNAME_DAY = "sales_day"
     TBLNAME_WEEK = "sales_week"
     TBLNAME_MONTH = "sales_month"
@@ -33,7 +30,8 @@ class Settings:
     SELECT_PREYEAR = 0
     SELECT_PERIOD = 1
     
-    ENTRY_DISP_FORM = "yyyy年mm月dd日"
+    ENTRY_DISP_FORM = "yyyy/mm/dd"
+    FORMAT_YMD = "%Y%m%d"
     
     CODE_WAGASHI = 9
     CODE_YOUGASHI = 5
