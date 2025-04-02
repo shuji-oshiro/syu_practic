@@ -8,4 +8,8 @@ modules/
 .settings/
 __pycache__/
 logfile/
+build/
+dist/
+.project
+main.spec
 *.bak
