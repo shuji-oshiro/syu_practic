@@ -714,7 +714,24 @@ class treeview(ttk.Treeview):
             self.df = df
             self.delete(*self.get_children())  # 既存データ削除
             for _, row in df.iterrows():
-                self.insert("", "end", values=list(row))
+                formatted_row = []
+                
+                for col in df.columns:
+                    value = row[col]
+            
+                    # データ型ごとの表示フォーマット
+                    if pd.api.types.is_integer_dtype(df[col]):
+                        formatted_value = f"{value:,}"  # 整数はカンマ区切り
+                    elif pd.api.types.is_float_dtype(df[col]):
+                        formatted_value = f"{value:,.2%}"  # 小数はカンマ区切り＆2桁
+                    elif pd.api.types.is_datetime64_any_dtype(df[col]):
+                        formatted_value = value.strftime("%Y年%m月%d日") if pd.notna(value) else ""  # 日付フォーマット
+                    else:
+                        formatted_value = value  # それ以外はそのまま
+            
+                    formatted_row.append(formatted_value)
+                
+                self.insert("", "end", values=formatted_row)  
     
         def sort_by_column(self, col):
             """ヘッダークリックでソート"""

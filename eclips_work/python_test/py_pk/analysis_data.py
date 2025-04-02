@@ -13,12 +13,25 @@ from datetime import datetime as dt
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
+dict_astype = {
+    't_code': 'int64',
+    'l_code': 'int64',
+    'i_code': 'int64',
+    'i_name': 'string',
+    'amount': 'int64',
+    'count': 'int64',
+    'day': 'datetime64'
+}
+
 class Analysis_data:
     '''
     classdocs
     '''
     def __init__(self):        
-        self.df = Process_db.Get_salesData()
+        df = Process_db.Get_salesData()
+        # データ型を変換
+        self.df = df.astype(dict_astype)
+        
         self.df_brand = Process_db.Get_master(Settings.TBLNAME_BRAND)
         self.df_line = Process_db.Get_master(Settings.TBLNAME_LINE)
         
@@ -92,7 +105,9 @@ class Analysis_data:
         
         try:
             df_base = self.df
-            df_add = Process_db._read_salesinfo_day(fle)
+            df = Process_db._read_salesinfo_day(fle)
+            df_add = df.astype(dict_astype)
+            
             
             # 同日付の売上情報が含まれている場合
             a = df_add["day"].tolist()
