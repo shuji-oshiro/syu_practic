@@ -6,7 +6,7 @@ Created on Thu Feb 13 17:49:19 2025
 """
 import os
 import tkinter as tk
-from tkinter import ttk, LabelFrame
+from tkinter import ttk
 import pandas as pd
 import openpyxl as op
 from py_pk import settings
@@ -20,31 +20,23 @@ from tkinter import filedialog, messagebox as msg
 import threading
 import calendar
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 const = settings.Settings()        
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
 
-control_list =[DateEntry, tk.Checkbutton, ttk.Combobox, tk.Listbox, tk.Entry, tk.Spinbox, tk.Button]
 
-def set_widget_status(wg_frame, state, l=[]):
+def set_widget_status(wg_frame, state, l):
     for widget in wg_frame.winfo_children():  
         if isinstance(widget, tk.Frame) or isinstance(widget, tk.LabelFrame):
             set_widget_status(widget, state, l)           
         
-        if l:
-            for target_wg in l:
-                if isinstance(widget, target_wg):
-                    widget.config(state=state)
-                    break  
-        else:            
-            for target_wg in control_list:
-                if isinstance(widget, target_wg):
-                    widget.config(state=state)
-                    break    
+        for target_wg in l:
+            if isinstance(widget, target_wg):
+                widget.config(state=state)
+                break  
+ 
      
       
 class FrameInput(tk.LabelFrame):
@@ -83,6 +75,14 @@ class FramePeriod(tk.LabelFrame):
 
         """
         super().__init__(master, text="集計期間：", bd=2)
+        
+        self.entry_from = None #抽出条件FROM
+        self.entry_to = None #抽出条件TO
+        self.week_flg = [] #抽出条件WEEK
+        self.var_checked_comper = tk.BooleanVar() #比較分析の可否
+        self.entry_from_pre = None #比較分析のFROM
+        
+        self.frame_row5 = tk.LabelFrame(self) #比較分析のコントロール制御用のフレーム
         self._setup_ui()        
         
     def _setup_ui(self):
@@ -94,12 +94,11 @@ class FramePeriod(tk.LabelFrame):
         frame_row1.pack(anchor=tk.W)
         btn_GetInfo = tk.Button(frame_row1, text="売上情報入力", command=self._push_inoputData)
         btn_GetInfo.pack()
-        
                 
         # 2-2 日別売上抽出
-        self.frame_row2 = tk.LabelFrame(self)
-        self.frame_row2.pack(anchor=tk.W)
-        frame_1 = tk.Frame(self.frame_row2)
+        frame_row2 = tk.LabelFrame(self)
+        frame_row2.pack(anchor=tk.W)
+        frame_1 = tk.Frame(frame_row2)
         frame_1.pack(anchor=tk.W)            
         
         _from, _to = salesDataFrame.get_from_and_to()
@@ -115,10 +114,9 @@ class FramePeriod(tk.LabelFrame):
         self.entry_to.pack(side=tk.LEFT)        
         self.entry_to.set_date(_to)
         # 2-2 日別売上抽出 曜日指定
-        frame_2 = tk.Frame(self.frame_row2)
+        frame_2 = tk.Frame(frame_row2)
         frame_2.pack()
                 
-        self.week_flg = []
         for _ in range(0,7):
             flg = tk.BooleanVar()
             flg.set(True)
@@ -134,18 +132,14 @@ class FramePeriod(tk.LabelFrame):
         tk.Checkbutton(frame_2, text="日", variable=self.week_flg[6]).pack(side=tk.LEFT)
                 
         #2-5　比較分析
-        self.frame_row5 = tk.LabelFrame(self)
         self.frame_row5.pack(anchor=tk.W)   
-        
-        self.var_checked_comper = tk.BooleanVar()
         tk.Checkbutton(self.frame_row5, text="比較", variable=self.var_checked_comper, command=self.comper_checked).pack(side=tk.LEFT)
         self.var_select_compar = tk.IntVar(value=0)
         tk.Radiobutton(self.frame_row5, text="前年", variable=self.var_select_compar, value=0, command=self.chang_coundkbn).pack(side=tk.LEFT)
         tk.Radiobutton(self.frame_row5, text="前月", variable=self.var_select_compar, value=1, command=self.chang_coundkbn).pack(side=tk.LEFT)
         tk.Radiobutton(self.frame_row5, text="前週", variable=self.var_select_compar, value=2, command=self.chang_coundkbn).pack(side=tk.LEFT)
         self.entry_from_pre = DateEntry(self.frame_row5, date_pattern=const.ENTRY_DISP_FORM)
-        self.entry_from_pre.pack(side=tk.LEFT)
-        
+        self.entry_from_pre.pack(side=tk.LEFT)        
         set_widget_status(self.frame_row5, tk.DISABLED, [tk.Radiobutton, DateEntry])
     
     def on_date_selected(self, _):
@@ -153,7 +147,7 @@ class FramePeriod(tk.LabelFrame):
         
     def chang_coundkbn(self):
         """
-        前月比較の条件ボタン選択時 or 日付の抽出条件選択時の処理
+        比較ボタンチェック中に、前年、前月、前週、日付の値を変更した際に処理
 
         Returns
         -------
@@ -175,7 +169,7 @@ class FramePeriod(tk.LabelFrame):
             _from_pre = _from_pre - timedelta(days=delta_days)
         
         self.entry_from_pre.set_date(_from_pre)  
-     
+
      
     def comper_checked(self):
         """
@@ -206,20 +200,17 @@ class FramePeriod(tk.LabelFrame):
             DESCRIPTION.
 
         """
-        #=======================================================================
-        # _from = dt.combine(self.entry_from.get_date() ,dt.min.time())  # @UndefinedVariable
-        # _to = dt.combine(self.entry_to.get_date(), dt.min.time())  # @UndefinedVariable
-        #=======================================================================
                 
         _from = dt.strptime(str(self.entry_from.get_date()), "%Y-%m-%d")
         _to = dt.strptime(str(self.entry_to.get_date()), "%Y-%m-%d")
-
         return _from, _to
     
-    def get_entry_from_pre_datetime(self):
+    def get_cound_perid_datetime_pre(self):
         _from = dt.strptime(str(self.entry_from_pre.get_date()), "%Y-%m-%d")
+        f, t = self.get_cound_perid_datetime() #期間取得 
+        _to = _from + relativedelta(days=(t-f).days) 
         
-        return _from
+        return _from, _to
         
         
     def get_select_dayofweeks(self):
@@ -332,6 +323,21 @@ class FrameCound(tk.LabelFrame):
 
         """
         super().__init__(master, text="抽出条件", bd=2)
+        
+        self.select_brand_var = tk.StringVar() #取引先抽出条件
+        self.var_checked_without = tk.BooleanVar() #特定区分を除くかの判断区分
+        self.radio_jyoken = tk.IntVar(value=1) #ライン別、商品別で抽出するかの判断区分       
+        self.select_line_var = tk.StringVar() #ライン別抽出条件
+        
+        self.frame_line = tk.LabelFrame(self) #ライン別のコントールを制御するフレーム
+        self.frame_item = tk.LabelFrame(self) #商品別のコントールを制御するフレーム
+        
+        self.var_icode = tk.IntVar(value=0)#商品コードを入力する変数
+        self.var_tname = tk.StringVar()#商品名を入力する変数
+        
+        self.var_foudlist = tk.StringVar()#リストに含まれている商品名を保持している変数
+        self.lbox_findItems = None
+        
         self._setup_ui()
         
         
@@ -346,66 +352,54 @@ class FrameCound(tk.LabelFrame):
         var_brand = salesDataFrame.df_brand["t_name"].unique().tolist()
         var_brand.insert(0,"全取引先")
         var_brand.append("その他取引先")
-        
-        self.select_brand_var = tk.StringVar()
+                
         cp_comb = ttk.Combobox(frame_row1, values=var_brand ,state="readonly", textvariable=self.select_brand_var)
         cp_comb.current(0)
         cp_comb.pack(side=tk.LEFT)
         
-        self.var_checked_without = tk.BooleanVar()
         tk.Checkbutton(frame_row1, text="和洋菓子課除外", variable=self.var_checked_without).pack(side=tk.LEFT)
-        
-        self.radio_jyoken = tk.IntVar(value=1)
+                
         # 3-2
-        self.frame_row2 = tk.LabelFrame(self)
-        self.frame_row2.pack(anchor=tk.W)
-        
-        tk.Radiobutton(self.frame_row2, text="ライン別", variable=self.radio_jyoken, value=const.SELECT_LINE, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        self.frame_line.pack(anchor=tk.W)
+        tk.Radiobutton(self.frame_line, text="ライン別", variable=self.radio_jyoken, value=const.SELECT_LINE, command=self.chang_coundkbn).pack(side=tk.LEFT)
         
         var_line = salesDataFrame.df_line["l_name"].tolist()
         var_line.insert(0,"全ライン")
         
-        self.select_line_var = tk.StringVar()
-        
-        line_comb = ttk.Combobox(self.frame_row2, values=var_line ,state="readonly", textvariable=self.select_line_var)
+        line_comb = ttk.Combobox(self.frame_line, values=var_line ,state="readonly", textvariable=self.select_line_var)
         line_comb.current(0)
         line_comb.pack(side=tk.LEFT)
         
         # 3-3
-        self.frame_row3 = tk.LabelFrame(self)
-        self.frame_row3.pack(anchor=tk.W)
-        
-        tk.Radiobutton(self.frame_row3, text="商品別", variable=self.radio_jyoken, value=const.SELECT_ITEM, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        self.frame_item.pack(anchor=tk.W)
+        frame = tk.Frame(self.frame_item)
+        frame.pack(anchor=tk.W)
+        tk.Radiobutton(frame, text="商品別", variable=self.radio_jyoken, value=const.SELECT_ITEM, command=self.chang_coundkbn).pack(side=tk.LEFT)
 
         # 商品コードを入力するフォーム
-        self.var_icode = tk.IntVar(value=0)
-        entry_icode = tk.Spinbox(self.frame_row3, width=5, from_=0, to=9999, textvariable=self.var_icode)
+        entry_icode = tk.Spinbox(frame, width=5, from_=0, to=9999, textvariable=self.var_icode)
         entry_icode.bind("<Return>", lambda event: self._setfindItems())
         entry_icode.pack(side=tk.LEFT) 
         
         
         # 商品名のキーワードを入力するフォーム
-        self.var_tname = tk.StringVar()
-        entry_name = tk.Entry(self.frame_row3, textvariable=self.var_tname)
+        entry_name = tk.Entry(frame, textvariable=self.var_tname)
         entry_name.bind("<Return>", lambda event: self._setfindItems(True))
         entry_name.pack(side=tk.LEFT)
-        
-                
-        #　一部コントロールの無効化処理
-        for widget in self.frame_row3.winfo_children():
-            if not isinstance(widget, tk.Radiobutton):
-                widget.config(state=tk.DISABLED)
-                
-        self.frame_row4 = tk.LabelFrame(self)
-        self.frame_row4.pack(anchor=tk.W)
-                
+                        
+        #=======================================================================
+        # self.frame_row4 = tk.LabelFrame(self.frame_item)
+        # self.frame_row4.pack()
+        #=======================================================================
+        frame2 = tk.Frame(self.frame_item)
+        frame2.pack(anchor=tk.W)         
         # キーワードで抽出された商品名を表示するリスト
-        self.var_foudlist = tk.StringVar()
-        self.lbox_findItems = tk.Listbox(self.frame_row4, listvariable=self.var_foudlist, width=25, height=12, selectmode=tk.MULTIPLE)
+        self.lbox_findItems = tk.Listbox(frame2, listvariable=self.var_foudlist, width=25, height=12, selectmode=tk.MULTIPLE)
         self.lbox_findItems.pack(side=tk.LEFT)
         self.lbox_findItems.bind("<Double-Button-1>", self._setfindItems)
-        self.lbox_findItems.config(state=tk.DISABLED)
         
+        #　一部コントロールの無効化処理
+        set_widget_status(self.frame_item, tk.DISABLED, [tk.Entry, tk.Spinbox, tk.Listbox])
         
     def _setfindItems(self, flg=False):
         """
@@ -477,164 +471,328 @@ class FrameCound(tk.LabelFrame):
         None.
     
         """
-        if self.radio_jyoken.get() == const.SELECT_LINE:            
-            set_widget_status(self.frame_row2, tk.NORMAL)
-            set_widget_status(self.frame_row3, tk.DISABLED)
-            set_widget_status(self.frame_row4, tk.DISABLED)
+        if self.radio_jyoken.get() == const.SELECT_LINE:   
+            set_widget_status(self.frame_line, tk.NORMAL, [ttk.Combobox])         
+            set_widget_status(self.frame_item, tk.DISABLED, [tk.Entry, tk.Spinbox, tk.Listbox])  
             
-            #===================================================================
-            # for widget in self.frame_row2.winfo_children():
-            #     if not isinstance(widget, tk.Radiobutton):
-            #         widget.config(state=tk.NORMAL)
-            # 
-            # for widget in self.frame_row3.winfo_children():
-            #     if not isinstance(widget, tk.Radiobutton):         
-            #         widget.config(state=tk.DISABLED)
-            # 
-            # for widget in self.frame_row4.winfo_children():
-            #     if not isinstance(widget, tk.Radiobutton):
-            #         widget.config(state=tk.DISABLED)
-            #===================================================================
             
         elif self.radio_jyoken.get() == const.SELECT_ITEM:
-            set_widget_status(self.frame_row2, tk.DISABLED)
-            set_widget_status(self.frame_row3, tk.NORMAL)
-            set_widget_status(self.frame_row4, tk.NORMAL)
+            set_widget_status(self.frame_line, tk.DISABLED, [ttk.Combobox])  
+            set_widget_status(self.frame_item, tk.NORMAL, [tk.Entry, tk.Spinbox, tk.Listbox])  
+
                    
 
+#===============================================================================
+# class FrameOutput(tk.LabelFrame):
+#            
+#      
+#     def _show_plotData(self, fig=None, df=pd.DataFrame):
+#             """
+#             フレームに分析データを表示する処理
+#      
+#             Returns
+#             -------
+#             None.
+#      
+#             """
+#             for item in self.tree.get_children():
+#                 self.tree.delete(item)            
+#             #===================================================================
+#             # for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
+#             #     widget.destroy()
+#             #===================================================================
+#              
+#                           
+#             canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
+#             canvas_widget = canvas.get_tk_widget()
+#             canvas_widget.pack()
+#      
+#  
+#     def _out_timeseries_chart(self, df_list, l_val): 
+#         """
+#         2024.07.31
+#         「時系列分析」ボタン押下処理　、エクセルへ出力する処理
+#      
+#         Parameters
+#         ----------
+#         event : TYPE
+#             DESCRIPTION.
+#      
+#         Returns
+#         -------
+#         str
+#             DESCRIPTION.
+#      
+#         """       
+#              
+#         try:              
+#                                                                                                             
+#             use_col = self.var_radio_select_vals.get()  
+#                    
+#             fig, ax = plt.subplots(figsize=(8, 6)) 
+#             x = []            
+#             for key in df_list.keys():              
+#                 df_out, _from, _to, _dff = df_list[key]
+#                  
+#                 # 時系列分析図出力処理-----
+#                 df_out = df_out[["day",use_col]].groupby(["day"], as_index=False).sum(numeric_only=True)         
+#                  
+#                 if len(x)==0: # X軸をそろえる為
+#                     x = df_out["day"]
+#                      
+#                 y = df_out[use_col]
+#                  
+#                 #比較分析時、X軸の件数が異なる場合エラーとなるで処理を中断
+#                 if (len(x)-len(y)) != 0:
+#                     msg.showerror(msg.ERROR,"比較対象となる期間が存在しない為、集計期間を短くてください")
+#                     return "break"
+#                   
+#                  
+#                 ax.plot(x, y,linewidth=0.5,label=f"{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({_dff})")          
+#                 #ax.xmargin = 5.0             
+#                 # 移動平均算出用処理
+#                 val = self.var_avgCount.get() 
+#                 if val > 0:                    
+#                     y = y.rolling(val).mean()  
+#                     ax.plot(x, y, linewidth=0.5, marker='^', label=f"{key}:移動平均({val})")           
+#                               
+#             #ax.scatter(x, y)            
+#             ax.set_title(f"時系列分析:{l_val}")
+#             ax.set_xlabel("日付")
+#             #ax.set_xlim(0,100) # X軸の幅指定　件数
+#             #ax.set_ylim(0,100) # X軸の幅指定　件数     
+#                            
+#             #等間隔の数を設定する処理
+#             step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
+#             step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
+#             ax.set_xticks(step_idx,step_xval) #ラベルに設定する
+#              
+#             ax.minorticks_on() #補助目盛を追加
+#              
+#             ax.set_ylabel(USECOLS_NAME[use_col])
+#             #　データラベルの追加
+#             ax.legend()        
+#             # グリッド線の追加
+#             ax.grid(True)                             
+#              
+#             self._show_plotData(fig=fig)
+#             salesDataFrame.pre_charts["timeseries"] = [x, y, l_val]
+#  
+#         except Exception: 
+#             erMsg = "売上分析出力中にエラーが発生しました。"
+#             msg.showerror(msg.ERROR,erMsg)
+#             logging.exception(erMsg)  
+#              
+#      
+#     def _out_histogram(self, df_list, l_val):
+#         """
+#         「ヒストグラム分析」ボタン押下処理　
+#  
+#         Returns
+#         -------
+#         str
+#             DESCRIPTION.
+#  
+#         """
+#          
+#         use_col = self.var_radio_select_vals.get()
+#         fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+#          
+#         for key in df_list.keys():
+#             df_out, _from, _to, _dff = df_list[key]
+#              
+#             temp = df_out.groupby(["day"]).mean(numeric_only=True)
+#             ax.hist(temp[use_col], bins=30, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
+#              
+#          
+#         #不要処理
+#         #=======================================================================
+#         # # 移動平均算出用処理
+#         # val = self.var_avgCount.get() 
+#         # if val > 0:     
+#         #     temp["temp2"] = temp[use_col].rolling(val).mean()              
+#         #     ax.hist(temp["temp2"], bins=30, alpha=0.5, label=f"移動平均({val})")
+#         #=======================================================================
+#              
+#         # タイトル
+#         ax.set_title(f'ヒストグラム分析:({l_val})')
+#          
+#         # x軸とy軸にラベルの追加
+#         ax.set_xlabel(USECOLS_NAME[use_col])
+#         ax.set_ylabel('Frequency')
+#          
+#         #　データラベルの追加
+#         ax.legend()        
+#         # グリッド線の追加
+#         ax.grid(True)
+#      
+#         self._show_plotData(fig=fig)        
+#         salesDataFrame.pre_charts["histogram"] = [temp[use_col], l_val]
+#          
+#              
+#     def _out_scatterplot(self, df_list, l_val):
+#         """
+#          
+#         「回帰分析」ボタン押下処理　
+#         Returns
+#         -------
+#         str
+#             DESCRIPTION.
+#  
+#         """        
+#                
+#         use_col = self.var_radio_select_vals.get()
+#         fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+#          
+#         for key in df_list.keys():
+#              
+#             df_out, _from, _to, _dff = df_list[key]
+#                
+#             temp = df_out[["day","count","amount"]].groupby(["day"]).mean(numeric_only=True) 
+#              
+#             # 平均単価算出
+#             temp["avg"] = temp["amount"]/temp["count"]        
+#          
+#             x = temp["avg"]
+#             y = temp[use_col]
+#                  
+#             ax.scatter(x, y, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
+#          
+#         # 不要？？
+#         # 移動平均算出用処理
+#         #=======================================================================
+#         # val = self.var_avgCount.get()
+#         # if val > 0:     
+#         #     y = y.rolling(val).mean()              
+#         #     ax.scatter(x, y, label=f"移動平均({val})")
+#         #=======================================================================
+#          
+#         ax.set_title(f"回帰分析：{l_val}")
+#         ax.set_xlabel(USECOLS_NAME["avg"])
+#         ax.set_ylabel(USECOLS_NAME[use_col])
+#         #　データラベルの追加
+#         ax.legend()        
+#         # グリッド線の追加
+#         ax.grid(True)
+#                  
+#         self._show_plotData(fig=fig)
+#         salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
+#===============================================================================
 
-class FrameOutput(tk.LabelFrame):
-    def __init__(self, master, cls_period_instance, cls_cound_instance):
-        """
-        抽出条件をベースに売上分析を行うフォーム
-
-        Parameters
-        ----------
-        master : TYPE
-            DESCRIPTION.
-        cls_period_instance : TYPE
-            DESCRIPTION.
-        cls_cound_instance : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
-        super().__init__(master, text="集計処理")
-        self.pack(anchor=tk.NW, padx=10,pady=10)
-        self.cls_period = cls_period_instance
-        self.cls_cound = cls_cound_instance  
-        self.labelFrame_out = LabelFrame(self, text="分析結果") 
-        self._setup_ui()
-              
+class treeview(ttk.Treeview):
+    
+    try:
+        def __init__(self, master, df):
+            super().__init__(master, columns=list(df.columns), show="headings", height=20)
             
-        self.labelFrame_out.pack(anchor=tk.NW)    
+            # 降順昇順を管理
+            self.sort_state = {col: False for col in df.columns}
+            self.df = df
+            
+            for col in df.columns:
+                self.heading(col, text=col, command=lambda c=col: self.sort_by_column(c))
+                self.column(col, width=max(df[col].astype(str).map(len).max() * 10, 100))   
+            
+            
+            # データ挿入
+            self.update_data(df)
+    
+            # スクロールバー追加
+            self.scroll_y = ttk.Scrollbar(master, orient="vertical", command=self.yview)
+            self.scroll_y.pack(side="right", fill="y")
+            self.configure(yscrollcommand=self.scroll_y.set)
+    
+            self.scroll_x = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
+            self.scroll_x.pack(side="bottom", fill="x")
+            self.configure(xscrollcommand=self.scroll_x.set)
+    
+            self.pack(expand=True, fill="both")
+    
+    
+        def update_data(self, df: pd.DataFrame):
+            """Treeview に `DataFrame` のデータを設定"""
+            self.df = df
+            self.delete(*self.get_children())  # 既存データ削除
+            for _, row in df.iterrows():
+                self.insert("", "end", values=list(row))
+    
+        def sort_by_column(self, col):
+            """ヘッダークリックでソート"""
+            reverse = self.sort_state[col] = not self.sort_state[col]
+            self.df = self.df.sort_values(by=col, ascending=reverse)
+    
+            self.update_data(self.df)  # データ更新
                 
         
-    def _setup_ui(self):
-        """Setup UI components"""
+        def on_select(self,event):        
+            #TODO：テスト実装
+            msg.showinfo("title", "message")    
+        
+    except Exception: 
+        erMsg = "treeviewの初期化中にエラーが発生しました。"
+        msg.showerror(msg.ERROR, erMsg)
+        logging.exception(erMsg)  
                 
-        frame_row0 = tk.LabelFrame(self)
-        frame_row0.pack(anchor=tk.W)
-        self.var_radio_select_vals = tk.StringVar(value="amount")    
+                
+    
+class MyApp(tk.Tk):
+        
+    def _setup_ui(self):
+        """Setup UI components"""         
+        
+        # right side frame output data
+        frame_main2 = tk.Frame(self)
+        frame_main2.pack(anchor=tk.NW, side=tk.LEFT,  padx=10, pady=10)
+        
+        label_f = tk.LabelFrame(frame_main2,text="集計処理")
+        label_f.pack(anchor=tk.NW, padx=10,pady=10)
+                     
+        frame_row0 = tk.LabelFrame(label_f)
+        frame_row0.pack(anchor=tk.W)  
         tk.Radiobutton(frame_row0, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
         tk.Radiobutton(frame_row0, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
         tk.Button(frame_row0, text="CSVデータ出力", bg="white", command=lambda:self._push_buttons(0)).pack(side=tk.LEFT)
-        
-        
-        # 3-1        
-        frame_row1 = tk.LabelFrame(self)
+                        
+        frame_row1 = tk.LabelFrame(label_f)
         frame_row1.pack(anchor=tk.W)
         tk.Button(frame_row1, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
         tk.Button(frame_row1, text="時系列分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)       
         tk.Button(frame_row1, text="ヒストグラム分析", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)               
         tk.Button(frame_row1, text="散布図分析", command=lambda:self._push_buttons(4)).pack(side=tk.LEFT)  
-        
+         
         frame_avg = tk.Frame(frame_row1)
         frame_avg.pack(side=tk.LEFT, padx=10)
         tk.Label(frame_avg, text="移動平均集計").pack(side=tk.LEFT)
-        self.var_avgCount = tk.IntVar(value=0)
         tk.Spinbox(frame_avg, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
-        
-        # 降順昇順を管理
-        self.sort_state = {}
-        
-        self.dic_col = {"項目":0, "売上金額":1, "比較金額":2,"売上数量":3,"比較数量":4,"平均単価":5,"比較単価":6,"金額増減率":7,"数量増減率":8,"単価増減率":9}
-        l_col = list(self.dic_col.keys())
-        self.tree = ttk.Treeview(self.labelFrame_out, columns=(l_col), show="headings",height=20)
-        self.tree.pack(expand=True, fill="both")
-        
-        for col in l_col:
-            self.tree.heading(col, text=col, command=lambda c=col: self.sort_by_column(c))
-            self.tree.column(col, width=100, anchor="center")
-            
-        #=======================================================================
-        # tree.heading("ID", text="ID")
-        # tree.heading("名前", text="名前")
-        # tree.heading("年齢", text="年齢")
-        # 
-        # # データを追加
-        # tree.insert("", "end", values=("1", "田中", "25"))
-        # tree.insert("", "end", values=("2", "鈴木", "30"))
-        # tree.insert("", "end", values=("3", "佐藤", "28"))
-        #=======================================================================
-        #tree.pack()
-
-    def sort_by_column(self,column):
-        """ ヘッダクリックで昇順・降順ソートを切り替え """
-                            
-        col_index = self.dic_col[column]
-
-        # 現在のデータを取得
-        items = [(self.tree.item(item, "values"), item) for item in self.tree.get_children()]
-
-        # 現在のソート状態を反転
-        self.sort_state[column] = not self.sort_state.get(column, True)
-
-        # 数値カラムはint/floatに変換、それ以外はそのまま
-        def convert(value):
-            try:
-                value = value.replace(",","")
-                return float(value) if "." in value else int(value)  # 小数点を含む場合はfloat
-            except ValueError:
-                return value  # 数値変換できない場合は文字列のまま
-        
-        # ソート実行
-        sorted_items = sorted(items, key=lambda x: convert(x[0][col_index]), reverse=not self.sort_state[column])
-        
-        # ツリ# ツリービューを更新
-        for i, (values, item) in enumerate(sorted_items):
-            self.tree.move(item, "", i)
-            
-    def adjust_column_widths(self):
-        """ 初期表示時にカラムの幅を自動調整 """
-        for col in self.tree["columns"]:
-            self.tree.column(col, width=tk.font.Font().measure(col) + 20)
-            for item in self.tree.get_children():
-                text_width = tk.font.Font().measure(self.tree.item(item, "values")[self.tree["columns"].index(col)])
-                self.tree.column(col, width=max(self.tree.column(col, "width"), text_width + 20))
-        
+        self.labelFrame_out = tk.LabelFrame(label_f, text="分析結果")
+        self.labelFrame_out.pack(anchor=tk.NW)
             
     def _push_buttons(self, out_typ):
-        # 商品名抽出        
-        _brand = self.cls_cound.select_brand_var.get()
-        _line = self.cls_cound.select_line_var.get()
-        _items = self.cls_cound.get_selectitems()
-        _from, _to = self.cls_period.get_cound_perid_datetime()
-        _weeks = self.cls_period.get_select_dayofweeks()
-        _without = self.cls_cound.var_checked_without.get()
-                                
-        # 商品名抽出
-        if self.cls_cound.radio_jyoken.get()==const.SELECT_ITEM:
+        #商品名抽出        
+        _brand = self.frameCound.select_brand_var.get()
+        _line = self.frameCound.select_line_var.get()
+        _items = self.frameCound.get_selectitems()
+        _from, _to = self.framePeriod.get_cound_perid_datetime()
+        _weeks = self.framePeriod.get_select_dayofweeks()
+        _without = self.frameCound.var_checked_without.get()
+                   
+        group_key = []              
+        # 商品名抽出       
+        if self.frameCound.radio_jyoken.get()==const.SELECT_ITEM:  
+            group_key = ["t_name","i_name","day_DateTime"]
+                       
             if not _items:
                 msg.showwarning(msg.WARNING,"抽出する商品名を選択してください。")
                 return "break"  
             l_val = "{}_{}".format(_brand, ",".join(_items))
         else:
+            if (_brand != "全取引先" and _line != "全ライン"):
+                group_key = ["t_name","i_name","day_DateTime"]
+            else:
+                group_key = ["t_name","l_name","day_DateTime"]
+                 
             l_val = "{}_{}".format(_brand, _line)
-                    
+                     
         df_out = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
@@ -646,203 +804,88 @@ class FrameOutput(tk.LabelFrame):
         if df_out.empty:
             msg.showwarning(msg.WARNING,"入力された期間の売上情報が存在しません")
             return "break"
-                      
-        diff_day = (_to -_from).days #期間取得               
-        
-        #_from2 = dt.combine(self.cls_period.entry_from_pre.get(), dt.min.time())  # @UndefinedVariable  
-        
-        _from2 = self.cls_period.get_entry_from_pre_datetime()     
-        _to2 = _from2 + relativedelta(days=diff_day) 
-                 
+         
+        #df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True)["amount"] #指定キーでグループ化
+        df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]].rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
+        #diff_day = (_to -_from).days #期間取得    
+         
+        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()  
+        #_to2 = _from2 + relativedelta(days=diff_day) 
+                  
         df_out2 = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
                                                      _from2,
                                                       _to2,
                                                        _weeks,
-                                                       _without)
-           
-            
-        df_list = {"now":[df_out,_from,_to, len(df_out["day"].unique())]}  
-        if out_typ == 0 or out_typ == 1 or self.cls_period.var_checked_comper.get():
-            df_list["past"]=[df_out2, _from2, _to2, len(df_out2["day"].unique())]        
-             
-        
-        if out_typ == 0:
-            self._out_compar_ana(df_list, l_val, _line, _items, _brand, True)
-        
-        elif out_typ == 1:
-            self._out_compar_ana(df_list, l_val, _line, _items, _brand)
-             
-        elif out_typ == 2: 
-            self._out_timeseries_chart(df_list, l_val)
+                                                       _without)           
          
-        elif out_typ == 3: 
-            self._out_histogram(df_list, l_val)
+        dif_day_pre = (_from-_from2).days #　ベースとなる売上情報にマッチする為に日付を加算
+        df_out2["day_DateTime"] = df_out2["day_DateTime"] + pd.Timedelta(days=dif_day_pre)  
+                 
+        #df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True) #指定キーでグループ化
+        df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]].rename(columns={'amount': 'past_amount', 'count': 'past_count'})
+         
+        df_out3 = pd.merge(df_out, df_out2, on=group_key, how="left").fillna(0)
               
-        elif out_typ == 4: 
-            self._out_scatterplot(df_list, l_val)
-            
-    
-    def _show_plotData(self, fig=None, df=pd.DataFrame):
-            """
-            フレームに分析データを表示する処理
-    
-            Returns
-            -------
-            None.
-    
-            """
-            for item in self.tree.get_children():
-                self.tree.delete(item)            
-            #===================================================================
-            # for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
-            #     widget.destroy()
-            #===================================================================
-            
-            if not df.empty :
-                
-                # スタイルの設定
-                style = ttk.Style()
-                # TreeViewの全部に対して、フォントサイズの変更
-                style.configure("Treeview",font=("",11))
-                # TreeViewのHeading部分に対して、フォントサイズの変更と太字の設定
-                # style.configure("Treeview.Heading",font=("",14,"bold"))
-                
-                
-                #===============================================================
-                # tree_col = ["_".join(col) for col in df.columns.to_flat_index()]
-                # tree_col.insert(0, "keyval")
-                #===============================================================
-                            
-                #===============================================================
-                # tree = ttk.Treeview(self.labelFrame_out, columns=tree_col, show="headings", height=25)
-                # tree.bind("<<TreeviewSelect>>", self.on_select)
-                # 
-                # 
-                # 
-                # # ヘッダーの設定
-                # for col in tree_col:
-                #     tree.heading(col, text=col)  # ヘッダーのラベル
-                #     tree.column(col, anchor="center", width=100)  # カラム幅
-                #===============================================================
-                
-                def format_values(row):                
-                    return (row[0],
-                             f"{round(row[1]):,}", f"{round(row[2]):,}",f"{round(row[3]):,}",
-                             f"{round(row[4]):,}", round(row[5],1), round(row[6],1),
-                             f"{row[7]:.1%}", f"{row[8]:.1%}", f"{row[9]:.1%}")
-                 
-                # DataFrame のデータを一括設定
-                for row in df.itertuples(index=True):
-                    self.tree.insert("", "end", values=format_values(row))
-                    
-                # スクロールバーを追加
-                scroll_y = ttk.Scrollbar(self.labelFrame_out, orient=tk.VERTICAL, command=self.tree.yview)
-                scroll_x = ttk.Scrollbar(self.labelFrame_out, orient=tk.HORIZONTAL, command=self.tree.xview)
-    
-                self.tree.configure(yscrollcommand=scroll_y.set)
-                self.tree.configure(xscrollcommand=scroll_x.set)
-                
-                self.after(100, self.adjust_column_widths)
-                
-                # レイアウト配置（grid を使用）
-                self.tree.grid(row=0, column=0, sticky="nsew")
-                scroll_y.grid(row=0, column=1, sticky="ns")
-                scroll_x.grid(row=1, column=0, sticky="ew")
-                 
-                # `frame` の中で `Treeview` が自動拡張するように設定
-                self.labelFrame_out.grid_rowconfigure(0, weight=1)
-                self.labelFrame_out.grid_columnconfigure(0, weight=1)
-                
-                            
-                #===================================================================
-                # scroll_y.pack(side="right", fill="y")    
-                # scroll_x.pack(side="bottom", fill="x")  
-                # 
-                # tree.pack(expand=True, fill="both")  
-                #===================================================================
-                
-            else:                                  
-                canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
-                canvas_widget = canvas.get_tk_widget()
-                canvas_widget.pack()
+         
+        if out_typ == 0:
+            self._out_compar_ana(df_out3, True)
+         
+        elif out_typ == 1:
+            self._out_compar_ana(df_out3)
+              
+        #=======================================================================
+        # elif out_typ == 2: 
+        #     self._out_timeseries_chart(df_list, l_val)
+        #  
+        # elif out_typ == 3: 
+        #     self._out_histogram(df_list, l_val)
+        #       
+        # elif out_typ == 4: 
+        #     self._out_scatterplot(df_list, l_val)
+        #=======================================================================
         
-    def on_select(self,event):
-        msg.showinfo("title", "message")
-    
-    def _out_compar_ana(self, df_list, l_val, _line, _items, _brand, csv_flg=False):
+    def _out_compar_ana(self, df, csv_flg=False):
         """
         売上比較分析処理
-
+ 
         Returns
         -------
         str
             DESCRIPTION.
-
+ 
         """
-        
-        try:
-            
-            key_val = None                       
-                        
-            sheetName=""                        
-            if self.cls_cound.select_brand_var.get() == "全取引先":               
-                key_val = "t_name"
-                if self.cls_cound.radio_jyoken.get()==const.SELECT_LINE:
-                    sheetName = _line
-                else:                  
-                    sheetName = "_".join(_items)                       
-            else:
-                if self.cls_cound.radio_jyoken.get()==const.SELECT_LINE:                    
-                    if self.cls_cound.select_line_var.get() == "全ライン":
-                        sheetName = _brand    
-                        key_val = "l_name"                   
-                    else:
-                        sheetName = _line  
-                        key_val = "i_name"                      
-                else:
-                    key_val = "i_name"  
-                    sheetName = _brand
-                      
-            df_out, _from, _to, diff_day = df_list["now"] 
-            df_out2, _from2, _to2, diff_day2 = df_list["past"] 
-                                      
-            df = df_out.groupby([key_val], as_index=False).sum(numeric_only=True)
-            df["unit"] = df["amount"]/df["count"]
-            df["year"] = "実績"
-                        
-            
-            df2 = df_out2.groupby([key_val], as_index=False).sum(numeric_only=True)
-            df2["unit"] = df2["amount"]/df2["count"]
-            df2["year"] = "比較"   
-            df3 = pd.concat([df,df2]) 
-
-                   
-            pivo_df = pd.pivot_table(df3, index=[key_val], columns="year", values=["amount","count","unit"])
-            pivo_df["amount","増減率"] = pivo_df["amount","実績"] / pivo_df["amount","比較"]
-            pivo_df["count","増減率"] = pivo_df["count","実績"] / pivo_df["count","比較"]
-            pivo_df["unit","増減率"] = pivo_df["unit","実績"] / pivo_df["unit","比較"]
-            
-            pivo_df = pivo_df.fillna(0)
-
-            head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff_day})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff_day2})　"
-                
-            self._show_plotData(df=pivo_df)  
+         
+        try:                        
+                            
+            _from, _to = self.framePeriod.get_cound_perid_datetime()
+            _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
              
+            diff = (_to-_from).days
+            diff2 = (_to2-_from2).days
+             
+            df["amount_par"] = df["base_amount"]/df["past_amount"]
+            df["count_par"] = df["base_count"]/df["past_count"]    
+             
+                         
+            treeview(self.labelFrame_out, df) 
+                       
             if csv_flg:
-                self._out_excel(pivo_df, l_val, sheetName, head_str)                
-                
+                sheetName=f"{self.cls_cound.select_brand_var.get()}:{self.cls_cound.select_line_var.get()}"
+                head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff2})　"
+                self._out_excel(df, sheetName, sheetName, head_str)                
+                 
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
             logging.exception(erMsg)  
-            
-       
+             
+        
     def _out_excel(self, pivo_df, book_name, sheetName, head_str) -> bool:
         """
         Excelファイルを出力する処理
-
+ 
         Parameters
         ----------
         out_df : TYPE
@@ -851,30 +894,30 @@ class FrameOutput(tk.LabelFrame):
             DESCRIPTION.
         sheet_name : TYPE
             DESCRIPTION.
-
+ 
         Raises
         ------
-        
+         
             DESCRIPTION.
-
+ 
         Returns
         -------
         bool
             DESCRIPTION.
-
+ 
         """
         try:
             fileNmae = f"{book_name}_売上分析"
             iDir = os.path.abspath(os.path.dirname(__file__))       
             file_path = filedialog.asksaveasfilename(initialfile=fileNmae, initialdir=iDir, defaultextension="xlsx")
-            
+             
             if file_path:                
                 # ファイルが存在しない場合、新規作成する
                 if not os.path.isfile(file_path):
                     create_file = op.Workbook()
                     create_file.save(file_path)      
-                                       
-                           
+                                        
+                            
                 #　エクセルファイルを書き込みする処理
                 with pd.ExcelWriter(file_path) as writer:
                     pivo_df.to_excel(writer, startrow=1, na_rep=0 ,sheet_name=sheetName) 
@@ -884,194 +927,22 @@ class FrameOutput(tk.LabelFrame):
                     excel_col = ["B","C","D","E","F","G","H","I","J"]
                     col_fm = ["#,##0", "#,##0", "#,##0", "#,##0", "0.0", "0.0", "0.0%", "0.0%", "0.0%"]
                     worksheet["A1"] = head_str
-                    
+                     
                     for col, format_code in zip(excel_col, col_fm): 
                         for cell in worksheet[col]:                            
                             cell.number_format = format_code
-                     
+                      
                 msg.showinfo(msg.INFO, "処理を正常に終了しました。")
             else:
                 msg.showwarning(msg.INFO, "処理を中断しました。")
-            
+             
         except Exception: 
             erMsg = "Excelファイル出力中にエラーが発生しました。"
             logging.exception(erMsg)  
             raise  
-
-
-    def _out_timeseries_chart(self, df_list, l_val): 
-        """
-        2024.07.31
-        「時系列分析」ボタン押下処理　、エクセルへ出力する処理
-    
-        Parameters
-        ----------
-        event : TYPE
-            DESCRIPTION.
-    
-        Returns
-        -------
-        str
-            DESCRIPTION.
-    
-        """       
-            
-        try:              
-                                                                                                           
-            use_col = self.var_radio_select_vals.get()  
-                  
-            fig, ax = plt.subplots(figsize=(8, 6)) 
-            x = []            
-            for key in df_list.keys():              
-                df_out, _from, _to, _dff = df_list[key]
-                
-                # 時系列分析図出力処理-----
-                df_out = df_out[["day",use_col]].groupby(["day"], as_index=False).sum(numeric_only=True)         
-                
-                if len(x)==0: # X軸をそろえる為
-                    x = df_out["day"]
-                    
-                y = df_out[use_col]
-                
-                #比較分析時、X軸の件数が異なる場合エラーとなるで処理を中断
-                if (len(x)-len(y)) != 0:
-                    msg.showerror(msg.ERROR,"比較対象となる期間が存在しない為、集計期間を短くてください")
-                    return "break"
-                 
-                
-                ax.plot(x, y,linewidth=0.5,label=f"{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({_dff})")          
-                #ax.xmargin = 5.0             
-                # 移動平均算出用処理
-                val = self.var_avgCount.get() 
-                if val > 0:                    
-                    y = y.rolling(val).mean()  
-                    ax.plot(x, y, linewidth=0.5, marker='^', label=f"{key}:移動平均({val})")           
-                             
-            #ax.scatter(x, y)            
-            ax.set_title(f"時系列分析:{l_val}")
-            ax.set_xlabel("日付")
-            #ax.set_xlim(0,100) # X軸の幅指定　件数
-            #ax.set_ylim(0,100) # X軸の幅指定　件数     
-                          
-            #等間隔の数を設定する処理
-            step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
-            step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
-            ax.set_xticks(step_idx,step_xval) #ラベルに設定する
-            
-            ax.minorticks_on() #補助目盛を追加
-            
-            ax.set_ylabel(USECOLS_NAME[use_col])
-            #　データラベルの追加
-            ax.legend()        
-            # グリッド線の追加
-            ax.grid(True)                             
-            
-            self._show_plotData(fig=fig)
-            salesDataFrame.pre_charts["timeseries"] = [x, y, l_val]
-
-        except Exception: 
-            erMsg = "売上分析出力中にエラーが発生しました。"
-            msg.showerror(msg.ERROR,erMsg)
-            logging.exception(erMsg)  
-            
-    
-    def _out_histogram(self, df_list, l_val):
-        """
-        「ヒストグラム分析」ボタン押下処理　
-
-        Returns
-        -------
-        str
-            DESCRIPTION.
-
-        """
-        
-        use_col = self.var_radio_select_vals.get()
-        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-        
-        for key in df_list.keys():
-            df_out, _from, _to, _dff = df_list[key]
-            
-            temp = df_out.groupby(["day"]).mean(numeric_only=True)
-            ax.hist(temp[use_col], bins=30, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
-            
-        
-        #不要処理
-        #=======================================================================
-        # # 移動平均算出用処理
-        # val = self.var_avgCount.get() 
-        # if val > 0:     
-        #     temp["temp2"] = temp[use_col].rolling(val).mean()              
-        #     ax.hist(temp["temp2"], bins=30, alpha=0.5, label=f"移動平均({val})")
-        #=======================================================================
-            
-        # タイトル
-        ax.set_title(f'ヒストグラム分析:({l_val})')
-        
-        # x軸とy軸にラベルの追加
-        ax.set_xlabel(USECOLS_NAME[use_col])
-        ax.set_ylabel('Frequency')
-        
-        #　データラベルの追加
-        ax.legend()        
-        # グリッド線の追加
-        ax.grid(True)
-    
-        self._show_plotData(fig=fig)        
-        salesDataFrame.pre_charts["histogram"] = [temp[use_col], l_val]
-        
-            
-    def _out_scatterplot(self, df_list, l_val):
-        """
-        
-        「回帰分析」ボタン押下処理　
-        Returns
-        -------
-        str
-            DESCRIPTION.
-
-        """        
-              
-        use_col = self.var_radio_select_vals.get()
-        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-        
-        for key in df_list.keys():
-            
-            df_out, _from, _to, _dff = df_list[key]
-              
-            temp = df_out[["day","count","amount"]].groupby(["day"]).mean(numeric_only=True) 
-            
-            # 平均単価算出
-            temp["avg"] = temp["amount"]/temp["count"]        
-        
-            x = temp["avg"]
-            y = temp[use_col]
-                
-            ax.scatter(x, y, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
-        
-        # 不要？？
-        # 移動平均算出用処理
-        #=======================================================================
-        # val = self.var_avgCount.get()
-        # if val > 0:     
-        #     y = y.rolling(val).mean()              
-        #     ax.scatter(x, y, label=f"移動平均({val})")
-        #=======================================================================
-        
-        ax.set_title(f"回帰分析：{l_val}")
-        ax.set_xlabel(USECOLS_NAME["avg"])
-        ax.set_ylabel(USECOLS_NAME[use_col])
-        #　データラベルの追加
-        ax.legend()        
-        # グリッド線の追加
-        ax.grid(True)
-                
-        self._show_plotData(fig=fig)
-        salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
+ 
         
 
-    
-class MyApp(tk.Tk):
     def __init__(self):
         """
         システムのメイン処理
@@ -1083,28 +954,30 @@ class MyApp(tk.Tk):
 
         super().__init__()
         
+        self.frameInput = None
+        self.framePeriod = None        
+        self.frameCound = None  
+        self.var_radio_select_vals = tk.StringVar(value="amount") 
+        self.var_avgCount = tk.IntVar(value=0)
+        self.labelFrame_out = None  
+        
         self.title("売上分析システム")
         self.geometry("1400x700")  
         
         # left side frame input data      
         frame_main1 = tk.Frame(self)
         frame_main1.pack(anchor=tk.NW, side=tk.LEFT,padx=10, pady=10)
-              
-        self.frame2 = FrameInput(frame_main1)
-        self.frame3 = FramePeriod(frame_main1)        
-        self.frame4 = FrameCound(frame_main1)        
+        self.frameInput = FrameInput(frame_main1)
+        self.framePeriod = FramePeriod(frame_main1)        
+        self.frameCound = FrameCound(frame_main1)  
         
-        # right side frame output data
-        frame_main2 = tk.Frame(self)
-        frame_main2.pack(anchor=tk.NW, side=tk.LEFT,  padx=10, pady=10)
-        
-        self.frame5 = FrameOutput(frame_main2, self.frame3, self.frame4)    
-                        
+        self._setup_ui() 
+                
+        #self.frame5 = FrameOutput(frame_main2, self.frame3, self.frame4)   
+         
         
 salesDataFrame = analysis_data.Analysis_data()
-
 app = MyApp()
-    
 app.mainloop()
 
 
