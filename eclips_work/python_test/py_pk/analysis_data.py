@@ -13,16 +13,6 @@ from datetime import datetime as dt
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
-dict_astype = {
-    't_code': 'int64',
-    'l_code': 'int64',
-    'i_code': 'int64',
-    'i_name': 'string',
-    'amount': 'int64',
-    'count': 'int64',
-    'day': 'datetime64'
-}
-
 class Analysis_data:
     '''
     classdocs
@@ -30,7 +20,7 @@ class Analysis_data:
     def __init__(self):        
         df = Process_db.Get_salesData()
         # データ型を変換
-        self.df = df.astype(dict_astype)
+        self.df = df.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df.columns})
         
         self.df_brand = Process_db.Get_master(Settings.TBLNAME_BRAND)
         self.df_line = Process_db.Get_master(Settings.TBLNAME_LINE)
@@ -106,17 +96,17 @@ class Analysis_data:
         try:
             df_base = self.df
             df = Process_db._read_salesinfo_day(fle)
-            df_add = df.astype(dict_astype)
+            df_add = df.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df.columns})
             
             
             # 同日付の売上情報が含まれている場合
-            a = df_add["day"].tolist()
-            b = df_base["day"].tolist()
+            a = df_add["day"]
+            b = df_base["day"]
             c = set(a) & set(b)
                         
             if len(c) > 0:                  
                 msgVal = sorted(c)                        
-                message_text = "\n".join([msgVal[0],"～",msgVal[-1]])
+                message_text = "\n".join([str(msgVal[0]),"～",str(msgVal[-1])])
                 
                 flg_answer = msg.askyesnocancel(msg.INFO,f"同日付の売上情報が含まれています。更新しますか？\n{message_text}")
                 
@@ -131,7 +121,7 @@ class Analysis_data:
 
             df_new = pd.concat([df_add, df_base])            
             
-            self.df = Process_db.Update_db(df_new, "sales_data")
+            self.df = Process_db.Update_db(df_new)
 
         except Exception:
             logging.exception(Exception)            

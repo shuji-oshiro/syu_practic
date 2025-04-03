@@ -6,7 +6,6 @@ Created on Sat Mar  8 16:24:05 2025
 """
 
 class Settings:
-    
     def __init__(self):
         pass
     
@@ -36,3 +35,21 @@ class Settings:
     CODE_WAGASHI = 9
     CODE_YOUGASHI = 5
     
+    DIC_AS_TYPES = {
+        't_code': 'int64',
+        't_name': 'object',
+        'l_code': 'int64',
+        'l_name': 'object',
+        'i_code': 'int64',
+        'i_name': 'object',
+        'day': 'int64',
+        'kind': 'int64',
+        'amount': 'int64',
+        'count': 'int64',
+        'base_amount': 'int64',
+        'base_count': 'int64',
+        'past_amount': 'int64',
+        'past_count': 'int64',
+        'amount_par': 'float64',
+        'count_par': 'float64',        
+        }

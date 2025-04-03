@@ -56,7 +56,7 @@ class Process_db:
             raise
     
     @classmethod
-    def Update_db(cls, df, tblName):
+    def Update_db(cls, df):
         """
         内部関数　DBの売上情報を更新する処理
 
@@ -78,7 +78,7 @@ class Process_db:
                 
         try:           
             with  sqlite3.connect(Settings.DB_PATH) as conn : 
-                df.to_sql(tblName, conn, if_exists="replace", index=None)
+                df.to_sql("sales_data", conn, if_exists="replace", index=None)
                 conn.commit()            
             return df
             

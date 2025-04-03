@@ -21,6 +21,7 @@ import threading
 import calendar
 import matplotlib.pyplot as plt
 
+
 const = settings.Settings()        
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
@@ -401,6 +402,7 @@ class FrameCound(tk.LabelFrame):
         #　一部コントロールの無効化処理
         set_widget_status(self.frame_item, tk.DISABLED, [tk.Entry, tk.Spinbox, tk.Listbox])
         
+        
     def _setfindItems(self, flg=False):
         """
         # 商品名で検索するエントリーフォームでエンターした時の処理　-＞条件に合致する商品名をリストに表示
@@ -480,7 +482,7 @@ class FrameCound(tk.LabelFrame):
             set_widget_status(self.frame_line, tk.DISABLED, [ttk.Combobox])  
             set_widget_status(self.frame_item, tk.NORMAL, [tk.Entry, tk.Spinbox, tk.Listbox])  
 
-                   
+                  
 
 #===============================================================================
 # class FrameOutput(tk.LabelFrame):
@@ -682,40 +684,44 @@ class FrameCound(tk.LabelFrame):
 class treeview(ttk.Treeview):
     
     try:
-        def __init__(self, master, df):
-            super().__init__(master, columns=list(df.columns), show="headings", height=20)
+        def __init__(self, master, df):       
             
-            # 降順昇順を管理
-            self.sort_state = {col: False for col in df.columns}
-            self.df = df
+            self.df_out = df #TreeView表示用DB 並び替えでも使用         
+                        
+            self.frame_treeview = tk.Frame(master) #TreeViewガジェット制御用フレーム
+            self.frame_treeview.pack(fill="both", expand=True)
             
-            for col in df.columns:
-                self.heading(col, text=col, command=lambda c=col: self.sort_by_column(c))
-                self.column(col, width=max(df[col].astype(str).map(len).max() * 10, 100))   
+            tree_scroll_y = tk.Scrollbar(self.frame_treeview, orient=tk.VERTICAL)
+            tree_scroll_x = tk.Scrollbar(self.frame_treeview, orient=tk.HORIZONTAL)
+            
+            use_columns = list(self.df_out.columns)   
+            # 🟢 Treeview のカラム設定
+            super().__init__(self.frame_treeview, columns=use_columns, show="headings", height=20, yscrollcommand=tree_scroll_y.set, xscrollcommand=tree_scroll_x.set)
+                        
+            for col in use_columns:
+                self.heading(col, text=col, command=lambda c=col: self.sort_by_column(c), anchor="center")
+                self.column(col, width=max(self.df_out[col].astype(str).map(len).max() * 10, 100), anchor="center") 
             
             
-            # データ挿入
-            self.update_data(df)
-    
-            # スクロールバー追加
-            self.scroll_y = ttk.Scrollbar(master, orient="vertical", command=self.yview)
-            self.scroll_y.pack(side="right", fill="y")
-            self.configure(yscrollcommand=self.scroll_y.set)
-    
-            self.scroll_x = ttk.Scrollbar(master, orient="horizontal", command=self.xview)
-            self.scroll_x.pack(side="bottom", fill="x")
-            self.configure(xscrollcommand=self.scroll_x.set)
-    
-            self.pack(expand=True, fill="both")
-    
+            self.sort_state = {col: False for col in use_columns} # 降順昇順を管理
+            tree_scroll_y.config(command=self.yview)
+            tree_scroll_x.config(command=self.xview) 
+            
+            # 🟢 データを Treeview に追加
+            self.update_data(self.df_out)
+            
+            # 🟢 配置
+            tree_scroll_y.pack(side="right", fill="y")
+            tree_scroll_x.pack(side="bottom", fill="x")
+            self.pack(expand=True, fill="both")     
+                       
     
         def update_data(self, df: pd.DataFrame):
+                        
             """Treeview に `DataFrame` のデータを設定"""
-            self.df = df
             self.delete(*self.get_children())  # 既存データ削除
             for _, row in df.iterrows():
                 formatted_row = []
-                
                 for col in df.columns:
                     value = row[col]
             
@@ -723,12 +729,12 @@ class treeview(ttk.Treeview):
                     if pd.api.types.is_integer_dtype(df[col]):
                         formatted_value = f"{value:,}"  # 整数はカンマ区切り
                     elif pd.api.types.is_float_dtype(df[col]):
-                        formatted_value = f"{value:,.2%}"  # 小数はカンマ区切り＆2桁
+                        formatted_value = f"{value:,.1%}"  # 小数はカンマ区切り＆2桁
                     elif pd.api.types.is_datetime64_any_dtype(df[col]):
                         formatted_value = value.strftime("%Y年%m月%d日") if pd.notna(value) else ""  # 日付フォーマット
                     else:
                         formatted_value = value  # それ以外はそのまま
-            
+                        
                     formatted_row.append(formatted_value)
                 
                 self.insert("", "end", values=formatted_row)  
@@ -736,9 +742,8 @@ class treeview(ttk.Treeview):
         def sort_by_column(self, col):
             """ヘッダークリックでソート"""
             reverse = self.sort_state[col] = not self.sort_state[col]
-            self.df = self.df.sort_values(by=col, ascending=reverse)
-    
-            self.update_data(self.df)  # データ更新
+            df = self.df_out.sort_values(by=col, ascending=reverse)
+            self.update_data(df)  # データ更新
                 
         
         def on_select(self,event):        
@@ -781,8 +786,10 @@ class MyApp(tk.Tk):
         frame_avg.pack(side=tk.LEFT, padx=10)
         tk.Label(frame_avg, text="移動平均集計").pack(side=tk.LEFT)
         tk.Spinbox(frame_avg, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
-        self.labelFrame_out = tk.LabelFrame(label_f, text="分析結果")
+        self.labelFrame_out = tk.LabelFrame(label_f, text="分析結果", width=500, height=400)
+        self.labelFrame_out.pack_propagate(False) 
         self.labelFrame_out.pack(anchor=tk.NW)
+            
             
     def _push_buttons(self, out_typ):
         #商品名抽出        
@@ -793,23 +800,8 @@ class MyApp(tk.Tk):
         _weeks = self.framePeriod.get_select_dayofweeks()
         _without = self.frameCound.var_checked_without.get()
                    
-        group_key = []              
-        # 商品名抽出       
-        if self.frameCound.radio_jyoken.get()==const.SELECT_ITEM:  
-            group_key = ["t_name","i_name","day_DateTime"]
-                       
-            if not _items:
-                msg.showwarning(msg.WARNING,"抽出する商品名を選択してください。")
-                return "break"  
-            l_val = "{}_{}".format(_brand, ",".join(_items))
-        else:
-            if (_brand != "全取引先" and _line != "全ライン"):
-                group_key = ["t_name","i_name","day_DateTime"]
-            else:
-                group_key = ["t_name","l_name","day_DateTime"]
-                 
-            l_val = "{}_{}".format(_brand, _line)
-                     
+        group_key = ["t_name","l_name","i_name","day_DateTime"]     
+                             
         df_out = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
@@ -823,7 +815,8 @@ class MyApp(tk.Tk):
             return "break"
          
         #df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True)["amount"] #指定キーでグループ化
-        df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]].rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
+        df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
+        df_out = df_out.rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
         #diff_day = (_to -_from).days #期間取得    
          
         _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()  
@@ -841,11 +834,16 @@ class MyApp(tk.Tk):
         df_out2["day_DateTime"] = df_out2["day_DateTime"] + pd.Timedelta(days=dif_day_pre)  
                  
         #df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True) #指定キーでグループ化
-        df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]].rename(columns={'amount': 'past_amount', 'count': 'past_count'})
-         
+        df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
+        df_out2 = df_out2.rename(columns={'amount': 'past_amount', 'count': 'past_count'})
+        
         df_out3 = pd.merge(df_out, df_out2, on=group_key, how="left").fillna(0)
-              
-         
+        df_out3["amount_par"] = df_out3["base_amount"]/df_out3["past_amount"]
+        df_out3["count_par"] = df_out3["base_count"]/df_out3["past_count"] 
+        
+        df_out3 = df_out3.astype({col: dtype for col, dtype in const.DIC_AS_TYPES.items() if col in df_out3.columns} )
+        df_out3 = df_out3.fillna(0)
+        
         if out_typ == 0:
             self._out_compar_ana(df_out3, True)
          
@@ -875,24 +873,54 @@ class MyApp(tk.Tk):
         """
          
         try:                        
-                            
+            key =[]
+            use_columns =[]
+            
+            # 商品名抽出       
+            if self.frameCound.radio_jyoken.get()==const.SELECT_ITEM:  
+                key = "i_name"
+                
+                #l_val = "{}_{}".format(_brand, ",".join(_items))
+            else:                
+                if (self.frameCound.select_brand_var.get() == "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
+                    key = "t_name"
+                    
+                elif (self.frameCound.select_brand_var.get() != "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
+                    key = "l_name"
+                    
+                else: 
+                    key = "i_name"
+                    
+                    
+                #l_val = "{}_{}".format(_brand, _line)
+
+            if self.var_radio_select_vals.get() == "amount":
+                use_columns = [f"{key}","base_amount","past_amount"]            
+                df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
+                df_out["比率"] = df_out["base_amount"] / df_out["past_amount"] #比較比率を産出
+                
+            else:
+                use_columns = [f"{key}","base_count","past_count"]            
+                df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
+                df_out["比率"] = df_out["base_count"] / df_out["past_count"] #比較比率を産出
+            
+            if self.tree:
+                self.tree.frame_treeview.destroy() 
+                #self.tree.destroy()             
+            
+            self.tree = treeview(self.labelFrame_out, df_out) 
+            
             _from, _to = self.framePeriod.get_cound_perid_datetime()
             _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
-             
+         
             diff = (_to-_from).days
             diff2 = (_to2-_from2).days
-             
-            df["amount_par"] = df["base_amount"]/df["past_amount"]
-            df["count_par"] = df["base_count"]/df["past_count"]    
-             
-                         
-            treeview(self.labelFrame_out, df) 
-                       
+                                      
             if csv_flg:
                 sheetName=f"{self.cls_cound.select_brand_var.get()}:{self.cls_cound.select_line_var.get()}"
                 head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff2})　"
                 self._out_excel(df, sheetName, sheetName, head_str)                
-                 
+                
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
@@ -978,8 +1006,10 @@ class MyApp(tk.Tk):
         self.var_avgCount = tk.IntVar(value=0)
         self.labelFrame_out = None  
         
+        self.tree = None
+        
         self.title("売上分析システム")
-        self.geometry("1400x700")  
+        self.geometry("1000x600")  
         
         # left side frame input data      
         frame_main1 = tk.Frame(self)
