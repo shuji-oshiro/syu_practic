@@ -4,8 +4,11 @@ import numpy as np
 import unittest
 
 class Sampledata:
+    def __init__(self):
+        pass
+    
     @classmethod  
-    def createSalesData(cls) -> pd.DataFrame:
+    def CreateSalesData(cls) -> pd.DataFrame:
         # データ型定義
         DIC_AS_TYPES = {
             't_code': 'int64',   # 10種類の一意な値
@@ -69,9 +72,9 @@ class Sampledata:
         df = df.astype(DIC_AS_TYPES)
         
         return df_sales, df_t_name, df_l_name
-    
+   
 
 if __name__ == "__main__": unittest.main()
-Sampledata.createSalesData()
+pass
 
     

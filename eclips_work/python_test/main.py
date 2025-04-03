@@ -4,12 +4,14 @@ Created on Thu Feb 13 17:49:19 2025
 
 @author: mkt05
 """
+
+import sys 
 import os
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
 import openpyxl as op
-from py_pk import settings
+from py_pk.settings import Settings
 from py_pk import analysis_data
 
 import logging
@@ -20,9 +22,7 @@ from tkinter import filedialog, messagebox as msg
 import threading
 import calendar
 import matplotlib.pyplot as plt
-
-
-const = settings.Settings()        
+     
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
@@ -54,7 +54,7 @@ class FrameInput(tk.LabelFrame):
         frame_row1.pack(anchor=tk.W)
         
         tk.Label(frame_row1, text="データベースパス：").pack(side=tk.LEFT)
-        tk.Label(frame_row1, text=const.DB_PATH).pack(side=tk.LEFT)
+        tk.Label(frame_row1, text=Settings.DB_PATH).pack(side=tk.LEFT)
 
 
 class FramePeriod(tk.LabelFrame):
@@ -104,14 +104,14 @@ class FramePeriod(tk.LabelFrame):
         
         _from, _to = salesDataFrame.get_from_and_to()
         
-        self.entry_from = DateEntry(frame_1, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_from = DateEntry(frame_1, date_pattern=Settings.ENTRY_DISP_FORM)
         self.entry_from.bind("<<DateEntrySelected>>", self.on_date_selected)        
         self.entry_from.set_date(_from)
         
         self.entry_from.pack(side=tk.LEFT)
         tk.Label(frame_1, text="～").pack(side=tk.LEFT)
         #　集計終了日
-        self.entry_to = DateEntry(frame_1, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_to = DateEntry(frame_1, date_pattern=Settings.ENTRY_DISP_FORM)
         self.entry_to.pack(side=tk.LEFT)        
         self.entry_to.set_date(_to)
         # 2-2 日別売上抽出 曜日指定
@@ -139,7 +139,7 @@ class FramePeriod(tk.LabelFrame):
         tk.Radiobutton(self.frame_row5, text="前年", variable=self.var_select_compar, value=0, command=self.chang_coundkbn).pack(side=tk.LEFT)
         tk.Radiobutton(self.frame_row5, text="前月", variable=self.var_select_compar, value=1, command=self.chang_coundkbn).pack(side=tk.LEFT)
         tk.Radiobutton(self.frame_row5, text="前週", variable=self.var_select_compar, value=2, command=self.chang_coundkbn).pack(side=tk.LEFT)
-        self.entry_from_pre = DateEntry(self.frame_row5, date_pattern=const.ENTRY_DISP_FORM)
+        self.entry_from_pre = DateEntry(self.frame_row5, date_pattern=Settings.ENTRY_DISP_FORM)
         self.entry_from_pre.pack(side=tk.LEFT)        
         set_widget_status(self.frame_row5, tk.DISABLED, [tk.Radiobutton, DateEntry])
     
@@ -362,7 +362,7 @@ class FrameCound(tk.LabelFrame):
                 
         # 3-2
         self.frame_line.pack(anchor=tk.W)
-        tk.Radiobutton(self.frame_line, text="ライン別", variable=self.radio_jyoken, value=const.SELECT_LINE, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        tk.Radiobutton(self.frame_line, text="ライン別", variable=self.radio_jyoken, value=Settings.SELECT_LINE, command=self.chang_coundkbn).pack(side=tk.LEFT)
         
         var_line = salesDataFrame.df_line["l_name"].tolist()
         var_line.insert(0,"全ライン")
@@ -375,7 +375,7 @@ class FrameCound(tk.LabelFrame):
         self.frame_item.pack(anchor=tk.W)
         frame = tk.Frame(self.frame_item)
         frame.pack(anchor=tk.W)
-        tk.Radiobutton(frame, text="商品別", variable=self.radio_jyoken, value=const.SELECT_ITEM, command=self.chang_coundkbn).pack(side=tk.LEFT)
+        tk.Radiobutton(frame, text="商品別", variable=self.radio_jyoken, value=Settings.SELECT_ITEM, command=self.chang_coundkbn).pack(side=tk.LEFT)
 
         # 商品コードを入力するフォーム
         entry_icode = tk.Spinbox(frame, width=5, from_=0, to=9999, textvariable=self.var_icode)
@@ -473,12 +473,12 @@ class FrameCound(tk.LabelFrame):
         None.
     
         """
-        if self.radio_jyoken.get() == const.SELECT_LINE:   
+        if self.radio_jyoken.get() == Settings.SELECT_LINE:   
             set_widget_status(self.frame_line, tk.NORMAL, [ttk.Combobox])         
             set_widget_status(self.frame_item, tk.DISABLED, [tk.Entry, tk.Spinbox, tk.Listbox])  
             
             
-        elif self.radio_jyoken.get() == const.SELECT_ITEM:
+        elif self.radio_jyoken.get() == Settings.SELECT_ITEM:
             set_widget_status(self.frame_line, tk.DISABLED, [ttk.Combobox])  
             set_widget_status(self.frame_item, tk.NORMAL, [tk.Entry, tk.Spinbox, tk.Listbox])  
 
@@ -814,14 +814,12 @@ class MyApp(tk.Tk):
             msg.showwarning(msg.WARNING,"入力された期間の売上情報が存在しません")
             return "break"
          
-        #df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True)["amount"] #指定キーでグループ化
+     
         df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
         df_out = df_out.rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
-        #diff_day = (_to -_from).days #期間取得    
+ 
          
-        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()  
-        #_to2 = _from2 + relativedelta(days=diff_day) 
-                  
+        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
         df_out2 = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
@@ -829,19 +827,27 @@ class MyApp(tk.Tk):
                                                       _to2,
                                                        _weeks,
                                                        _without)           
-         
-        dif_day_pre = (_from-_from2).days #　ベースとなる売上情報にマッチする為に日付を加算
-        df_out2["day_DateTime"] = df_out2["day_DateTime"] + pd.Timedelta(days=dif_day_pre)  
+        
+        if self.framePeriod.var_checked_comper.get():
+            dif_day_pre = (_from-_from2).days #　ベースとなる売上情報にマッチする為に日付を加算
+            df_out2["day_DateTime"] = df_out2["day_DateTime"] + pd.Timedelta(days=dif_day_pre)  
+        else:
+            df_out2 = df_out2.iloc[0:0]
+
                  
-        #df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True) #指定キーでグループ化
         df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
         df_out2 = df_out2.rename(columns={'amount': 'past_amount', 'count': 'past_count'})
         
-        df_out3 = pd.merge(df_out, df_out2, on=group_key, how="left").fillna(0)
+        # df_out と df_out2 を共通キーで結合
+        df_out3 = pd.merge(df_out, df_out2, on=group_key, how="outer")  # 外部結合（全データを残す）        
+        # 必要なら、NaNを0に置き換え
+        df_out3 = df_out3.fillna(0)
+        
+        #df_out3 = pd.merge(df_out, df_out2, on=group_key, how="left").fillna(0)
         df_out3["amount_par"] = df_out3["base_amount"]/df_out3["past_amount"]
         df_out3["count_par"] = df_out3["base_count"]/df_out3["past_count"] 
         
-        df_out3 = df_out3.astype({col: dtype for col, dtype in const.DIC_AS_TYPES.items() if col in df_out3.columns} )
+        df_out3 = df_out3.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df_out3.columns} )
         df_out3 = df_out3.fillna(0)
         
         if out_typ == 0:
@@ -877,7 +883,7 @@ class MyApp(tk.Tk):
             use_columns =[]
             
             # 商品名抽出       
-            if self.frameCound.radio_jyoken.get()==const.SELECT_ITEM:  
+            if self.frameCound.radio_jyoken.get()==Settings.SELECT_ITEM:  
                 key = "i_name"
                 
                 #l_val = "{}_{}".format(_brand, ",".join(_items))

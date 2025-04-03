@@ -7,9 +7,11 @@ Created on 2025/03/19
 import pandas as pd
 from py_pk.settings import Settings
 from py_pk.process_db import Process_db
+from py_pk.sampledata import Sampledata
 import logging
 from tkinter import messagebox as msg
 from datetime import datetime as dt
+import sys
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
@@ -18,12 +20,16 @@ class Analysis_data:
     classdocs
     '''
     def __init__(self):        
-        df = Process_db.Get_salesData()
-        # データ型を変換
-        self.df = df.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df.columns})
         
-        self.df_brand = Process_db.Get_master(Settings.TBLNAME_BRAND)
-        self.df_line = Process_db.Get_master(Settings.TBLNAME_LINE)
+        if sys.gettrace() is not None:  # デバッグ実行コード
+            self.df, self.df_brand, self.df_line = Sampledata.CreateSalesData()
+        else:        
+            df = Process_db.Get_salesData()
+            # データ型を変換
+            self.df = df.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df.columns})
+            
+            self.df_brand = Process_db.Get_master(Settings.TBLNAME_BRAND)
+            self.df_line = Process_db.Get_master(Settings.TBLNAME_LINE)
         
         self.pre_charts = {
             'timeseries': [],
@@ -50,10 +56,6 @@ class Analysis_data:
         try:
             
             df_out = self.df.copy()
-            
-            if df_out.empty:
-                return df_out
-            
             df_out = df_out.merge(self.df_brand, on='t_code', how='left').fillna("その他取引先")
             df_out = df_out.merge(self.df_line, on='l_code', how='left').fillna("その他ライン")
     
