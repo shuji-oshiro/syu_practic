@@ -4,8 +4,7 @@ Created on Thu Feb 13 17:49:19 2025
 
 @author: mkt05
 """
-
-import sys 
+ 
 import os
 import tkinter as tk
 from tkinter import ttk
@@ -22,6 +21,9 @@ from tkinter import filedialog, messagebox as msg
 import threading
 import calendar
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
      
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
@@ -483,7 +485,6 @@ class FrameCound(tk.LabelFrame):
             set_widget_status(self.frame_item, tk.NORMAL, [tk.Entry, tk.Spinbox, tk.Listbox])  
 
                   
-
 #===============================================================================
 # class FrameOutput(tk.LabelFrame):
 #            
@@ -850,16 +851,49 @@ class MyApp(tk.Tk):
         df_out3 = df_out3.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df_out3.columns} )
         df_out3 = df_out3.fillna(0)
         
+        
+        
+        key = ""
+        key_plot = "day_DateTime"
+        if self.frameCound.radio_jyoken.get()==Settings.SELECT_ITEM:#商品名で抽出する条件
+            l_val = "{}_{}".format(_brand, ",".join(_items))
+            
+            key = "i_name"
+            
+        else:#ライン名で抽出する条件
+            l_val = "{}_{}".format(_brand, _line)
+            
+            if (self.frameCound.select_brand_var.get() == "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
+                key = "t_name"#全取引先ごとに集計
+                
+            elif (self.frameCound.select_brand_var.get() != "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
+                key = "l_name"#取引先単位でライン別
+                
+            else: 
+                key = "i_name"
+            
+        
+        base_val = f"base_{self.var_radio_select_vals.get()}"
+        past_val = f"past_{self.var_radio_select_vals.get()}"
+                      
+        
+        df_tree = df_out3.groupby(key, as_index=False).sum(numeric_only=True).loc[:,[key,base_val,past_val]]
+        df_tree["比率"] = df_tree[base_val] / df_tree[past_val] #比較比率を算出
+        
+        df_out_plot = df_out3.groupby(key_plot, as_index=False).sum(numeric_only=True).loc[:,[key_plot,base_val,past_val]]           
+            
+
+        self._out_compar_ana(df_out3)
         if out_typ == 0:
             self._out_compar_ana(df_out3, True)
          
         elif out_typ == 1:
             self._out_compar_ana(df_out3)
               
+        elif out_typ == 2:
+            self._out_timeseries_chart(df_out_plot, l_val)
+              
         #=======================================================================
-        # elif out_typ == 2: 
-        #     self._out_timeseries_chart(df_list, l_val)
-        #  
         # elif out_typ == 3: 
         #     self._out_histogram(df_list, l_val)
         #       
@@ -900,12 +934,12 @@ class MyApp(tk.Tk):
                     
                 #l_val = "{}_{}".format(_brand, _line)
 
-            if self.var_radio_select_vals.get() == "amount":
+            if self.var_radio_select_vals.get() == "amount":#出力項目選択　金額
                 use_columns = [f"{key}","base_amount","past_amount"]            
                 df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
                 df_out["比率"] = df_out["base_amount"] / df_out["past_amount"] #比較比率を産出
                 
-            else:
+            else:#出力項目選択　数量
                 use_columns = [f"{key}","base_count","past_count"]            
                 df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
                 df_out["比率"] = df_out["base_count"] / df_out["past_count"] #比較比率を産出
@@ -992,7 +1026,125 @@ class MyApp(tk.Tk):
             logging.exception(erMsg)  
             raise  
  
-        
+ 
+    def _out_timeseries_chart(self, df, l_val): 
+        """
+        時系列分析チャートを表示する処理
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            プロットするデータフレーム
+        l_val : str
+            チャートのタイトルに使用するラベル
+
+        Returns
+        -------
+        None
+        """
+        try:
+            # 別画面が存在する場合は削除
+            if hasattr(self, "chart_window") and self.chart_window.winfo_exists():
+                self.chart_window.destroy()
+
+            # 別画面を作成
+            self.chart_window = tk.Toplevel(self)
+            self.chart_window.title("時系列分析チャート")
+            self.chart_window.geometry("800x600")
+
+            # プロットの準備
+            fig, ax = plt.subplots(figsize=(8, 6))
+            x = df["day_DateTime"]
+            y = df["base_amount"]
+
+            # 元データのプロット
+            ax.plot(x, y, linewidth=0.5, label="元データ")
+
+            # 移動平均のプロット
+            val = self.var_avgCount.get()
+            if val > 0:
+                y_avg = y.rolling(val).mean()
+                ax.plot(x, y_avg, linewidth=0.5, marker='^', label=f"移動平均({val})")
+
+            # Y軸のフォーマットを設定（千円単位、カンマ区切り）
+            ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x):,}"))
+
+            # チャートの設定
+            ax.set_title(f"時系列分析: {l_val}")
+            ax.set_xlabel("日付")
+            ax.set_ylabel("売上金額")
+            ax.legend()
+            ax.grid(True)
+
+            # プロットをTkinterウィジェットに埋め込む
+            canvas = FigureCanvasTkAgg(fig, master=self.chart_window)
+            canvas_widget = canvas.get_tk_widget()
+            canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+        except Exception as e:
+            erMsg = "時系列分析チャートの表示中にエラーが発生しました。"
+            msg.showerror("エラー", f"{erMsg}\n{e}")
+            logging.exception(erMsg)        
+
+
+
+
+        # try:                                                                                                         
+            
+            
+        #     use_col = self.var_radio_select_vals.get()  
+                   
+        #     fig, ax = plt.subplots(figsize=(8, 6))                
+            
+        #     _from, _to = self.framePeriod.get_cound_perid_datetime()
+        #     _diff = (_to-_from).days
+            
+        #     x = df["day_DateTime"]
+        #     y = df["base_amount"]
+            
+        #     ax.plot(x, y,linewidth=0.5,label=f"{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({_diff})") 
+
+        #     key = self.frameCound.select_brand_var.get()
+
+        #     #ax.xmargin = 5.0             
+        #     # 移動平均算出用処理
+        #     val = self.var_avgCount.get() 
+        #     if val > 0:                    
+        #         y = y.rolling(val).mean()  
+        #         ax.plot(x, y, linewidth=0.5, marker='^', label=f"{key}:移動平均({val})")           
+                              
+        #     #ax.scatter(x, y)            
+        #     ax.set_title(f"時系列分析:{l_val}")
+        #     ax.set_xlabel("日付")
+        #     #ax.set_xlim(0,100) # X軸の幅指定　件数
+        #     #ax.set_ylim(0,100) # X軸の幅指定　件数     
+                           
+        #     #等間隔の数を設定する処理
+        #     step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
+        #     step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
+        #     ax.set_xticks(step_idx,step_xval) #ラベルに設定する
+             
+        #     ax.minorticks_on() #補助目盛を追加
+            
+        #     ax.set_ylabel(use_col)
+        #     #　データラベルの追加
+        #     ax.legend()        
+        #     # グリッド線の追加
+        #     ax.grid(True)                             
+            
+        #     new_root = tk.Tk()
+
+        #     canvas = FigureCanvasTkAgg(fig, master=new_root)  # Tkinter フレームに埋め込む
+        #     canvas_widget = canvas.get_tk_widget()
+        #     canvas_widget.pack()
+        #     #salesDataFrame.pre_charts["timeseries"] = [x, y, l_val] 
+
+  
+        # except Exception: 
+        #     erMsg = "売上分析出力中にエラーが発生しました。"
+        #     msg.showerror(msg.ERROR,erMsg)
+        #     logging.exception(erMsg)  
+    
 
     def __init__(self):
         """
@@ -1002,7 +1154,6 @@ class MyApp(tk.Tk):
         -------
         None.
         """
-
         super().__init__()
         
         self.frameInput = None
