@@ -903,12 +903,12 @@ class MyApp(tk.Tk):
             if self.var_radio_select_vals.get() == "amount":
                 use_columns = [f"{key}","base_amount","past_amount"]            
                 df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
-                df_out["比率"] = df_out["base_amount"] / df_out["past_amount"] #比較比率を産出
+                df_out["比率"] = df_out["base_amount"] / df_out["past_amount"] #比較比率
                 
             else:
                 use_columns = [f"{key}","base_count","past_count"]            
                 df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
-                df_out["比率"] = df_out["base_count"] / df_out["past_count"] #比較比率を産出
+                df_out["比率"] = df_out["base_count"] / df_out["past_count"] #比較比率
             
             if self.tree:
                 self.tree.frame_treeview.destroy() 

@@ -13,3 +13,4 @@ dist/
 .project
 main.spec
 *.bak
+.env
