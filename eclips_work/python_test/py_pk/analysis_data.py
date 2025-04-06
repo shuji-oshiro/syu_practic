@@ -12,6 +12,7 @@ import logging
 from tkinter import messagebox as msg
 from datetime import datetime as dt
 import sys
+import os
 
 logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
 
@@ -21,7 +22,12 @@ class Analysis_data:
     '''
     def __init__(self):        
         
-        if sys.gettrace() is not None:  # デバッグ実行コード
+        if sys.gettrace() is not None:  #TODO: デバッグ実行中ゲットできない？？
+            print("！！！！！！sys.gettrace獲得OK！！！！！！！")
+           
+        DEBUG_MODE = os.getenv("DEBUG_MODE", "False")
+        if DEBUG_MODE == "True":
+            print("NOW!!! NOW!!! デバッグモードが有効です")
             self.df, self.df_brand, self.df_line = Sampledata.CreateSalesData()
         else:        
             df = Process_db.Get_salesData()
