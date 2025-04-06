@@ -5,7 +5,8 @@
 import os
 from pyicloud import PyiCloudService
 
-# 環境変数から認証情報を読み込む例（推奨）
+# 環境変数から認証情報を読み込む
+
 import os
 APPLE_ID = os.getenv("APPLE_ID", "your_email@example.com")
 APPLE_PASSWORD = os.getenv("APPLE_PASSWORD", "your_password")

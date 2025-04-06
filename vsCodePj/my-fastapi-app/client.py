@@ -19,7 +19,6 @@ if github_response.status_code != 200:
 
 github_data = github_response.json()
 print("GitHubから取得:", github_data)
-
 # 自分のFastAPIに送るデータを構成
 payload = {
     "login": github_data["login"],
