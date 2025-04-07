@@ -1,0 +1,94 @@
+ubuntuログイン
+wsl -d ubuntu
+wsl -d Ubuntu -u root <- rootユーザーでログイン
+
+root でログインできたら、Linux内でユーザーを手動で再作成
+adduser **username**
+
+ubuntuルートユーザー変更
+ubuntu config --default-user owner-pc <-ログインユーザー
+
+ユーザーに権限を与える 例：docker 
+sudo usermod -aG docker $USER <-現在ログインしているユーザーで置換）
+
+WSLシャットダウン
+wsl --shutdown
+
+強制停止、次の起動がクリーンになることがある
+wsl --terminate Ubuntu
+
+WSLが正しく動いているか確認
+wsl --status
+
+Ubuntu の WSL を一度削除（データ全消去）して再インストール
+*この操作は Ubuntu の中のデータがすべて削除されるので、データがある場合は注意！
+wsl --unregister Ubuntu
+wsl --install -d Ubuntu
+
+docker起動
+docker run hello-world <-サービス名
+
+Docker再起動
+Restart-Service com.docker.service
+
+情報取得　＊管理者権限が必要な場合あり
+docker info
+
+
+
+Deckerで仮想イメージを構築する基本的な流れ
+
+
+【docker build -t flask-app . 】の意味
+
+「コンテナのレシピ（Dockerfile）をもとに、アプリの完成形を作る」
+
+docker build → ビルドするよ
+
+-t flask-app → 名前を flask-app にする（タグの意味）
+
+. → 「今のフォルダ」にある Dockerfile を使う
+
+！！イメージとしては：「料理レシピ（Dockerfile）」をもとにして、冷凍弁当（Dockerイメージ）を作るって感じ！
+
+
+run → そのイメージを元に**一時的な部屋（コンテナ）**を作って実行
+
+【docker run -p 5000:5000 flask-app】の意味
+
+「その冷凍弁当（イメージ）を、電子レンジでチン（＝実行）して食べる（＝アクセス）」
+
+
+-p 5000:5000 → ポート番号をつなげる
+
+左の 5000: あなたのPC（ホスト）のポート
+
+右の 5000: コンテナの中でアプリが動いてるポート
+
+flask-app → どのアプリ（イメージ）を動かすか？
+
+イメージとしては：冷凍弁当をチンしてお皿に盛って「5000番の席」に出すって感じ！
+
+
+build → PythonのFlaskアプリが入ったコンテナイメージを作る
+docker run → コンテナ起動するよ！
+ブラウザで http://localhost:5000 にアクセスすると…
+Flaskの app.py が動いてレスポンスを返す！（例："Hello from Flask!"）
+
+・その他のコマンド
+docker ps → 今動いてるコンテナを確認
+docker stop <ID> → 動いてるコンテナを止める
+docker images → 作ったイメージ一覧を確認
+docker rmi <イメージ名> → イメージ削除もできる
+
+
+【docker 停止方法】
+
+コンテナだけ停止　＝docker stop <ID>　＝PowerShell / WSL
+Docker全体停止　＝Quit Docker Desktop　＝タスクトレイ
+WSL停止　＝wsl --shutdown　＝PowerShell
+
+【dcker 不要なコンテナ削除】
+docker run hello-world	毎回「新しいコンテナ」が作られる
+docker ps -a	全部の履歴を見る
+docker container prune	いらない停止済みコンテナを一括削除
