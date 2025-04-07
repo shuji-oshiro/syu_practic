@@ -760,38 +760,77 @@ class treeview(ttk.Treeview):
     
 class MyApp(tk.Tk):
         
+    def __init__(self):
+        """
+        システムのメイン処理
+
+        Returns
+        -------
+        None.
+        """
+        super().__init__()
+        
+        self.frameInput = None
+        self.framePeriod = None        
+        self.frameCound = None  
+        self.var_radio_select_vals = tk.StringVar(value="amount") 
+        self.var_avgCount = tk.IntVar(value=7) # 移動平均集計日数
+        self.labelFrame_out = None  ## TreeView表示用フレーム
+        self.labelFrame_out2 = None  ## チャート表示用フレーム
+        self.tree = None
+        
+        self.title("売上分析システム")
+        self.geometry("1500x600")  
+        
+        self._setup_ui() 
+                
+
     def _setup_ui(self):
         """Setup UI components"""         
-        
-        # right side frame output data
-        frame_main2 = tk.Frame(self)
-        frame_main2.pack(anchor=tk.NW, side=tk.LEFT,  padx=10, pady=10)
-        
-        label_f = tk.LabelFrame(frame_main2,text="集計処理")
-        label_f.pack(anchor=tk.NW, padx=10,pady=10)
+        # left side frame input data      
+        frame_main1 = tk.LabelFrame(self, text="抽出条件入力", height=500)
+        frame_main1.pack(anchor=tk.NW, side=tk.LEFT,padx=10, pady=10)
+
+        self.frameInput = FrameInput(frame_main1)
+        self.framePeriod = FramePeriod(frame_main1)        
+        self.frameCound = FrameCound(frame_main1)  
+
+        # midoll frame output data
+        frame_main2 = tk.LabelFrame(self, text="集計処理", height=500)
+        frame_main2.pack(anchor=tk.NW, side=tk.LEFT,padx=10, pady=10)
                      
-        frame_row0 = tk.LabelFrame(label_f)
-        frame_row0.pack(anchor=tk.W)  
-        tk.Radiobutton(frame_row0, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
-        tk.Radiobutton(frame_row0, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
-        tk.Button(frame_row0, text="CSVデータ出力", bg="white", command=lambda:self._push_buttons(0)).pack(side=tk.LEFT)
-                        
-        frame_row1 = tk.LabelFrame(label_f)
-        frame_row1.pack(anchor=tk.W)
-        tk.Button(frame_row1, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
-        tk.Button(frame_row1, text="時系列分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)       
-        tk.Button(frame_row1, text="ヒストグラム分析", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)               
-        tk.Button(frame_row1, text="散布図分析", command=lambda:self._push_buttons(4)).pack(side=tk.LEFT)  
-         
-        frame_avg = tk.Frame(frame_row1)
-        frame_avg.pack(side=tk.LEFT, padx=10)
-        tk.Label(frame_avg, text="移動平均集計").pack(side=tk.LEFT)
-        tk.Spinbox(frame_avg, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
-        self.labelFrame_out = tk.LabelFrame(label_f, text="分析結果", width=500, height=400)
+        f_group1 = tk.Frame(frame_main2)
+        f_group1.pack(anchor=tk.W)  
+        tk.Radiobutton(f_group1, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
+        tk.Radiobutton(f_group1, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
+        
+        f_group2 = tk.Frame(frame_main2)
+        f_group2.pack(anchor=tk.W)  
+
+        #tk.Button(frame_row0, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
+        tk.Button(f_group2, text="時系列分析", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)       
+        tk.Button(f_group2, text="ヒストグラム分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)               
+        tk.Button(f_group2, text="散布図分析", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)          
+        tk.Button(f_group2, text="CSVデータ出力", bg="white", command=lambda:self._push_buttons(0)).pack(side=tk.LEFT)
+
+        tk.Label(f_group2, text="移動平均集計").pack(side=tk.LEFT)
+        tk.Spinbox(f_group2, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
+        
+        self.labelFrame_out = tk.LabelFrame(frame_main2, text="分析結果", width=500, height=450) ## TreeView表示用フレーム                
         self.labelFrame_out.pack_propagate(False) 
         self.labelFrame_out.pack(anchor=tk.NW)
-            
-            
+
+
+
+        # right side frame output data
+        frame_main3 = tk.LabelFrame(self, text="チャート")
+        frame_main3.pack(anchor=tk.NW, side=tk.LEFT, padx=10, pady=10)
+
+        self.labelFrame_out2 = tk.Frame(frame_main3,width=500, height=500) ## TreeView表示用フレーム                
+        self.labelFrame_out2.pack_propagate(False) 
+        self.labelFrame_out2.pack(anchor=tk.NW)
+
+
     def _push_buttons(self, out_typ):
         #商品名抽出        
         _brand = self.frameCound.select_brand_var.get()
@@ -883,15 +922,21 @@ class MyApp(tk.Tk):
         df_out_plot = df_out3.groupby(key_plot, as_index=False).sum(numeric_only=True).loc[:,[key_plot,base_val,past_val]]           
             
 
-        self._out_compar_ana(df_out3)
+        df_excel = self._out_compar_ana(df_out3) # TreeViewにデータを表示する
+
+
         if out_typ == 0:
-            self._out_compar_ana(df_out3, True)
-         
-        elif out_typ == 1:
-            self._out_compar_ana(df_out3)
+            self._out_compar_ana(df_out3, True)         
+            diff = (_to - _from).days
+            diff2 = (_to2 - _from2).days
+                                      
+            sheetName=f"{self.cls_cound.select_brand_var.get()}:{self.cls_cound.select_line_var.get()}"
+            head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff2})　"
+            self._out_excel(df_excel, sheetName, sheetName, head_str)  
+
               
-        elif out_typ == 2:
-            self._out_timeseries_chart(df_out_plot, l_val)
+        elif out_typ == 1:
+            self._out_timeseries_chart(df_out_plot, l_val) # 時系列分析表示する処理
               
         #=======================================================================
         # elif out_typ == 3: 
@@ -901,7 +946,8 @@ class MyApp(tk.Tk):
         #     self._out_scatterplot(df_list, l_val)
         #=======================================================================
         
-    def _out_compar_ana(self, df, csv_flg=False):
+        
+    def _out_compar_ana(self, df, csv_flg=False) -> pd.DataFrame:
         """
         売上比較分析処理
  
@@ -948,19 +994,10 @@ class MyApp(tk.Tk):
                 self.tree.frame_treeview.destroy() 
                 #self.tree.destroy()             
             
-            self.tree = treeview(self.labelFrame_out, df_out) 
+            self.tree = treeview(self.labelFrame_out, df_out)   
+
+            return df_out    
             
-            _from, _to = self.framePeriod.get_cound_perid_datetime()
-            _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
-         
-            diff = (_to-_from).days
-            diff2 = (_to2-_from2).days
-                                      
-            if csv_flg:
-                sheetName=f"{self.cls_cound.select_brand_var.get()}:{self.cls_cound.select_line_var.get()}"
-                head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff2})　"
-                self._out_excel(df, sheetName, sheetName, head_str)                
-                
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
@@ -1043,17 +1080,12 @@ class MyApp(tk.Tk):
         None
         """
         try:
-            # 別画面が存在する場合は削除
-            if hasattr(self, "chart_window") and self.chart_window.winfo_exists():
-                self.chart_window.destroy()
-
-            # 別画面を作成
-            self.chart_window = tk.Toplevel(self)
-            self.chart_window.title("時系列分析チャート")
-            self.chart_window.geometry("800x600")
+            # 既存のチャートを削除
+            for widget in self.labelFrame_out2.winfo_children():
+                widget.destroy()
 
             # プロットの準備
-            fig, ax = plt.subplots(figsize=(8, 6))
+            fig, ax = plt.subplots(figsize=(6, 4))
             x = df["day_DateTime"]
             y = df["base_amount"]
 
@@ -1066,8 +1098,31 @@ class MyApp(tk.Tk):
                 y_avg = y.rolling(val).mean()
                 ax.plot(x, y_avg, linewidth=0.5, marker='^', label=f"移動平均({val})")
 
+            # X軸のラベルを自動調整
+            num_labels = len(x)
+            if num_labels > 20:
+                font_size = 8  # データが多い場合は小さく
+            elif num_labels > 10:
+                font_size = 10  # 中程度の場合
+            else:
+                font_size = 12  # データが少ない場合は大きく
+
+            ax.set_xticks(x[::max(1, len(x) // 10)])  # データ数に応じて間隔を調整
+            ax.tick_params(axis='x', rotation=45, labelsize=font_size)  # ラベルを45度回転し、フォントサイズを調整
+
+            # Y軸のラベルを自動調整
+            num_labels_y = len(y)
+            if num_labels_y > 20:
+                font_size_y = 8  # データが多い場合は小さく
+            elif num_labels_y > 10:
+                font_size_y = 10  # 中程度の場合
+            else:
+                font_size_y = 12  # データが少ない場合は大きく
+
+            ax.tick_params(axis='y', labelsize=font_size_y)  # Y軸ラベルのフォントサイズを調整
+
             # Y軸のフォーマットを設定（千円単位、カンマ区切り）
-            ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x):,}"))
+            ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x/1000):,}"))
 
             # チャートの設定
             ax.set_title(f"時系列分析: {l_val}")
@@ -1076,8 +1131,11 @@ class MyApp(tk.Tk):
             ax.legend()
             ax.grid(True)
 
+            # 余白を調整
+            plt.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.2)
+
             # プロットをTkinterウィジェットに埋め込む
-            canvas = FigureCanvasTkAgg(fig, master=self.chart_window)
+            canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out2)
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill=tk.BOTH, expand=True)
 
@@ -1086,104 +1144,8 @@ class MyApp(tk.Tk):
             msg.showerror("エラー", f"{erMsg}\n{e}")
             logging.exception(erMsg)        
 
-
-
-
-        # try:                                                                                                         
-            
-            
-        #     use_col = self.var_radio_select_vals.get()  
-                   
-        #     fig, ax = plt.subplots(figsize=(8, 6))                
-            
-        #     _from, _to = self.framePeriod.get_cound_perid_datetime()
-        #     _diff = (_to-_from).days
-            
-        #     x = df["day_DateTime"]
-        #     y = df["base_amount"]
-            
-        #     ax.plot(x, y,linewidth=0.5,label=f"{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({_diff})") 
-
-        #     key = self.frameCound.select_brand_var.get()
-
-        #     #ax.xmargin = 5.0             
-        #     # 移動平均算出用処理
-        #     val = self.var_avgCount.get() 
-        #     if val > 0:                    
-        #         y = y.rolling(val).mean()  
-        #         ax.plot(x, y, linewidth=0.5, marker='^', label=f"{key}:移動平均({val})")           
-                              
-        #     #ax.scatter(x, y)            
-        #     ax.set_title(f"時系列分析:{l_val}")
-        #     ax.set_xlabel("日付")
-        #     #ax.set_xlim(0,100) # X軸の幅指定　件数
-        #     #ax.set_ylim(0,100) # X軸の幅指定　件数     
-                           
-        #     #等間隔の数を設定する処理
-        #     step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
-        #     step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
-        #     ax.set_xticks(step_idx,step_xval) #ラベルに設定する
-             
-        #     ax.minorticks_on() #補助目盛を追加
-            
-        #     ax.set_ylabel(use_col)
-        #     #　データラベルの追加
-        #     ax.legend()        
-        #     # グリッド線の追加
-        #     ax.grid(True)                             
-            
-        #     new_root = tk.Tk()
-
-        #     canvas = FigureCanvasTkAgg(fig, master=new_root)  # Tkinter フレームに埋め込む
-        #     canvas_widget = canvas.get_tk_widget()
-        #     canvas_widget.pack()
-        #     #salesDataFrame.pre_charts["timeseries"] = [x, y, l_val] 
-
-  
-        # except Exception: 
-        #     erMsg = "売上分析出力中にエラーが発生しました。"
-        #     msg.showerror(msg.ERROR,erMsg)
-        #     logging.exception(erMsg)  
-    
-
-    def __init__(self):
-        """
-        システムのメイン処理
-
-        Returns
-        -------
-        None.
-        """
-        super().__init__()
-        
-        self.frameInput = None
-        self.framePeriod = None        
-        self.frameCound = None  
-        self.var_radio_select_vals = tk.StringVar(value="amount") 
-        self.var_avgCount = tk.IntVar(value=0)
-        self.labelFrame_out = None  
-        
-        self.tree = None
-        
-        self.title("売上分析システム")
-        self.geometry("1000x600")  
-        
-        # left side frame input data      
-        frame_main1 = tk.Frame(self)
-        frame_main1.pack(anchor=tk.NW, side=tk.LEFT,padx=10, pady=10)
-        self.frameInput = FrameInput(frame_main1)
-        self.framePeriod = FramePeriod(frame_main1)        
-        self.frameCound = FrameCound(frame_main1)  
-        
-        self._setup_ui() 
-                
-        #self.frame5 = FrameOutput(frame_main2, self.frame3, self.frame4)   
-         
         
 salesDataFrame = analysis_data.Analysis_data()
 app = MyApp()
 app.mainloop()
-
-
-
 
