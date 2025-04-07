@@ -1,7 +1,8 @@
+# uvicorn main:app --reload
 # ブラウザで http://localhost:8000/github/ にアクセス
 # GitHubのユーザー情報を取得して表示するFastAPIアプリケーション
 # FastAPIを使ったGitHubのユーザー情報を取得して表示するサンプルコード
-# uvicorn main:app --reload
+
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
