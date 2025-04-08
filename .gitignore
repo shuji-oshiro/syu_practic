@@ -14,5 +14,5 @@ dist/
 *.json
 *.code-workspace
 *.project
-main.spec
+*.spec
 *.code-workspace
