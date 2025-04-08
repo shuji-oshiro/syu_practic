@@ -30,7 +30,13 @@ except Exception:
     msg.showerror(msg.ERROR, "モジュールのインポートに失敗しました")
     raise  
 
-logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
+# ログの設定
+logging.basicConfig(
+    filename='logfile/debug.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'  # エンコーディングを指定
+)
 
 USECOLS_NAME = {"amount":"売上金額","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"

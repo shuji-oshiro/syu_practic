@@ -14,8 +14,13 @@ from datetime import datetime as dt
 import sys
 import os
 
-logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
-
+# ログの設定
+logging.basicConfig(
+    filename='logfile/debug.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'  # エンコーディングを指定
+)
 class Analysis_data:
     '''
     classdocs

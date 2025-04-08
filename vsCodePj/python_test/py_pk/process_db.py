@@ -12,7 +12,13 @@ from py_pk.settings import Settings
 
 COL_CSVTODB_DAY = {'得意先コード': 't_code',"ラインコード":"l_code","商品コード":"i_code","商品名":"i_name"}
 
-logging.basicConfig(filename='logfile/logger.log', level=logging.ERROR)
+# ログの設定
+logging.basicConfig(
+    filename='logfile/debug.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'  # エンコーディングを指定
+)
 
 print(Settings.DB_PATH)
 
