@@ -23,8 +23,9 @@ import calendar
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.ticker import FuncFormatter
+from adjustText import adjust_text
 
-     
 
 USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
@@ -44,19 +45,15 @@ def set_widget_status(wg_frame, state, l):
       
 class FrameInput(tk.LabelFrame):
     def __init__(self, master):
-        super().__init__(master, text="売上情報入力", bd=2)
+        super().__init__(master, text="データベースパス", bd=2)
         self._setup_ui()
     
     def _setup_ui(self):
         """Setup UI components"""
-        self.pack(padx=10, pady=10)
+        self.pack(padx=10, pady=10,anchor=tk.NW)
 
-        """Create frame for database information"""
-        frame_row1 = tk.LabelFrame(self)
-        frame_row1.pack(anchor=tk.W)
-        
-        tk.Label(frame_row1, text="データベースパス：").pack(side=tk.LEFT)
-        tk.Label(frame_row1, text=Settings.DB_PATH).pack(side=tk.LEFT)
+        """Create frame for database information"""        
+        tk.Label(self, text=Settings.DB_PATH).pack()
 
 
 class FramePeriod(tk.LabelFrame):
@@ -484,203 +481,6 @@ class FrameCound(tk.LabelFrame):
             set_widget_status(self.frame_line, tk.DISABLED, [ttk.Combobox])  
             set_widget_status(self.frame_item, tk.NORMAL, [tk.Entry, tk.Spinbox, tk.Listbox])  
 
-                  
-#===============================================================================
-# class FrameOutput(tk.LabelFrame):
-#            
-#      
-#     def _show_plotData(self, fig=None, df=pd.DataFrame):
-#             """
-#             フレームに分析データを表示する処理
-#      
-#             Returns
-#             -------
-#             None.
-#      
-#             """
-#             for item in self.tree.get_children():
-#                 self.tree.delete(item)            
-#             #===================================================================
-#             # for widget in self.labelFrame_out.winfo_children():  # フレーム内の全ウィジェットを削除
-#             #     widget.destroy()
-#             #===================================================================
-#              
-#                           
-#             canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out)  # Tkinter フレームに埋め込む
-#             canvas_widget = canvas.get_tk_widget()
-#             canvas_widget.pack()
-#      
-#  
-#     def _out_timeseries_chart(self, df_list, l_val): 
-#         """
-#         2024.07.31
-#         「時系列分析」ボタン押下処理　、エクセルへ出力する処理
-#      
-#         Parameters
-#         ----------
-#         event : TYPE
-#             DESCRIPTION.
-#      
-#         Returns
-#         -------
-#         str
-#             DESCRIPTION.
-#      
-#         """       
-#              
-#         try:              
-#                                                                                                             
-#             use_col = self.var_radio_select_vals.get()  
-#                    
-#             fig, ax = plt.subplots(figsize=(8, 6)) 
-#             x = []            
-#             for key in df_list.keys():              
-#                 df_out, _from, _to, _dff = df_list[key]
-#                  
-#                 # 時系列分析図出力処理-----
-#                 df_out = df_out[["day",use_col]].groupby(["day"], as_index=False).sum(numeric_only=True)         
-#                  
-#                 if len(x)==0: # X軸をそろえる為
-#                     x = df_out["day"]
-#                      
-#                 y = df_out[use_col]
-#                  
-#                 #比較分析時、X軸の件数が異なる場合エラーとなるで処理を中断
-#                 if (len(x)-len(y)) != 0:
-#                     msg.showerror(msg.ERROR,"比較対象となる期間が存在しない為、集計期間を短くてください")
-#                     return "break"
-#                   
-#                  
-#                 ax.plot(x, y,linewidth=0.5,label=f"{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({_dff})")          
-#                 #ax.xmargin = 5.0             
-#                 # 移動平均算出用処理
-#                 val = self.var_avgCount.get() 
-#                 if val > 0:                    
-#                     y = y.rolling(val).mean()  
-#                     ax.plot(x, y, linewidth=0.5, marker='^', label=f"{key}:移動平均({val})")           
-#                               
-#             #ax.scatter(x, y)            
-#             ax.set_title(f"時系列分析:{l_val}")
-#             ax.set_xlabel("日付")
-#             #ax.set_xlim(0,100) # X軸の幅指定　件数
-#             #ax.set_ylim(0,100) # X軸の幅指定　件数     
-#                            
-#             #等間隔の数を設定する処理
-#             step_idx = np.arange(0, len(x), step=np.ceil(len(x)/6)) #等間隔の数を決める
-#             step_xval = x.loc[step_idx] #等間隔に沿った文字列データを取得
-#             ax.set_xticks(step_idx,step_xval) #ラベルに設定する
-#              
-#             ax.minorticks_on() #補助目盛を追加
-#              
-#             ax.set_ylabel(USECOLS_NAME[use_col])
-#             #　データラベルの追加
-#             ax.legend()        
-#             # グリッド線の追加
-#             ax.grid(True)                             
-#              
-#             self._show_plotData(fig=fig)
-#             salesDataFrame.pre_charts["timeseries"] = [x, y, l_val]
-#  
-#         except Exception: 
-#             erMsg = "売上分析出力中にエラーが発生しました。"
-#             msg.showerror(msg.ERROR,erMsg)
-#             logging.exception(erMsg)  
-#              
-#      
-#     def _out_histogram(self, df_list, l_val):
-#         """
-#         「ヒストグラム分析」ボタン押下処理　
-#  
-#         Returns
-#         -------
-#         str
-#             DESCRIPTION.
-#  
-#         """
-#          
-#         use_col = self.var_radio_select_vals.get()
-#         fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-#          
-#         for key in df_list.keys():
-#             df_out, _from, _to, _dff = df_list[key]
-#              
-#             temp = df_out.groupby(["day"]).mean(numeric_only=True)
-#             ax.hist(temp[use_col], bins=30, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
-#              
-#          
-#         #不要処理
-#         #=======================================================================
-#         # # 移動平均算出用処理
-#         # val = self.var_avgCount.get() 
-#         # if val > 0:     
-#         #     temp["temp2"] = temp[use_col].rolling(val).mean()              
-#         #     ax.hist(temp["temp2"], bins=30, alpha=0.5, label=f"移動平均({val})")
-#         #=======================================================================
-#              
-#         # タイトル
-#         ax.set_title(f'ヒストグラム分析:({l_val})')
-#          
-#         # x軸とy軸にラベルの追加
-#         ax.set_xlabel(USECOLS_NAME[use_col])
-#         ax.set_ylabel('Frequency')
-#          
-#         #　データラベルの追加
-#         ax.legend()        
-#         # グリッド線の追加
-#         ax.grid(True)
-#      
-#         self._show_plotData(fig=fig)        
-#         salesDataFrame.pre_charts["histogram"] = [temp[use_col], l_val]
-#          
-#              
-#     def _out_scatterplot(self, df_list, l_val):
-#         """
-#          
-#         「回帰分析」ボタン押下処理　
-#         Returns
-#         -------
-#         str
-#             DESCRIPTION.
-#  
-#         """        
-#                
-#         use_col = self.var_radio_select_vals.get()
-#         fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-#          
-#         for key in df_list.keys():
-#              
-#             df_out, _from, _to, _dff = df_list[key]
-#                
-#             temp = df_out[["day","count","amount"]].groupby(["day"]).mean(numeric_only=True) 
-#              
-#             # 平均単価算出
-#             temp["avg"] = temp["amount"]/temp["count"]        
-#          
-#             x = temp["avg"]
-#             y = temp[use_col]
-#                  
-#             ax.scatter(x, y, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_dff})")
-#          
-#         # 不要？？
-#         # 移動平均算出用処理
-#         #=======================================================================
-#         # val = self.var_avgCount.get()
-#         # if val > 0:     
-#         #     y = y.rolling(val).mean()              
-#         #     ax.scatter(x, y, label=f"移動平均({val})")
-#         #=======================================================================
-#          
-#         ax.set_title(f"回帰分析：{l_val}")
-#         ax.set_xlabel(USECOLS_NAME["avg"])
-#         ax.set_ylabel(USECOLS_NAME[use_col])
-#         #　データラベルの追加
-#         ax.legend()        
-#         # グリッド線の追加
-#         ax.grid(True)
-#                  
-#         self._show_plotData(fig=fig)
-#         salesDataFrame.pre_charts["scatterplot"] = [x,y,l_val]        
-#===============================================================================
 
 class treeview(ttk.Treeview):
     
@@ -778,6 +578,8 @@ class MyApp(tk.Tk):
         self.labelFrame_out = None  ## TreeView表示用フレーム
         self.labelFrame_out2 = None  ## チャート表示用フレーム
         self.tree = None
+
+        self.var_chk_outcsv = tk.BooleanVar() # CSV出力チェックボックス
         
         self.title("売上分析システム")
         self.geometry("1500x600")  
@@ -803,6 +605,7 @@ class MyApp(tk.Tk):
         f_group1.pack(anchor=tk.W)  
         tk.Radiobutton(f_group1, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
         tk.Radiobutton(f_group1, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
+        tk.Radiobutton(f_group1, text="平均単価", variable=self.var_radio_select_vals, value="unitprice").pack(side=tk.LEFT)
         
         f_group2 = tk.Frame(frame_main2)
         f_group2.pack(anchor=tk.W)  
@@ -810,8 +613,9 @@ class MyApp(tk.Tk):
         #tk.Button(frame_row0, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
         tk.Button(f_group2, text="時系列分析", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)       
         tk.Button(f_group2, text="ヒストグラム分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)               
-        tk.Button(f_group2, text="散布図分析", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)          
-        tk.Button(f_group2, text="CSVデータ出力", bg="white", command=lambda:self._push_buttons(0)).pack(side=tk.LEFT)
+        tk.Button(f_group2, text="構成比グラフ", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)          
+        tk.Button(f_group2, text="散布図分析", command=lambda:self._push_buttons(4)).pack(side=tk.LEFT)      
+        tk.Checkbutton(f_group2, text="CSVデータ出力", variable=self.var_chk_outcsv).pack(side=tk.LEFT)    
 
         tk.Label(f_group2, text="移動平均集計").pack(side=tk.LEFT)
         tk.Spinbox(f_group2, width=5, from_=0, to=100, textvariable=self.var_avgCount).pack(side=tk.LEFT) 
@@ -859,14 +663,14 @@ class MyApp(tk.Tk):
         df_out = df_out.rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
  
          
-        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
+        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre() #比較期間の取得
         df_out2 = salesDataFrame.get_datacondition(None if _brand == "全取引先" else _brand,
                                                    None if _line == "全ライン" else _line,
                                                     _items,
                                                      _from2,
                                                       _to2,
                                                        _weeks,
-                                                       _without)           
+                                                       _without)      
         
         if self.framePeriod.var_checked_comper.get():
             dif_day_pre = (_from-_from2).days #　ベースとなる売上情報にマッチする為に日付を加算
@@ -893,7 +697,7 @@ class MyApp(tk.Tk):
         
         
         key = ""
-        key_plot = "day_DateTime"
+        key_time = "day_DateTime"
         if self.frameCound.radio_jyoken.get()==Settings.SELECT_ITEM:#商品名で抽出する条件
             l_val = "{}_{}".format(_brand, ",".join(_items))
             
@@ -911,43 +715,49 @@ class MyApp(tk.Tk):
             else: 
                 key = "i_name"
             
-        
+        # 選択された出力項目に基づいて列名を決定
+        # 出力項目選択　金額
+        # 出力項目選択　数量
+        # 出力項目選択　平均単価　TODO:要検討
         base_val = f"base_{self.var_radio_select_vals.get()}"
         past_val = f"past_{self.var_radio_select_vals.get()}"
                       
         
-        df_tree = df_out3.groupby(key, as_index=False).sum(numeric_only=True).loc[:,[key,base_val,past_val]]
-        df_tree["比率"] = df_tree[base_val] / df_tree[past_val] #比較比率を算出
+        # keyでグループ化し、合計を計算
+        df_key = df_out3.groupby(key, as_index=False).sum(numeric_only=True).loc[:,[key,base_val,past_val]]
+        df_key["%"] = df_key[base_val] / df_key[past_val] #比較比率を算出
+        df_key = df_key.sort_values(by=base_val, ascending=False) # 比率でソート
         
-        df_out_plot = df_out3.groupby(key_plot, as_index=False).sum(numeric_only=True).loc[:,[key_plot,base_val,past_val]]           
-            
+        # day_DateTimeでグループ化し、合計を計算
+        df_time = df_out3.groupby(key_time, as_index=False).sum(numeric_only=True).loc[:,[key_time,base_val,past_val]]              
 
-        df_excel = self._out_compar_ana(df_out3) # TreeViewにデータを表示する
-
-
-        if out_typ == 0:
-            self._out_compar_ana(df_out3, True)         
+        #self._out_compar_ana(df_tree) # TreeViewにデータを表示する
+        if self.var_chk_outcsv.get(): #CSV出力処理のボタン押下        
             diff = (_to - _from).days
             diff2 = (_to2 - _from2).days
-                                      
-            sheetName=f"{self.cls_cound.select_brand_var.get()}:{self.cls_cound.select_line_var.get()}"
             head_str = f"実績期間：{_from.strftime('%Y年%m月%d日')}～{_to.strftime('%Y年%m月%d日')}({diff})　比較期間{_from2.strftime('%Y年%m月%d日')}～{_to2.strftime('%Y年%m月%d日')}({diff2})　"
-            self._out_excel(df_excel, sheetName, sheetName, head_str)  
 
+            self._out_compar_ana(df_key, l_val, l_val, head_str)  
+        else:
+            self._out_compar_ana(df_key)  
               
-        elif out_typ == 1:
-            self._out_timeseries_chart(df_out_plot, l_val) # 時系列分析表示する処理
+
+        # チャート分析を表示する処理
+        if out_typ == 1:
+            self._out_timeseries_chart(df_time, key_time, base_val, past_val, l_val) # 時系列分析表示する処理
               
-        #=======================================================================
-        # elif out_typ == 3: 
-        #     self._out_histogram(df_list, l_val)
-        #       
+        elif out_typ == 2: 
+            self._out_histogram(df_time, base_val, past_val, l_val) # ヒストグラム分析表示する処理
+
+        elif out_typ == 3: 
+            self._out_pie(df_key, key, base_val, past_val, l_val)
+
         # elif out_typ == 4: 
         #     self._out_scatterplot(df_list, l_val)
         #=======================================================================
         
         
-    def _out_compar_ana(self, df, csv_flg=False) -> pd.DataFrame:
+    def _out_compar_ana(self, df, book_name="", sheetName="", head_str="") -> pd.DataFrame:
         """
         売上比較分析処理
  
@@ -958,113 +768,50 @@ class MyApp(tk.Tk):
  
         """
          
-        try:                        
-            key =[]
-            use_columns =[]
-            
-            # 商品名抽出       
-            if self.frameCound.radio_jyoken.get()==Settings.SELECT_ITEM:  
-                key = "i_name"
-                
-                #l_val = "{}_{}".format(_brand, ",".join(_items))
-            else:                
-                if (self.frameCound.select_brand_var.get() == "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
-                    key = "t_name"
-                    
-                elif (self.frameCound.select_brand_var.get() != "全取引先" and self.frameCound.select_line_var.get() == "全ライン"):
-                    key = "l_name"
-                    
-                else: 
-                    key = "i_name"
-                    
-                    
-                #l_val = "{}_{}".format(_brand, _line)
-
-            if self.var_radio_select_vals.get() == "amount":#出力項目選択　金額
-                use_columns = [f"{key}","base_amount","past_amount"]            
-                df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
-                df_out["比率"] = df_out["base_amount"] / df_out["past_amount"] #比較比率
-                
-            else:#出力項目選択　数量
-                use_columns = [f"{key}","base_count","past_count"]            
-                df_out = df.groupby(key, as_index=False).sum(numeric_only=True)[use_columns]
-                df_out["比率"] = df_out["base_count"] / df_out["past_count"] #比較比率
-            
+        try:                                    
             if self.tree:
-                self.tree.frame_treeview.destroy() 
-                #self.tree.destroy()             
+                self.tree.frame_treeview.destroy()             
             
-            self.tree = treeview(self.labelFrame_out, df_out)   
+            self.tree = treeview(self.labelFrame_out, df)     
+            
+            if not book_name == "":
+                # CSVファイル出力処理
+                fileNmae = f"{book_name}_売上分析"
+                iDir = os.path.abspath(os.path.dirname(__file__))       
+                file_path = filedialog.asksaveasfilename(initialfile=fileNmae, initialdir=iDir, defaultextension="xlsx")
+                
+                if file_path:                
+                    # ファイルが存在しない場合、新規作成する
+                    if not os.path.isfile(file_path):
+                        create_file = op.Workbook()
+                        create_file.save(file_path)      
+                                            
+                                
+                    #　エクセルファイルを書き込みする処理
+                    with pd.ExcelWriter(file_path) as writer:
+                        df.to_excel(writer, startrow=1, na_rep=0 ,sheet_name=sheetName, index=False) #index=Falseでインデックスを出力しない
+                        # workbook = writer.book
+                        worksheet = writer.sheets[sheetName]
+                        # カンマ区切り（千単位）、パーセント、整数のフォーマット設定
+                        excel_col = ["B","C","D"]
+                        col_fm = ["#,##0", "#,##0", "0.0%"]
+                        worksheet["A1"] = head_str
+                        
+                        for col, format_code in zip(excel_col, col_fm): 
+                            for cell in worksheet[col]:                            
+                                cell.number_format = format_code
+                        
+                    msg.showinfo(msg.INFO, "処理を正常に終了しました。")
+                else:
+                    msg.showwarning(msg.INFO, "処理を中断しました。")
 
-            return df_out    
-            
         except Exception: 
             erMsg = "売上分析出力中にエラーが発生しました。"
             msg.showerror(msg.ERROR,erMsg)
             logging.exception(erMsg)  
-             
-        
-    def _out_excel(self, pivo_df, book_name, sheetName, head_str) -> bool:
-        """
-        Excelファイルを出力する処理
- 
-        Parameters
-        ----------
-        out_df : TYPE
-            DESCRIPTION.
-        book_name : TYPE
-            DESCRIPTION.
-        sheet_name : TYPE
-            DESCRIPTION.
- 
-        Raises
-        ------
-         
-            DESCRIPTION.
- 
-        Returns
-        -------
-        bool
-            DESCRIPTION.
- 
-        """
-        try:
-            fileNmae = f"{book_name}_売上分析"
-            iDir = os.path.abspath(os.path.dirname(__file__))       
-            file_path = filedialog.asksaveasfilename(initialfile=fileNmae, initialdir=iDir, defaultextension="xlsx")
-             
-            if file_path:                
-                # ファイルが存在しない場合、新規作成する
-                if not os.path.isfile(file_path):
-                    create_file = op.Workbook()
-                    create_file.save(file_path)      
-                                        
-                            
-                #　エクセルファイルを書き込みする処理
-                with pd.ExcelWriter(file_path) as writer:
-                    pivo_df.to_excel(writer, startrow=1, na_rep=0 ,sheet_name=sheetName) 
-                    # workbook = writer.book
-                    worksheet = writer.sheets[sheetName]
-                    # カンマ区切り（千単位）、パーセント、整数のフォーマット設定
-                    excel_col = ["B","C","D","E","F","G","H","I","J"]
-                    col_fm = ["#,##0", "#,##0", "#,##0", "#,##0", "0.0", "0.0", "0.0%", "0.0%", "0.0%"]
-                    worksheet["A1"] = head_str
-                     
-                    for col, format_code in zip(excel_col, col_fm): 
-                        for cell in worksheet[col]:                            
-                            cell.number_format = format_code
-                      
-                msg.showinfo(msg.INFO, "処理を正常に終了しました。")
-            else:
-                msg.showwarning(msg.INFO, "処理を中断しました。")
-             
-        except Exception: 
-            erMsg = "Excelファイル出力中にエラーが発生しました。"
-            logging.exception(erMsg)  
-            raise  
  
  
-    def _out_timeseries_chart(self, df, l_val): 
+    def _out_timeseries_chart(self, df, key, col1, col2, l_val): 
         """
         時系列分析チャートを表示する処理
 
@@ -1086,17 +833,21 @@ class MyApp(tk.Tk):
 
             # プロットの準備
             fig, ax = plt.subplots(figsize=(6, 4))
-            x = df["day_DateTime"]
-            y = df["base_amount"]
+            x = df[key]
+            y1 = df[col1]
+            y2 = df[col2]
 
             # 元データのプロット
-            ax.plot(x, y, linewidth=0.5, label="元データ")
+            ax.plot(x, y1, linewidth=0.5, label="Base")
+            ax.plot(x, y2, linewidth=0.5, label="Compare") 
 
             # 移動平均のプロット
             val = self.var_avgCount.get()
             if val > 0:
-                y_avg = y.rolling(val).mean()
-                ax.plot(x, y_avg, linewidth=0.5, marker='^', label=f"移動平均({val})")
+                y_avg = y1.rolling(val).mean()
+                y2_avg = y2.rolling(val).mean()
+                ax.plot(x, y_avg, linewidth=0.5, marker='^', label=f"Base({val})")
+                ax.plot(x, y2_avg, linewidth=0.5, marker='^', label=f"Compare({val})")
 
             # X軸のラベルを自動調整
             num_labels = len(x)
@@ -1111,7 +862,7 @@ class MyApp(tk.Tk):
             ax.tick_params(axis='x', rotation=45, labelsize=font_size)  # ラベルを45度回転し、フォントサイズを調整
 
             # Y軸のラベルを自動調整
-            num_labels_y = len(y)
+            num_labels_y = max(len(y1),len(y2))
             if num_labels_y > 20:
                 font_size_y = 8  # データが多い場合は小さく
             elif num_labels_y > 10:
@@ -1144,8 +895,110 @@ class MyApp(tk.Tk):
             msg.showerror("エラー", f"{erMsg}\n{e}")
             logging.exception(erMsg)        
 
+
+    def _out_histogram(self, df, col1, col2, l_val):
+        """
+        「ヒストグラム分析」ボタン押下処理　
+
+        Returns
+        -------
+        str
+            DESCRIPTION.
+
+        """
+        # 既存のチャートを削除
+        for widget in self.labelFrame_out2.winfo_children():
+            widget.destroy()
+
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+
+        min_value = min(set(df[col1] + df[col2]))  # 最小値を設定
+        max_value = max(set(df[col1] + df[col2])) # 最大値を設定
         
-salesDataFrame = analysis_data.Analysis_data()
-app = MyApp()
-app.mainloop()
+        _from, _to = self.framePeriod.get_cound_perid_datetime()
+        _diff = (_to - _from).days
+            
+        ax.hist(df[col1], bins=30, alpha=0.5, label=f"{_from.strftime('%Y年%m月%d日')}:{_to.strftime('%Y年%m月%d日')}({_diff})", range=(min_value, max_value))
+    
+        _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre()
+        _diff2 = (_to - _from).days
+        
+        ax.hist(df[col2], bins=30, alpha=0.5, label=f"{_from2.strftime('%Y年%m月%d日')}:{_to2.strftime('%Y年%m月%d日')}({_diff2})", range=(min_value, max_value)) 
+        # X軸のフォーマットを設定（千円単位、カンマ区切り）
+        ax.get_xaxis().set_major_formatter(FuncFormatter(lambda x, _: f"{int(x/1000):,}"))
+
+        
+        # タイトル
+        ax.set_title(f'ヒストグラム分析:({l_val})')
+        # x軸とy軸にラベルの追加
+        ax.set_xlabel(USECOLS_NAME[self.var_radio_select_vals.get()])
+        ax.set_ylabel('Frequency')
+        #　データラベルの追加
+        ax.legend()        
+        # グリッド線の追加
+        ax.grid(True)
+
+        # 余白を調整
+        plt.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.2)
+
+        # プロットをTkinterウィジェットに埋め込む
+        canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out2)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill=tk.BOTH, expand=True)
+        
+
+    def _out_pie(self, df, key, col1, col2, l_val):
+        """
+        横棒グラフ分析処理（円グラフを横棒グラフに置き換え）
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            プロットするデータフレーム
+        l_val : str
+            チャートのタイトルに使用するラベル
+        key : str
+            グループ化に使用するキー
+
+        Returns
+        -------
+        None
+        """
+        # 既存のチャートを削除
+        for widget in self.labelFrame_out2.winfo_children():
+            widget.destroy()
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        # 横棒グラフのデータを集計
+        labels = df[key]
+        sizes = df[col1]  # 売上金額の列を指定"]
+        sizes2 = df[col2]  # 売上金額の列を指定"]
+
+        # 横棒グラフのプロット
+        y_pos = range(len(labels))  # ラベルの位置
+        ax.barh(y_pos, sizes, align='center', alpha=0.5,)
+        ax.barh(y_pos, sizes2, align='center', alpha=0.5,)
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(labels)
+        ax.invert_yaxis()  # ラベルを上から下に表示
+        ax.set_xlabel("売上金額")
+        ax.set_title(f"横棒グラフ分析: {l_val}")
+
+        # 値を各バーの右側に表示
+        # for i, v in enumerate(sizes):
+        #     ax.text(v, i, f"{v:,.0f}", va='center', fontsize=6)
+
+        # 余白を調整
+        plt.subplots_adjust(left=0.3, right=0.95, top=0.9, bottom=0.1)
+
+        # プロットをTkinterウィジェットに埋め込む
+        canvas = FigureCanvasTkAgg(fig, master=self.labelFrame_out2)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill=tk.BOTH, expand=True)
+        
+if __name__ == "__main__":
+    salesDataFrame = analysis_data.Analysis_data()
+    app = MyApp()
+    app.mainloop()
 
