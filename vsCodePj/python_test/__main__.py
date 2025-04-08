@@ -27,7 +27,7 @@ from matplotlib.ticker import FuncFormatter
 from adjustText import adjust_text
 
 
-USECOLS_NAME = {"amount":"売上金額","count":"売上数量","avg":"平均単価","":""}
+USECOLS_NAME = {"amount":"売上金額","avg":"平均単価","":""}
 plt.rcParams["font.family"] = "meiryo"
 
 
@@ -205,6 +205,7 @@ class FramePeriod(tk.LabelFrame):
         _to = dt.strptime(str(self.entry_to.get_date()), "%Y-%m-%d")
         return _from, _to
     
+
     def get_cound_perid_datetime_pre(self):
         _from = dt.strptime(str(self.entry_from_pre.get_date()), "%Y-%m-%d")
         f, t = self.get_cound_perid_datetime() #期間取得 
@@ -604,17 +605,14 @@ class MyApp(tk.Tk):
         f_group1 = tk.Frame(frame_main2)
         f_group1.pack(anchor=tk.W)  
         tk.Radiobutton(f_group1, text="売上金額", variable=self.var_radio_select_vals, value="amount").pack(side=tk.LEFT)
-        tk.Radiobutton(f_group1, text="売上数量", variable=self.var_radio_select_vals, value="count").pack(side=tk.LEFT)
-        tk.Radiobutton(f_group1, text="平均単価", variable=self.var_radio_select_vals, value="unitprice").pack(side=tk.LEFT)
         
         f_group2 = tk.Frame(frame_main2)
         f_group2.pack(anchor=tk.W)  
 
         #tk.Button(frame_row0, text="集計表出力", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)
         tk.Button(f_group2, text="時系列分析", command=lambda:self._push_buttons(1)).pack(side=tk.LEFT)       
-        tk.Button(f_group2, text="ヒストグラム分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)               
-        tk.Button(f_group2, text="構成比グラフ", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)          
-        tk.Button(f_group2, text="散布図分析", command=lambda:self._push_buttons(4)).pack(side=tk.LEFT)      
+        # tk.Button(f_group2, text="ヒストグラム分析", command=lambda:self._push_buttons(2)).pack(side=tk.LEFT)               
+        tk.Button(f_group2, text="構成比グラフ", command=lambda:self._push_buttons(3)).pack(side=tk.LEFT)               
         tk.Checkbutton(f_group2, text="CSVデータ出力", variable=self.var_chk_outcsv).pack(side=tk.LEFT)    
 
         tk.Label(f_group2, text="移動平均集計").pack(side=tk.LEFT)
@@ -659,8 +657,8 @@ class MyApp(tk.Tk):
             return "break"
          
      
-        df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
-        df_out = df_out.rename(columns={'amount': 'base_amount', 'count': 'base_count'})                 
+        df_out = df_out.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount"]]
+        df_out = df_out.rename(columns={'amount': 'base_amount'})                 
  
          
         _from2, _to2 = self.framePeriod.get_cound_perid_datetime_pre() #比較期間の取得
@@ -679,8 +677,8 @@ class MyApp(tk.Tk):
             df_out2 = df_out2.iloc[0:0]
 
                  
-        df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount","count"]]
-        df_out2 = df_out2.rename(columns={'amount': 'past_amount', 'count': 'past_count'})
+        df_out2 = df_out2.groupby(group_key, as_index=False).sum(numeric_only=True).loc[:,group_key+["amount"]]
+        df_out2 = df_out2.rename(columns={'amount': 'past_amount'})
         
         # df_out と df_out2 を共通キーで結合
         df_out3 = pd.merge(df_out, df_out2, on=group_key, how="outer")  # 外部結合（全データを残す）        
@@ -689,7 +687,6 @@ class MyApp(tk.Tk):
         
         #df_out3 = pd.merge(df_out, df_out2, on=group_key, how="left").fillna(0)
         df_out3["amount_par"] = df_out3["base_amount"]/df_out3["past_amount"]
-        df_out3["count_par"] = df_out3["base_count"]/df_out3["past_count"] 
         
         df_out3 = df_out3.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df_out3.columns} )
         df_out3 = df_out3.fillna(0)

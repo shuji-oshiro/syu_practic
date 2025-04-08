@@ -33,7 +33,7 @@ class Analysis_data:
             df = Process_db.Get_salesData()
             # データ型を変換
             self.df = df.astype({col: dtype for col, dtype in Settings.DIC_AS_TYPES.items() if col in df.columns})
-            
+
             self.df_brand = Process_db.Get_master(Settings.TBLNAME_BRAND)
             self.df_line = Process_db.Get_master(Settings.TBLNAME_LINE)
         
@@ -136,6 +136,9 @@ class Analysis_data:
             raise          
     
     def get_from_and_to(self):
+        if self.df.empty:
+            return None, None
+        
         _from = dt.strptime(str(min(self.df["day"].unique())), Settings.FORMAT_YMD)
         _to = dt.strptime(str(max(self.df["day"].unique())), Settings.FORMAT_YMD)
         

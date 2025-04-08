@@ -114,29 +114,22 @@ class Process_db:
                 temp = pd.read_csv(f ,encoding="CP932", header=1) 
                     
                 head_data = temp[["得意先コード","ラインコード","商品コード","商品名"]].rename(columns = COL_CSVTODB_DAY)
-                
+                               
+                flg = True
                 sales_data = temp.filter(like=f"納品金額{dt_year}", axis=1)   
                 henpin_data = temp.filter(like=f"返品金額{dt_year}", axis=1)  
                 
-                index = 0
-                for col in sales_data.columns:
-                                     
-                    head_data["day"] = col[4:8]+col[9:11]+col[12:14]
-                    head_data2 = head_data.copy()
+                
+                for col, col2 in zip(sales_data.columns, henpin_data.columns):
+                    copy_data = head_data.copy() 
+                    copy_data["day"] = col[4:8]+col[9:11]+col[12:14]
                     
-                    head_data["kind"] = "1"
-                    head_data2["kind"] = "0"
-                    
-                    head_data["amount"] = sales_data.iloc[:,index]
-                    head_data2["amount"] = henpin_data.iloc[:,index]
-                       
-                    # 日別の売上情報は数量が存在しなしので0を設定
-                    head_data["count"] = 0
-                    head_data2["amount"] = 0
+                    copy_data["amount"] = sales_data.loc[:,col] - henpin_data.loc[:,col2]
+
                                         
-                    df = pd.concat([df,head_data.query("amount>0"),head_data2.query("amount>0")]) 
+                    df = pd.concat([df,copy_data]) # 追加するデータフレームを結合
+
                     
-                    index += 1
                             
             #　欠損値を更新            
             df = df.fillna({"t_code":-1,"l_code":-1,"i_name":"その他","amount":0})    
