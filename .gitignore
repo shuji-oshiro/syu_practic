@@ -1,4 +1,4 @@
-# ディレクトリを無視する
+#none directory
 .ipynb_checkpoints/
 __pycache__/
 logfile/
@@ -8,6 +8,10 @@ modules/
 logfile/
 build/
 dist/
+.venv/
+instance/
+
+#none file
 .env
 *.ini
 *.bak

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>名前登録アプリ</title>
+</head>
+<body>
+    <h1>名前を入力してください</h1>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.name.label }}<br>
+        {{ form.name(size=30) }}<br>
+
+        {% for error in form.name.errors %}
+            <span style="color:red;">{{ error }}</span><br>
+        {% endfor %}
+
+        {{ form.submit() }}
+    </form>
+
+    <h2>登録済みの名前一覧</h2>
+    <ul>
+        {% for user in users %}
+            <li>{{ user.name }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
