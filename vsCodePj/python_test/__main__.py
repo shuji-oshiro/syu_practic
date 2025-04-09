@@ -19,11 +19,11 @@ try:
     from tkcalendar import DateEntry
     from tkinter import filedialog, messagebox as msg
     import threading
-    import calendar
+    #import calendar
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.ticker import FuncFormatter
-    from adjustText import adjust_text
+    #from adjustText import adjust_text
 
 except Exception:               
     logging.exception(Exception)
