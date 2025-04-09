@@ -19,10 +19,11 @@ try:
     from tkcalendar import DateEntry
     from tkinter import filedialog, messagebox as msg
     import threading
-    import calendar
+    #import calendar
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.ticker import FuncFormatter
+    from adjustText import adjust_text
 
 except Exception:               
     logging.exception(Exception)
@@ -86,8 +87,12 @@ class FrameInput(tk.LabelFrame):
             """Setup UI components"""
             self.pack(padx=10, pady=10,anchor=tk.NW)
 
-            """Create frame for database information"""        
-            tk.Label(self, text=Settings.DB_PATH).pack()
+            """Create frame for database information"""   
+            
+            # .env読み込み
+            load_dotenv()
+            db_path = os.getenv("DB_PATH")     
+            tk.Label(self, text=db_path).pack()
     except Exception:               
         logging.exception(Exception)
         raise  
@@ -812,15 +817,13 @@ class MyApp(tk.Tk):
                 
             # 選択された出力項目に基づいて列名を決定
             # 出力項目選択　金額
-            # 出力項目選択　数量
-            # 出力項目選択　平均単価　TODO:要検討
             base_val = f"base_{self.var_radio_select_vals.get()}"
             past_val = f"past_{self.var_radio_select_vals.get()}"
                         
             
             # keyでグループ化し、合計を計算
             df_key = df_out3.groupby(key, as_index=False).sum(numeric_only=True).loc[:,[key,base_val,past_val]]
-            df_key["%"] = df_key[base_val] / df_key[past_val] #比較比率を算出
+            df_key["%percent"] = df_key[base_val] / df_key[past_val] #比較比率を算出
             df_key = df_key.sort_values(by=base_val, ascending=False) # 比率でソート
             
             # day_DateTimeでグループ化し、合計を計算
@@ -935,6 +938,9 @@ class MyApp(tk.Tk):
             y1 = df[col1]
             y2 = df[col2]
 
+            y_max = max(y1.max(), y2.max())  # Y軸の最大値を設定
+            y_min = min(y1.min(), y2.min())  # Y軸の最小値を設定
+
             # 元データのプロット
             ax.plot(x, y1, linewidth=0.5, label="Base")
             ax.plot(x, y2, linewidth=0.5, label="Compare") 
@@ -969,6 +975,10 @@ class MyApp(tk.Tk):
                 font_size_y = 12  # データが少ない場合は大きく
 
             ax.tick_params(axis='y', labelsize=font_size_y)  # Y軸ラベルのフォントサイズを調整
+
+            # Y軸の最大値と最小値を設定
+            ax.set_ylim(int(y_min)-(int(y_min))*0.1, int(y_max)+(int(y_max)*0.1))  # 最小値、最大値を設定（必要に応じて変更）
+            #ax.set_ylim(y_min, y_max)  # 最小値、最大値を設定（必要に応じて変更）
 
             # Y軸のフォーマットを設定（千円単位、カンマ区切り）
             ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x/1000):,}"))
@@ -1047,6 +1057,7 @@ class MyApp(tk.Tk):
         except Exception as e:
             logging.exception("エラーが発生しました")
             raise
+
 
     def _out_pie(self, df, key, col1, col2, l_val):
         """
