@@ -23,7 +23,6 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.ticker import FuncFormatter
-    from adjustText import adjust_text
 
 except Exception:               
     logging.exception(Exception)
