@@ -7,7 +7,7 @@
 # 自分のFastAPIは、POSTリクエストを受け取り、リクエストボディに含まれるデータを処理します。
 # FastAPIのエンドポイントは、/github/でPOSTリクエストを受け取ります。
 import requests
-
+import os
 # GitHubのユーザー情報を取得
 github_username = "shuji-oshiro"
 github_url = f"https://api.github.com/users/{github_username}"
@@ -27,8 +27,8 @@ payload = {
 
 headers = {
     "Content-Type": "application/json",
-    "X-API-KEY": "" # 自分のAPIキーをここに設定
-    # "X-API-KEY": os.getenv("API_KEY") # .envから取得する場合
+    "X-API-KEY": "super-secret-key" # 自分のAPIキーをここに設定
+    #"X-API-KEY": os.getenv("API_KEY") # .envから取得する場合
 }
 
 # 自分のAPIへPOST
