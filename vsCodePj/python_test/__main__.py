@@ -24,6 +24,7 @@ try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.ticker import FuncFormatter
     #from adjustText import adjust_text
+    from dotenv import load_dotenv
 
 except Exception:               
     logging.exception(Exception)
@@ -87,8 +88,12 @@ class FrameInput(tk.LabelFrame):
             """Setup UI components"""
             self.pack(padx=10, pady=10,anchor=tk.NW)
 
-            """Create frame for database information"""        
-            tk.Label(self, text=Settings.DB_PATH).pack()
+            """Create frame for database information"""   
+            
+            # .env読み込み
+            load_dotenv()
+            db_path = os.getenv("DB_PATH")     
+            tk.Label(self, text=db_path).pack()
     except Exception:               
         logging.exception(Exception)
         raise  
