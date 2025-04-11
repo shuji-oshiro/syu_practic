@@ -24,6 +24,7 @@ try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from matplotlib.ticker import FuncFormatter
     from adjustText import adjust_text
+    from dotenv import load_dotenv
 
 except Exception:               
     logging.exception(Exception)
