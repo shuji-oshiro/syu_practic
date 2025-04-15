@@ -106,3 +106,15 @@ pip freeze > requirements.txt
 
 他の人がこのファイルを使って環境構築する場合は：
 pip install -r requirements.txt
+
+
+●nginx + アプリ（例：FastAPI）を別々のコンテナに分けて、nginxがリバースプロキシになる構成
+
+[ユーザーのブラウザ]
+        ↓
+     [nginx] ← ポート80
+        ↓
+   [FastAPI(Uvicorn)] ← ポート8000
+
+プロジェクトルートで以下を実行：
+docker-compose up --build

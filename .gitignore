@@ -20,3 +20,4 @@ instance/
 *.project
 *.spec
 *.code-workspace
+*.log
