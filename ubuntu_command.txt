@@ -1,0 +1,32 @@
+【Ubuntu操作方法】
+
+ubuntuログイン
+wsl
+wsl -d Ubuntu -u root <- rootユーザーでログイン
+
+root でログインできたら、Linux内でユーザーを手動で再作成
+adduser **username**
+
+ルートユーザー変更
+ubuntu config --default-user owner-pc <-ログインユーザー
+
+ユーザーに権限を与える 例：docker 
+sudo usermod -aG docker $USER <-現在ログインしているユーザーで置換）
+
+
+
+【WSL操作】
+
+WSLシャットダウン
+wsl --shutdown
+
+強制停止、次の起動がクリーンになることがある
+wsl --terminate Ubuntu
+
+WSLが正しく動いているか確認
+wsl --status
+
+WSLのUbuntu を削除（データ全消去）して再インストール
+*この操作は Ubuntu の中のデータがすべて削除されるので、データがある場合は注意！
+wsl --unregister Ubuntu
+wsl --install -d Ubuntu

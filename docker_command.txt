@@ -11,12 +11,10 @@ docker クライアントがまだ入ってない or dockerDesktopが起動し�
 
 3）もし「permission denied」と言われたら
 ubuntsのログインユーザーの権限を確認する
-sudo usermod -aG docker $USER　入っていなび場合、dockerへのアクセス権限を追加（要再起動）
+sudo usermod -aG docker $USER　-＞入っていない場合、dockerへのアクセス権限を追加（要再起動）
 
 4）確認できたら試してみよう！
-docker run hello-world
-
-返信があればOK
+docker run hello-world　-＞返信があればOK
 
 5)「ホストのポート5000をコンテナのポート5000にバインド」http://localhost:5000 でアクセス可
 docker run -p 5000:5000 myapp
@@ -26,6 +24,8 @@ docker run -p 5000:5000 myapp
 開発用 Docker 環境を作る
 
 1）プロジェクト直下に Dockerfileが必要：
+
+-----start-----
 
 # ベースイメージ
 FROM python:3.11-slim
@@ -43,6 +43,8 @@ COPY app/ .
 # 実行コマンド
 CMD ["python", "main.py"]
 
+-----end-----
+
 
 2）Dockerイメージをビルド
 docker build -t my-python-app .
@@ -56,6 +58,7 @@ docker run my-python-app　 *run --rmで実行後削除されるようだがErro
 docker run -v $(pwd)/app:/app my-python-app*ビルド時に指定した名前
 
 -v <ホスト側のパス>:<コンテナ側のパス> 
+
 
 
 Docker操作
@@ -75,15 +78,18 @@ wsl --shutdown
 これは WSL全体を完全にシャットダウンするコマンド。 → Docker Desktop との統合が切れて、Dockerも間接的に止まる。
 
 4）状態を確認したいとき
-docker ps -a　→ 停止中のコンテナも含めて確認できる。
+docker ps 	＜-今動いてるコンテナを確認
+docker ps -a	＜-停止中のコンテナも含めて確認できる。
+docker stop <ID> ＜- 動いてるコンテナを止める
 
 5）Docker は run するたびに、新しい「コンテナ」を作成するので削除する
-docker container prune　-＞確認メッセージが出るので y を入力。
+docker container prune　＜-確認メッセージが出るので y を入力。
 
 6）イメージも不要なら消せる
 
-docker image ls
-docker rmi hello-world　＜-これでイメージ自体も消える！
+docker image ls	＜-作ったイメージ一覧を確認
+docker rmi <イメージ名>　＜-これでイメージ自体も消える！
+
 
 
 requirements.txtの記入方法
@@ -95,7 +101,7 @@ requests==2.31.0
 パッケージ名==バージョン番号 の形式で書きます。
 バージョンを省略すると最新がインストールされます（ただし推奨されません）。
 
-手動でも良いですが、今の環境で使っているライブラリを自動で記録したい場合は：
+今の環境で使っているライブラリを自動で記録したい場合は：
 pip freeze > requirements.txt
 
 他の人がこのファイルを使って環境構築する場合は：
