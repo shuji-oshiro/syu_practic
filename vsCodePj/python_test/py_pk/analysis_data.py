@@ -25,13 +25,8 @@ class Analysis_data:
     '''
     classdocs
     '''
-    def __init__(self):        
-        
+    def __init__(self):                
         if sys.gettrace() is not None:  #TODO: デバッグ実行中ゲットできない？？
-            print("！！！！！！sys.gettrace獲得OK！！！！！！！")
-           
-        DEBUG_MODE = os.getenv("DEBUG_MODE", "False")
-        if DEBUG_MODE == "True":
             print("NOW!!! NOW!!! デバッグモードが有効です")
             self.df, self.df_brand, self.df_line = Sampledata.CreateSalesData()
         else:        
