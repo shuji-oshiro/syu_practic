@@ -1113,9 +1113,15 @@ class MyApp(tk.Tk):
         except Exception as e:
             logging.exception("エラーが発生しました")
             raise
-        
+
+def click_close():
+    print("プロセスを終了しました")
+    app.destroy()  # 明示的にプロセスを終了
+
 if __name__ == "__main__":
     salesDataFrame = analysis_data.Analysis_data()
+    
     app = MyApp()
+    app.protocol("WM_DELETE_WINDOW", click_close) #フォームを閉じるボタン押下処理
     app.mainloop()
 
