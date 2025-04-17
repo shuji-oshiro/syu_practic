@@ -4,7 +4,7 @@ import asyncio
 import logging
 import pandas as pd
 from typing import List
-from app.tests.conftest import DEBUG  # conftest.pyからDEBUGをインポート
+from conftest import DEBUG  # config.pyからDEBUGをインポート
 from fastapi import UploadFile, HTTPException
 from app.tests.debug_utils import get_debug_test_files
 
@@ -105,7 +105,7 @@ async def process_csv_files(files: List[UploadFile] = None) -> dict:
 
 # デバッグモード時のテスト実行
 if __name__ == "__main__":
-    # conftest.pyから取得したDEBUGの値を使用
+    # config.pyから取得したDEBUGの値を使用
     if DEBUG:
         # デバッグモード時はテストデータを使用
         logger.info("デバッグモード: テストデータを使用します")

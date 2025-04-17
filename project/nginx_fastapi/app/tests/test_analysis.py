@@ -1,10 +1,10 @@
-import pytest
-from fastapi import UploadFile, HTTPException
-from io import BytesIO
-import pandas as pd
+import osimport
 import sys
-import os
+import pytest
 import logging
+import pandas as pd
+from io import BytesIO
+from fastapi import UploadFile, HTTPException
 
 # プロジェクトのルートディレクトリをPythonパスに追加
 # これにより、テスト実行時にプロジェクトのモジュールを正しくインポートできるようになります
