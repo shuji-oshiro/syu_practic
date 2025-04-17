@@ -1,20 +1,26 @@
 # app/main.py
 import logging
 import sys
+from fastapi import FastAPI, Form
+from fastapi.responses import JSONResponse
+import datetime
+import pytz
 
 # ロギングの設定
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z',
     handlers=[
         logging.StreamHandler(sys.stdout),
         logging.FileHandler('logs/app.log')
     ]
 )
-logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, Form
-from fastapi.responses import JSONResponse
+# タイムゾーンを日本時間に設定
+logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
