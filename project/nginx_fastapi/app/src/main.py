@@ -3,12 +3,13 @@ import logging
 import sys
 import json
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import datetime
 import pytz
 from typing import List, Dict
+from .analysis import process_csv_files
 
 # ロギングの設定
 logging.basicConfig(
@@ -84,3 +85,9 @@ async def delete_product(product_code: str):
     del products[product_code]
     save_products(products)
     return {"message": "商品を削除しました"}
+
+@app.post("/api/analyze")
+async def analyze_files(files: List[UploadFile] = File(...)):
+    """CSVファイルを分析"""
+    logger.debug(f"分析リクエストを受信: {len(files)}個のファイル")
+    return await process_csv_files(files)

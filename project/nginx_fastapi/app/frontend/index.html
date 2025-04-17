@@ -40,6 +40,10 @@
       background-color: #f44336;
       color: white;
     }
+    .analyze-btn {
+      background-color: #2196F3;
+      color: white;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -60,6 +64,16 @@
     .selected {
       background-color: #fff3e0;
     }
+    #analysisResult {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +91,8 @@
     
     <button class="register-btn" onclick="registerProduct()">登録</button>
     <button class="delete-btn" onclick="deleteSelectedProducts()">選択した商品を削除</button>
+    <button class="analyze-btn" onclick="document.getElementById('fileInput').click()">商品売上集計</button>
+    <input type="file" id="fileInput" multiple accept=".csv" class="hidden" onchange="handleFileSelect(event)">
   </div>
 
   <table id="productTable">
@@ -91,6 +107,11 @@
     <tbody id="productList">
     </tbody>
   </table>
+
+  <div id="analysisResult" class="hidden">
+    <h2>分析結果</h2>
+    <div id="analysisContent"></div>
+  </div>
 
   <script>
     // 商品一覧を取得して表示
@@ -187,6 +208,64 @@
         console.error('商品の削除に失敗しました:', error);
         alert('商品の削除中にエラーが発生しました。');
       }
+    }
+
+    // ファイル選択時の処理
+    async function handleFileSelect(event) {
+      const files = event.target.files;
+      if (files.length === 0) return;
+
+      const formData = new FormData();
+      for (let file of files) {
+        formData.append('files', file);
+      }
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('分析処理に失敗しました。');
+        }
+
+        const result = await response.json();
+        displayAnalysisResult(result);
+      } catch (error) {
+        console.error('分析処理中にエラーが発生しました:', error);
+        alert('分析処理中にエラーが発生しました。');
+      }
+
+      // ファイル選択をリセット
+      event.target.value = '';
+    }
+
+    // 分析結果の表示
+    function displayAnalysisResult(result) {
+      const resultDiv = document.getElementById('analysisResult');
+      const contentDiv = document.getElementById('analysisContent');
+      
+      let html = `
+        <p>処理したファイル数: ${result.total_files}</p>
+        <p>総行数: ${result.total_rows}</p>
+        <p>列名: ${result.columns.join(', ')}</p>
+      `;
+
+      if (Object.keys(result.numeric_summary).length > 0) {
+        html += '<h3>数値データの集計</h3>';
+        for (const [column, stats] of Object.entries(result.numeric_summary)) {
+          html += `<h4>${column}</h4>`;
+          html += '<ul>';
+          for (const [stat, value] of Object.entries(stats)) {
+            html += `<li>${stat}: ${value}</li>`;
+          }
+          html += '</ul>';
+        }
+      }
+
+      contentDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
     }
 
     // 初期表示時に商品一覧を読み込む
