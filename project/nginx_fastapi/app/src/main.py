@@ -1,40 +1,57 @@
 # app/main.py
-import logging
 import sys
-import json
 import os
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import datetime
+import json
 import pytz
+import logging
+import datetime
+from pathlib import Path
 from typing import List, Dict
-from .analysis import process_csv_files
-
-# ロギングの設定
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %Z',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('logs/app.log')
-    ]
-)
-
-# タイムゾーンを日本時間に設定
-logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
-
-logger = logging.getLogger(__name__)
-
-app = FastAPI()
+from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from analysis.analysis import process_csv_files
 
 # データ保存用のディレクトリとファイルパス
 DATA_DIR = "data"
+LOG_DIR = "logs"
 PRODUCTS_FILE = os.path.join(DATA_DIR, "products.json")
+LOG_FOLDER = os.path.join(LOG_DIR)
 
 # データディレクトリが存在しない場合は作成
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# ログ設定をまとめて定義
+LOG_CONFIG = {
+    'dir': LOG_DIR,
+    'level': logging.DEBUG,
+    'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    'datefmt': '%Y-%m-%d %H:%M:%S %Z',
+    'timezone': 'Asia/Tokyo'
+}
+
+# ログディレクトリ作成
+os.makedirs(LOG_CONFIG['dir'], exist_ok=True)
+
+# ロギング設定を一括で行う
+logging.basicConfig(
+    level=LOG_CONFIG['level'],
+    format=LOG_CONFIG['format'],
+    datefmt=LOG_CONFIG['datefmt'],
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(os.path.join(LOG_CONFIG['dir'], 'app.log'))
+    ]
+)
+
+# タイムゾーン設定
+logging.Formatter.converter = lambda *args: datetime.now(pytz.timezone(LOG_CONFIG['timezone'])).timetuple()
+logger = logging.getLogger(__name__)
+
+
+app = FastAPI()
+
 
 # 商品データを読み込む関数
 def load_products() -> Dict[str, dict]:

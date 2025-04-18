@@ -1,6 +1,8 @@
-import osimport
+import os
 import sys
+import pytz
 import pytest
+import datetime
 import logging
 import pandas as pd
 from io import BytesIO
@@ -14,10 +16,19 @@ if root_dir not in sys.path:
 
 # 絶対インポートを使用
 from app.src.analysis import process_csv_files
-from app.src.logger_config import setup_logger
 
-# ロガーの設定
-setup_logger()
+# ロギングの設定
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('logs/app.log')
+    ]
+)
+# タイムゾーンを日本時間に設定
+logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
 logger = logging.getLogger(__name__)
 
 @pytest.fixture

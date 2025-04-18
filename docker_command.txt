@@ -118,3 +118,11 @@ pip install -r requirements.txt
 
 プロジェクトルートで以下を実行：
 docker-compose up --build
+
+
+
+●docker-composeを活用
+docker-compose down
+docker-compose up --build
+
+

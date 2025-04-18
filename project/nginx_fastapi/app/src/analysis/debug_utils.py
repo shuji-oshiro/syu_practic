@@ -1,9 +1,7 @@
 import pandas as pd
-from fastapi import UploadFile
 from io import BytesIO
-import logging
+from fastapi import UploadFile
 
-logger = logging.getLogger(__name__)
 
 def create_debug_csv_file(filename: str, data: dict) -> UploadFile:
     """
