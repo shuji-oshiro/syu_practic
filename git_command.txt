@@ -14,7 +14,11 @@ git clone [リモートリポジトリパス]
 =https://github.com/shuji-oshiro/syu_practic.git
 
 
+###リモートリポジトリ（GitHub）との関連を解除
+git remote remove origin
 
+### 完全にGitの管理から外す
+rm -rf .git
 
 ###git addの使用例
 git add . //すべてのファイル・ディレクトリ
