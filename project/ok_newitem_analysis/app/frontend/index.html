@@ -1,0 +1,275 @@
+<!-- nginx/html/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>商品管理システム</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .register-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #f44336;
+      color: white;
+    }
+    .analyze-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+    }
+    .delete-checkbox {
+      width: auto;
+      margin: 0;
+    }
+    .selected {
+      background-color: #fff3e0;
+    }
+    #analysisResult {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>商品管理システム</h1>
+  
+  <div class="form-group">
+    <label for="productCode">商品コード:</label>
+    <input type="text" id="productCode" required>
+    
+    <label for="productName">商品名:</label>
+    <input type="text" id="productName" required>
+    
+    <label for="salesTarget">売上目標:</label>
+    <input type="number" id="salesTarget" required>
+    
+    <button class="register-btn" onclick="registerProduct()">登録</button>
+    <button class="delete-btn" onclick="deleteSelectedProducts()">選択した商品を削除</button>
+    <button class="analyze-btn" onclick="document.getElementById('fileInput').click()">商品売上集計</button>
+    <input type="file" id="fileInput" multiple accept=".csv" class="hidden" onchange="handleFileSelect(event)">
+  </div>
+
+  <table id="productTable">
+    <thead>
+      <tr>
+        <th>選択</th>
+        <th>商品コード</th>
+        <th>商品名</th>
+        <th>売上目標</th>
+      </tr>
+    </thead>
+    <tbody id="productList">
+    </tbody>
+  </table>
+
+  <div id="analysisResult" class="hidden">
+    <h2>分析結果</h2>
+    <div id="analysisContent"></div>
+  </div>
+
+  <script>
+    // 商品一覧を取得して表示
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products');
+        const products = await response.json();
+        const productList = document.getElementById('productList');
+        productList.innerHTML = '';
+        
+        products.forEach(product => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><input type="checkbox" class="delete-checkbox" value="${product.product_code}"></td>
+            <td>${product.product_code}</td>
+            <td>${product.product_name}</td>
+            <td>${product.sales_target}</td>
+          `;
+          productList.appendChild(row);
+        });
+
+        // チェックボックスのイベントリスナーを設定
+        document.querySelectorAll('.delete-checkbox').forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            this.closest('tr').classList.toggle('selected', this.checked);
+          });
+        });
+      } catch (error) {
+        console.error('商品一覧の取得に失敗しました:', error);
+      }
+    }
+
+    // 商品を登録
+    async function registerProduct() {
+      const productCode = document.getElementById('productCode').value;
+      const productName = document.getElementById('productName').value;
+      const salesTarget = document.getElementById('salesTarget').value;
+
+      try {
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product_code: productCode,
+            product_name: productName,
+            sales_target: parseInt(salesTarget)
+          })
+        });
+
+        if (response.ok) {
+          // 入力フィールドをクリア
+          document.getElementById('productCode').value = '';
+          document.getElementById('productName').value = '';
+          document.getElementById('salesTarget').value = '';
+          
+          // 商品一覧を更新
+          loadProducts();
+        }
+      } catch (error) {
+        console.error('商品の登録に失敗しました:', error);
+      }
+    }
+
+    // 選択した商品を削除
+    async function deleteSelectedProducts() {
+      const selectedProducts = Array.from(document.querySelectorAll('.delete-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+
+      if (selectedProducts.length === 0) {
+        alert('削除する商品を選択してください。');
+        return;
+      }
+
+      if (!confirm(`${selectedProducts.length}件の商品を削除してもよろしいですか？`)) {
+        return;
+      }
+
+      try {
+        for (const productCode of selectedProducts) {
+          const response = await fetch(`/api/products/${productCode}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            throw new Error(`商品コード ${productCode} の削除に失敗しました。`);
+          }
+        }
+        
+        // 商品一覧を更新
+        loadProducts();
+      } catch (error) {
+        console.error('商品の削除に失敗しました:', error);
+        alert('商品の削除中にエラーが発生しました。');
+      }
+    }
+
+    // ファイル選択時の処理
+    async function handleFileSelect(event) {
+      const files = event.target.files;
+      if (files.length === 0) return;
+
+      const formData = new FormData();
+      for (let file of files) {
+        formData.append('files', file);
+      }
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('分析処理に失敗しました。');
+        }
+
+        const result = await response.json();
+        displayAnalysisResult(result);
+      } catch (error) {
+        console.error('分析処理中にエラーが発生しました:', error);
+        alert('分析処理中にエラーが発生しました。');
+      }
+
+      // ファイル選択をリセット
+      event.target.value = '';
+    }
+
+    // 分析結果の表示
+    function displayAnalysisResult(result) {
+      const resultDiv = document.getElementById('analysisResult');
+      const contentDiv = document.getElementById('analysisContent');
+      
+      let html = `
+        <p>処理したファイル数: ${result.total_files}</p>
+        <p>総行数: ${result.total_rows}</p>
+        <p>列名: ${result.columns.join(', ')}</p>
+      `;
+
+      if (Object.keys(result.numeric_summary).length > 0) {
+        html += '<h3>数値データの集計</h3>';
+        for (const [column, stats] of Object.entries(result.numeric_summary)) {
+          html += `<h4>${column}</h4>`;
+          html += '<ul>';
+          for (const [stat, value] of Object.entries(stats)) {
+            html += `<li>${stat}: ${value}</li>`;
+          }
+          html += '</ul>';
+        }
+      }
+
+      contentDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
+    }
+
+    // 初期表示時に商品一覧を読み込む
+    loadProducts();
+  </script>
+</body>
+</html>
