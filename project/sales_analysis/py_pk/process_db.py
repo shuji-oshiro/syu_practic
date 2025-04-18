@@ -5,11 +5,10 @@ Created on Sat Feb  8 16:55:47 2025
 @author: mkt05
 """
 import os
-import pandas as pd
 import sqlite3
 import logging
+import pandas as pd
 from py_pk.settings import Settings
-from dotenv import load_dotenv
 
 COL_CSVTODB_DAY = {'得意先コード': 't_code',"ラインコード":"l_code","商品コード":"i_code","商品名":"i_name"}
 
@@ -40,11 +39,7 @@ class Process_db:
     def Get_salesData(cls) -> pd.DataFrame:
         df = pd.DataFrame()      
         try:  
-            # データベース接続
-
-            # .env読み込み
-            load_dotenv()
-            db_path = os.getenv("DB_PATH")    
+            # データベース接続 
 
             with sqlite3.connect(Settings.DB_PATH) as conn:
                 df = pd.read_sql(f"SELECT * FROM sales_data", conn)

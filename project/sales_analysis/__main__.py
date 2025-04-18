@@ -7,24 +7,22 @@ Created on Thu Feb 13 17:49:19 2025
 
 try:
     import os
-    import tkinter as tk
-    from tkinter import ttk
     import logging
+    import threading
     import pandas as pd
+    import tkinter as tk
     import openpyxl as op
-    from py_pk.settings import Settings
+    from tkinter import ttk
+    import matplotlib.pyplot as plt
     from py_pk import analysis_data    
+    from tkcalendar import DateEntry
+    from py_pk.settings import Settings
+    from adjustText import adjust_text
+    from matplotlib.ticker import FuncFormatter
     from datetime import timedelta, datetime as dt
     from dateutil.relativedelta import relativedelta  
-    from tkcalendar import DateEntry
     from tkinter import filedialog, messagebox as msg
-    import threading
-    #import calendar
-    import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    from matplotlib.ticker import FuncFormatter
-    from adjustText import adjust_text
-    from dotenv import load_dotenv
 
 except Exception:               
     logging.exception(Exception)
@@ -87,12 +85,8 @@ class FrameInput(tk.LabelFrame):
             """Setup UI components"""
             self.pack(padx=10, pady=10,anchor=tk.NW)
 
-            """Create frame for database information"""   
-            
-            # .env読み込み
-            load_dotenv()
-            db_path = os.getenv("DB_PATH")     
-            tk.Label(self, text=db_path).pack()
+            """Create frame for database information"""                 
+            tk.Label(self, text=Settings.DB_PATH).pack()
     except Exception:               
         logging.exception(Exception)
         raise  

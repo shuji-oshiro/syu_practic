@@ -4,15 +4,15 @@ Created on 2025/03/19
 @author: mkt05
 '''
 
+import os
+import sys
+import logging
 import pandas as pd
 from py_pk.settings import Settings
 from py_pk.process_db import Process_db
 from py_pk.sampledata import Sampledata
-import logging
 from tkinter import messagebox as msg
 from datetime import datetime as dt
-import sys
-import os
 
 # ログの設定
 logging.basicConfig(
@@ -26,8 +26,8 @@ class Analysis_data:
     classdocs
     '''
     def __init__(self):                
-        if sys.gettrace() is not None:  #TODO: デバッグ実行中ゲットできない？？
-            print("NOW!!! NOW!!! デバッグモードが有効です")
+        if sys.gettrace() is not None: 
+            print("****デバッグモードが有効です****")
             self.df, self.df_brand, self.df_line = Sampledata.CreateSalesData()
         else:        
             df = Process_db.Get_salesData()
