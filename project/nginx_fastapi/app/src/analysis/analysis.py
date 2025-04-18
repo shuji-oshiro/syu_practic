@@ -1,15 +1,46 @@
 import io
+import os
 import sys
+import pytz
 import asyncio
 import logging
+import datetime
 import pandas as pd
 from typing import List
-from conftest import DEBUG  # config.pyからDEBUGをインポート
 from fastapi import UploadFile, HTTPException
-from app.tests.debug_utils import get_debug_test_files
+from .debug_utils import get_debug_test_files
 
-# ロガーの設定
+# データ保存用のディレクトリとファイルパス
+LOG_DIR = "logs"
+LOG_FOLDER = os.path.join(LOG_DIR)
+
+# ログ設定をまとめて定義
+LOG_CONFIG = {
+    'dir': LOG_DIR,
+    'level': logging.DEBUG,
+    'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    'datefmt': '%Y-%m-%d %H:%M:%S %Z',
+    'timezone': 'Asia/Tokyo'
+}
+
+# ログディレクトリ作成
+os.makedirs(LOG_CONFIG['dir'], exist_ok=True)
+
+# ロギング設定を一括で行う
+logging.basicConfig(
+    level=LOG_CONFIG['level'],
+    format=LOG_CONFIG['format'],
+    datefmt=LOG_CONFIG['datefmt'],
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(os.path.join(LOG_CONFIG['dir'], 'app.log'))
+    ]
+)
+
+# タイムゾーン設定
+logging.Formatter.converter = lambda *args: datetime.now(pytz.timezone(LOG_CONFIG['timezone'])).timetuple()
 logger = logging.getLogger(__name__)
+
 
 async def process_csv_files(files: List[UploadFile] = None) -> dict:
     """
@@ -103,15 +134,14 @@ async def process_csv_files(files: List[UploadFile] = None) -> dict:
         logger.error(f"集計処理中にエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"集計処理中にエラーが発生しました: {str(e)}")
 
-# デバッグモード時のテスト実行
+# デバッグモード時はテスト実行
 if __name__ == "__main__":
     # config.pyから取得したDEBUGの値を使用
-    if DEBUG:
-        # デバッグモード時はテストデータを使用
-        logger.info("デバッグモード: テストデータを使用します")
-        files = get_debug_test_files()
-        async def run_debug():
-            result = await process_csv_files(files)
-            print("処理結果:", result)
-        
-        asyncio.run(run_debug())
+    # デバッグモード時はテストデータを使用
+    logger.info("デバッグモード: 直起動によりテストデータを使用します")
+    files = get_debug_test_files()
+    async def run_debug():
+        result = await process_csv_files(files)
+        print("処理結果:", result)
+    
+    asyncio.run(run_debug())
