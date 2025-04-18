@@ -15,7 +15,7 @@
 - FastAPI
 - Docker / Docker Compose
 - Pandas /　（データ分析）
-- 
+- sklearn
 - その他、必要に応じて追加
 
 ## 学習目的
