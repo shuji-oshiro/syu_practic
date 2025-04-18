@@ -18,6 +18,4 @@ instance/
 *.json
 *.code-workspace
 *.project
-*.spec
-*.code-workspace
 *.log
