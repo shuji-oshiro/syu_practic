@@ -1,10 +1,28 @@
-import pandas as pd
+import io
+import sys
+import pytz
 import logging
+import datetime
+import pandas as pd
 from typing import List
 from fastapi import UploadFile, HTTPException
-import io
 
+
+# ロギングの設定
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('logs/app.log')
+    ]
+)
+# タイムゾーンを日本時間に設定
+logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
 logger = logging.getLogger(__name__)
+
+logger.debug(f"analysis.pyは正常に動作していますYOYOYOYO")
 
 async def process_csv_files(files: List[UploadFile]) -> dict:
     """
@@ -13,6 +31,7 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
     all_data = []
     
     for file in files:
+
         try:
             # ファイルの内容を読み込む
             content = await file.read()
