@@ -90,4 +90,16 @@ async def delete_product(product_code: str):
 async def analyze_files(files: List[UploadFile] = File(...)):
     """CSVファイルを分析"""
     logger.debug(f"分析リクエストを受信: {len(files)}個のファイル")
-    return await process_csv_files(files)
+    result = await process_csv_files(files)
+
+    if result["error_status"] == 0:
+        return result["summary_by_client_product"]     
+    elif result["error_status"] == 1:
+        raise HTTPException(status_code=400, detail="ファイルが空です")
+    elif result["error_status"] == 2:
+        raise HTTPException(status_code=400, detail="必要なカラムが不足しています")
+    elif result["error_status"] == 3:
+        raise HTTPException(status_code=400, detail="数値が不正です")
+
+    
+    

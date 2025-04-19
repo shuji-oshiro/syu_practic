@@ -86,6 +86,12 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
         # すべてのデータフレームを結合
         combined_df = pd.concat(all_data, ignore_index=True)
 
+        # TODO:app配下にあるdataフォルダにあるjsonファイルを読み込む 
+        # ファイル名はclient_product_list.json
+        # ファイルの内容は取引先コードと商品コードのリスト
+        # client_product_list = pd.read_json('app/data/products.json')
+
+
         # 取引先・商品ごとの集計
         summary_by_client_product = combined_df[combined_df['売上金額'] > 0].groupby(
             ['取引先コード', '取引先名', '商品コード', '商品名']
@@ -97,7 +103,7 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
 
         return {
             "error_status": error_status,
-            "summary_by_client_product": summary_by_client_product.to_dict('records'),
+            "summary_by_client_product": summary_by_client_product.to_json(orient='records', force_ascii=False)
         }
 
     except Exception as e:

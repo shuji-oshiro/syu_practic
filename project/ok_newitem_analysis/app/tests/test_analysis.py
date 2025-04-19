@@ -1,3 +1,4 @@
+import json
 import pytest
 import pandas as pd
 from io import BytesIO
@@ -21,7 +22,7 @@ async def test_process_csv_files():
         file2 = UploadFile(filename="sample2.csv", file=BytesIO(f2.read()))
         
         result = await process_csv_files([file1, file2])
-        
+
         assert result["error_status"] == 0
         assert len(result["summary_by_client_product"]) > 0
 
