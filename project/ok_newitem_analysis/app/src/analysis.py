@@ -8,21 +8,31 @@ from typing import List
 from fastapi import UploadFile, HTTPException
 
 
-# ロギングの設定
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %Z',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('logs/app.log')
-    ]
-)
-# タイムゾーンを日本時間に設定
-logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
+# ロガーの作成
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-logger.debug(f"analysis.pyは正常に動作していますYOYOYOYO")
+# フォーマッターの設定
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z'
+)
+
+# タイムゾーンを日本時間に設定
+formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
+
+# テスト実行中でない場合のみファイルハンドラーを追加
+if not sys.modules.get('pytest'):
+    # ファイルハンドラーの作成
+    file_handler = logging.FileHandler('logs/app.log')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+# コンソールハンドラーは常に追加
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
 
 async def process_csv_files(files: List[UploadFile]) -> dict:
     """
@@ -88,3 +98,4 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
     except Exception as e:
         logger.error(f"集計処理中にエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"集計処理中にエラーが発生しました: {str(e)}") 
+

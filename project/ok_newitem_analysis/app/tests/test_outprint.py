@@ -1,4 +1,3 @@
-
 from app.src.outprint import getData, getData2
 from app.tests import conftest
 
