@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>動的モーダル</title>
+  <link rel="stylesheet" href="styles/modal.css">
+</head>
+<body>
+
+  <h2>商品リスト</h2>
+  <button onclick="openDeleteModal()">商品を削除</button>
+
+  <script src="components/modal.js"></script>
+  <script>
+  function openDeleteModal() {
+    showModal("1件の商品を削除してもよろしいですか？", () => {
+      showToast("削除しました！", "success");
+    });
+  }
+  </script>
+</body>
+</html>
