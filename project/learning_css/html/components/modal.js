@@ -22,9 +22,9 @@ function showModal(message, onOk) {
     if (typeof onOk === 'function') onOk();
     overlay.remove();
   };
-  // overlay.querySelector('.cancel-button').onclick = () => {
-  //   overlay.remove();
-  // };
+  overlay.querySelector('.cancel-button').onclick = () => {
+    overlay.remove();
+  };
 
   // 表示
   document.body.appendChild(overlay);

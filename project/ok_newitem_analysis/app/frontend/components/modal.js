@@ -1,4 +1,4 @@
-function showModal(message, onOk) {
+function showOkorCancelModal(message, onOk, onCancel) {
   // すでに表示中なら削除
   const existing = document.getElementById('modalOverlay');
   if (existing) existing.remove();
