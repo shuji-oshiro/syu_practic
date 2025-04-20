@@ -232,7 +232,6 @@
           return;
         }        
         const result = await response.json();
-        console.log(result);
         displayAnalysisResult(result);
 
       } catch (error) {
@@ -250,21 +249,33 @@
       const contentDiv = document.getElementById('analysisContent');
       
       let html = '<p>分析が完了しました</p>';
-       // ログ出力コメント含む
-      console.log("displayAnalysisResult-----");
-      console.log("typeof result before parse:", typeof result);  // string? object?
 
-      result = JSON.parse(result);
-      console.log(result.length);
-      if (result && result.length > 0) {
+      result1 = JSON.parse(result[0]);
+      result2 = JSON.parse(result[1]);
 
-        // テーブル表示
+      if (result1 && result1.length > 0) {
+        // 商品別のテーブル表示
+        html += '<h3>商品別集計</h3>';
+        html += '<table class="table">';
+        html += '<tr><th>商品コード</th><th>商品名</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
+        
+        for (const row of result1) {
+          html += `<tr>
+            <td>${row.商品コード}</td>
+            <td>${row.商品名}</td>
+            <td>${row.売上金額.toLocaleString()}</td>
+            <td>${row.売上数量.toLocaleString()}</td>
+            <td>${row.店舗名}</td>
+          </tr>`;
+        }
+        html += '</table>';
+
+        // 取引先・商品別のテーブル表示
         html += '<h3>取引先・商品別集計</h3>';
         html += '<table class="table">';
         html += '<tr><th>取引先</th><th>商品</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
         
-        for (const row of result) {
-          console.log(row);
+        for (const row of result2) {
           html += `<tr>
             <td>${row.取引先名} (${row.取引先コード})</td>
             <td>${row.商品名} (${row.商品コード})</td>
@@ -273,8 +284,6 @@
             <td>${row.店舗名}</td>
           </tr>`;
         }
-
-
         html += '</table>';
 
         // CSVデータの作成

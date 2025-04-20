@@ -1,10 +1,12 @@
 import io
 import sys
 import pytz
+import json
 import logging
 import datetime
 import pandas as pd
 from typing import List
+from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
 
@@ -86,12 +88,35 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
         # すべてのデータフレームを結合
         combined_df = pd.concat(all_data, ignore_index=True)
 
-        # TODO:app配下にあるdataフォルダにあるjsonファイルを読み込む 
-        # ファイル名はclient_product_list.json
-        # ファイルの内容は取引先コードと商品コードのリスト
-        # client_product_list = pd.read_json('app/data/products.json')
+
+        # 抽出条件となる商品コードを取得
+        # テスト実行中のみファイルハンドラーで処理
+        if sys.modules.get('pytest'):
+            json_path = Path(__file__).parent.parent / "data" / "products.json"
+        else:  
+            json_path = "data/products.json"
 
 
+        with open(json_path, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
+        # フィルタ条件をリスト化
+        conditions = [
+            int(item["product_code"])
+            for item in json_data.values()
+        ]
+
+        # DataFrameから条件に合う行を抽出
+        combined_df = combined_df[combined_df.apply(lambda row: (row["商品コード"]) in conditions, axis=1)]
+
+        # 取引先・商品ごとの集計
+        summary_by_product = combined_df[combined_df['売上金額'] > 0].groupby(
+            ['商品コード', '商品名']
+        ).agg({
+            '売上金額': 'sum',
+            '売上数量': 'sum',
+            '店舗名': lambda x: x.nunique()  # 店舗数をカウント
+        }).reset_index()
+        
         # 取引先・商品ごとの集計
         summary_by_client_product = combined_df[combined_df['売上金額'] > 0].groupby(
             ['取引先コード', '取引先名', '商品コード', '商品名']
@@ -100,10 +125,15 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
             '売上数量': 'sum',
             '店舗名': lambda x: x.nunique()  # 店舗数をカウント
         }).reset_index()
+        
+        # 売上金額の降順でソート
+        summary_by_client_product = summary_by_client_product.sort_values(by='売上金額', ascending=False)
 
         return {
             "error_status": error_status,
+            "summary_by_product": summary_by_product.to_json(orient='records', force_ascii=False),
             "summary_by_client_product": summary_by_client_product.to_json(orient='records', force_ascii=False)
+            
         }
 
     except Exception as e:

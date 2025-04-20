@@ -93,7 +93,7 @@ async def analyze_files(files: List[UploadFile] = File(...)):
     result = await process_csv_files(files)
 
     if result["error_status"] == 0:
-        return result["summary_by_client_product"]     
+        return result["summary_by_product"], result["summary_by_client_product"] 
     elif result["error_status"] == 1:
         raise HTTPException(status_code=400, detail="ファイルが空です")
     elif result["error_status"] == 2:
