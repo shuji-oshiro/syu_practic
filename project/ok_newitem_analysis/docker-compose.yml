@@ -1,11 +1,14 @@
+version: '3'
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     container_name: fastapi_app
-    volumes:
-      - ./app:/app
     expose:
       - "8000"
+    networks:
+      - backend
 
   nginx:
     image: nginx:latest
@@ -18,3 +21,8 @@ services:
       - ./app/logs:/var/log/nginx
     depends_on:
       - app
+    networks:
+      - backend
+
+networks:
+  backend:
