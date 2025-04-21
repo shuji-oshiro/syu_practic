@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+python-multipart
+pytz
+pandas
+pytest
+pytest-asyncio

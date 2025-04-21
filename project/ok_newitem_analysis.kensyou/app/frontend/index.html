@@ -1,0 +1,252 @@
+<!-- nginx/html/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <script src="components/modal.js"></script>
+  <link rel="stylesheet" href="styles/style.css">
+  <title>売上分析</title>
+</head>
+<body>
+  <h1>分析対象商品入力</h1>
+  
+  <div class="form-group">
+    <label for="productCode">商品コード:</label>
+    <input type="text" id="productCode" required>
+    
+    <label for="productName">商品名:</label>
+    <input type="text" id="productName" required>
+    
+    <label for="salesTarget">売上目標:</label>
+    <input type="number" id="salesTarget" required>
+
+    <button class="register-btn" onclick="showToast('テスト実装中！！！！！')">テストボタン</button>
+    <button class="register-btn" onclick="registerProduct()">登録</button>
+    <button class="delete-btn" onclick="deleteSelectedProducts()">選択した商品を削除</button>
+    <button class="analyze-btn" onclick="document.getElementById('fileInput').click()">商品売上集計</button>
+    <input type="file" id="fileInput" multiple accept=".csv" class="hidden" onchange="handleFileSelect(event)">
+  </div>
+
+  <table id="productTable">
+    <thead>
+      <tr>
+        <th>選択</th>
+        <th>商品コード</th>
+        <th>商品名</th>
+        <th>売上目標</th>
+      </tr>
+    </thead>
+    <tbody id="productList">
+    </tbody>
+  </table>
+
+  <div id="analysisResult" class="hidden">
+    <h2>分析結果</h2>
+    <div id="analysisContent"></div>
+  </div>
+
+  <script>
+    // 商品一覧を取得して表示
+    async function loadProducts() {
+      try {
+        const response = await fetch('/api/products');
+        const products = await response.json();
+        const productList = document.getElementById('productList');
+        productList.innerHTML = '';
+        
+        products.forEach(product => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><input type="checkbox" class="delete-checkbox" value="${product.product_code}"></td>
+            <td>${product.product_code}</td>
+            <td>${product.product_name}</td>
+            <td>${product.sales_target}</td>
+          `;
+          productList.appendChild(row);
+        });
+
+        // チェックボックスのイベントリスナーを設定
+        document.querySelectorAll('.delete-checkbox').forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            this.closest('tr').classList.toggle('selected', this.checked);
+          });
+        });
+      } catch (error) {
+        console.error('商品一覧の取得に失敗しました:', error);
+      }
+    }
+
+    // 商品を登録
+    async function registerProduct() {
+      const productCode = document.getElementById('productCode').value;
+      const productName = document.getElementById('productName').value;
+      const salesTarget = document.getElementById('salesTarget').value;
+
+      try {
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            product_code: productCode,
+            product_name: productName,
+            sales_target: parseInt(salesTarget)
+          })
+        });
+
+        if (response.ok) {
+          // 入力フィールドをクリア
+          document.getElementById('productCode').value = '';
+          document.getElementById('productName').value = '';
+          document.getElementById('salesTarget').value = '';
+          
+          // 商品一覧を更新
+          loadProducts();
+        }
+      } catch (error) {
+        console.error('商品の登録に失敗しました:', error);
+      }
+    }
+
+    // 選択した商品を削除
+    async function deleteSelectedProducts() {
+      const selectedProducts = Array.from(document.querySelectorAll('.delete-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+
+      if (selectedProducts.length === 0) {
+        showToast('削除する商品を選択してください。');
+        return;
+      }
+
+      if (!confirm(`${selectedProducts.length}件の商品を削除してもよろしいですか？`)) {
+        return;
+      }
+
+      try {
+        for (const productCode of selectedProducts) {
+          const response = await fetch(`/api/products/${productCode}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            throw new Error(`商品コード ${productCode} の削除に失敗しました。`);
+          }
+        }
+        
+        // 商品一覧を更新
+        loadProducts();
+      } catch (error) {
+        console.error('商品の削除に失敗しました:', error);
+        alert('商品の削除中にエラーが発生しました。');
+      }
+    }
+
+    // ファイル選択時の処理
+    async function handleFileSelect(event) {
+      const files = event.target.files;
+      if (files.length === 0) return;
+
+      const formData = new FormData();
+      for (let file of files) {
+        formData.append('files', file);
+      }
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(errorData.detail);
+          return;
+        }        
+        const result = await response.json();
+        displayAnalysisResult(result);
+
+      } catch (error) {
+        console.error('分析処理中にエラーが発生しました:', error);
+        alert('分析処理中にエラーが発生しました。');
+      }
+
+      // ファイル選択をリセット
+      event.target.value = '';
+    }
+
+    // 分析結果の表示
+    function displayAnalysisResult(result) {
+      const resultDiv = document.getElementById('analysisResult');
+      const contentDiv = document.getElementById('analysisContent');
+      
+      let html = '<p>分析が完了しました</p>';
+
+      result1 = JSON.parse(result[0]);
+      result2 = JSON.parse(result[1]);
+
+      if (result1 && result1.length > 0) {
+        // 商品別のテーブル表示
+        html += '<h3>商品別集計</h3>';
+        html += '<table class="table">';
+        html += '<tr><th>商品コード</th><th>商品名</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
+        
+        for (const row of result1) {
+          html += `<tr>
+            <td>${row.商品コード}</td>
+            <td>${row.商品名}</td>
+            <td>${row.売上金額.toLocaleString()}</td>
+            <td>${row.売上数量.toLocaleString()}</td>
+            <td>${row.店舗名}</td>
+          </tr>`;
+        }
+        html += '</table>';
+
+        // 取引先・商品別のテーブル表示
+        html += '<h3>取引先・商品別集計</h3>';
+        html += '<table class="table">';
+        html += '<tr><th>取引先</th><th>商品</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
+        
+        for (const row of result2) {
+          html += `<tr>
+            <td>${row.取引先名} (${row.取引先コード})</td>
+            <td>${row.商品名} (${row.商品コード})</td>
+            <td>${row.売上金額.toLocaleString()}</td>
+            <td>${row.売上数量.toLocaleString()}</td>
+            <td>${row.店舗名}</td>
+          </tr>`;
+        }
+        html += '</table>';
+
+        // CSVデータの作成
+        let csvContent = "取引先コード,取引先名,商品コード,商品名,売上金額,売上数量,店舗数\n";
+        result.forEach(row => {
+          csvContent += `${row.取引先コード},${row.取引先名},${row.商品コード},${row.商品名},${row.売上金額},${row.売上数量},${row.店舗名}\n`;
+        });
+
+        const shouldDownload = confirm("分析結果をCSVファイルとしてダウンロードしますか？");
+
+        if (shouldDownload) {
+          // CSVファイルのダウンロード処理
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement("a");
+          const date = new Date().toISOString().slice(0, 10);
+          link.setAttribute("href", window.URL.createObjectURL(blob));
+          link.setAttribute("download", `分析結果_${date}.csv`);
+          link.style.display = "none";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+
+      contentDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
+    }
+
+    // 初期表示時に商品一覧を読み込む
+    loadProducts();
+  </script>
+</body>
+</html>
