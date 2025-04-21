@@ -1,0 +1,5 @@
+fastapi==0.115.12
+pandas==2.2.3
+pydantic==2.11.3
+pytest==8.3.5
+pytz==2025.2

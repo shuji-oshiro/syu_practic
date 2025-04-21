@@ -1,0 +1,21 @@
+#プロジェクト単位で仮想環境構築
+
+python -m venv venv #1. 作成
+
+.\venv\Scripts\activate #2. 有効化
+
+pip install ... # 3. パッケージをインストール
+
+deactivate #4. 無効化
+ 
+
+#効率的なコマンド
+python -m venv venv #作成
+.\venv\Scripts\activate ＃有効化
+pip install fastapi uvicorn pipreqs ＃常に監視
+
+
+#pipreqs は、プロジェクトのソースコードを解析して、実際にインポートされているパッケージを検出し、その一覧から requirements.txt を生成します。不要なパッケージが除外され、実際の使用パッケージだけをリストアップできるため、より「すっきり」した内容になります。
+
+pipreqs . --force
+pipreqs . --force --encoding=utf-8 #shift-jisだとエラーが出る場合
