@@ -54,7 +54,7 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
             
             # 空のデータフレームチェック
             if df.empty:
-                logger.warning(f"ファイル {file.filename} は空です")
+                logger.warning(f"売上情報ファイル {file.filename} は空です")
                 error_status = 1
                 return {"error_status": error_status}
 
@@ -62,7 +62,7 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
             required_columns = ['取引先コード', '取引先名', '商品コード', '商品名', '店舗名', '売上金額', '売上数量']
             for col in required_columns:
                 if col not in df.columns:
-                    logger.error(f"ファイル {file.filename} に必要なカラムが不足しています: {col}")
+                    logger.error(f"売上情報ファイル {file.filename} に必要なカラムが不足しています: {col}")
                     error_status = 2
                     return {"error_status": error_status} 
 
@@ -71,16 +71,16 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
                 df['売上金額'] = pd.to_numeric(df['売上金額'])
                 df['売上数量'] = pd.to_numeric(df['売上数量'])
             except ValueError:
-                logger.error(f"ファイル {file.filename} の数値データが不正です")
+                logger.error(f"売上情報ファイル {file.filename} の数値データが不正です")
                 error_status = 3
                 return {"error_status": error_status}
 
 
             all_data.append(df)
-            logger.debug(f"ファイル {file.filename} を読み込みました。行数: {len(df)}")
+            logger.debug(f"売上情報ファイル {file.filename} を読み込みました。行数: {len(df)}")
 
         except Exception as e:
-            logger.error(f"ファイル {file.filename} の読み込み処理中にエラーが発生しました: {str(e)}")
+            logger.error(f"売上情報ファイル {file.filename} の読み込み処理中にエラーが発生しました: {str(e)}")
             error_status = 4
             return {"error_status": error_status}
 

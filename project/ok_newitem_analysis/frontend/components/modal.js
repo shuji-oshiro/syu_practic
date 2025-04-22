@@ -1,34 +1,38 @@
 function showOkorCancelModal(message, onOk, onCancel) {
-  // すでに表示中なら削除
-  const existing = document.getElementById('modalOverlay');
-  if (existing) existing.remove();
+  return new Promise((resolve) => {
+    // すでに表示中なら削除
+    const existing = document.getElementById('modalOverlay');
+    if (existing) existing.remove();
 
-  // モーダルHTML構築
-  const overlay = document.createElement('div');
-  overlay.id = 'modalOverlay';
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal">
-      <p>${message}</p>
-      <div class="modal-buttons">
-        <button class="ok-button">OK</button>
-        <!-- <button class="cancel-button">キャンセル</button> -->
+    // モーダルHTML構築
+    const overlay = document.createElement('div');
+    overlay.id = 'modalOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <p>${message}</p>
+        <div class="modal-buttons">
+          <button class="ok-button">OK</button>
+          <button class="cancel-button">キャンセル</button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  // イベント設定
-  overlay.querySelector('.ok-button').onclick = () => {
-    if (typeof onOk === 'function') onOk();
-    overlay.remove();
-  };
-  overlay.querySelector('.cancel-button').onclick = () => {
-    overlay.remove();
-  };
+    // イベント設定
+    overlay.querySelector('.ok-button').onclick = () => {
+      if (typeof onOk === 'function') onOk();
+      resolve(true);
+      overlay.remove();
+    };
+    overlay.querySelector('.cancel-button').onclick = () => {
+      resolve(false);
+      overlay.remove();
+    };
 
-  // 表示
-  document.body.appendChild(overlay);
-  overlay.style.display = 'flex';
+    // 表示
+    document.body.appendChild(overlay);
+    overlay.style.display = 'flex';
+  });
 }
 
 

@@ -126,3 +126,8 @@ docker-compose down
 docker-compose up --build
 
 
+
+●docker-compose 開発環境build
+docker-compose -f docker-compose.dev.yml build
+docker-compose -f docker-compose.dev.yml up
+
