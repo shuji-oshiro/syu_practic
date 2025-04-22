@@ -1,28 +1,28 @@
 version: '3'
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: app-stage
     container_name: fastapi_app
     expose:
       - "8000"
     networks:
-      - backend
+      - appnet
 
-  nginx:
-    image: nginx:latest
-    container_name: nginx_proxy
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: nginx-stage
+    container_name: nginx_web
     ports:
       - "80:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./app/frontend:/usr/share/nginx/html
-      - ./app/logs:/var/log/nginx
     depends_on:
-      - app
-    networks:
       - backend
+    networks:
+      - appnet
 
 networks:
-  backend:
+  appnet:
