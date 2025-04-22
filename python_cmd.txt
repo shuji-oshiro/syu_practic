@@ -19,3 +19,8 @@ pip install fastapi uvicorn pipreqs ＃常に監視
 
 pipreqs . --force
 pipreqs . --force --encoding=utf-8 #shift-jisだとエラーが出る場合
+
+
+#pip freeze は仮想環境にインストールされているすべてのパッケージを含むため、
+プロジェクトに不要なものも混ざることがあります。
+pip freeze > requirements.txt
