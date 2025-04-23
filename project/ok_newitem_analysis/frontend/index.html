@@ -47,6 +47,8 @@
   </div>
 
   <script>
+
+
     // 商品一覧を取得して表示
     async function loadProducts() {
       try {
@@ -73,7 +75,9 @@
           });
         });
       } catch (error) {
-        console.error('商品一覧の取得に失敗しました:', error);
+        message = "商品一覧の取得に失敗しました"; 
+        showToast(message, "error");
+        console.error(message, error);
       }
     }
 
@@ -97,6 +101,8 @@
         });
 
         if (response.ok) {
+          showToast("商品情報を更新しました");
+
           // 入力フィールドをクリア
           document.getElementById('productCode').value = '';
           document.getElementById('productName').value = '';
@@ -104,9 +110,14 @@
           
           // 商品一覧を更新
           loadProducts();
+        }else{
+          const errorData = await response.json();
+          showToast(errorData.detail);
         }
       } catch (error) {
-        console.error('商品の登録に失敗しました:', error);
+        message = "商品の登録に失敗しました"; 
+        showToast(message, "error");
+        console.error(message, error);
       }
     }
 
@@ -131,20 +142,24 @@
             method: 'DELETE'
           });
 
-          if (!response.ok) {
-            throw new Error(`商品コード ${productCode} の削除に失敗しました。`);
+          if (response.ok) {
+            showToast("商品情報を更新しました");
+          }else{
+            const errorData = await response.json();
+            showToast(errorData.detail);
           }
         }
         
         // 商品一覧を更新
         loadProducts();
       } catch (error) {
-        console.error('商品の削除に失敗しました:', error);
-        alert('商品の削除中にエラーが発生しました。');
+        message = "商品の削除に失敗しました";
+        showToast(message, "error");
+        console.error(message, error);
       }
     }
 
-    // ファイル選択時の処理
+    // 売上情報分析の処理
     async function handleFileSelect(event) {
       const files = event.target.files;
       if (files.length === 0) return;
@@ -169,8 +184,9 @@
         displayAnalysisResult(result);
 
       } catch (error) {
-        console.error('分析処理中にエラーが発生しました:', error);
-        alert('分析処理中にエラーが発生しました。');
+        message = "分析処理中にエラーが発生しました";
+        showToast(message, "error");
+        console.error(message, error);
       }
 
       // ファイル選択をリセット
