@@ -188,15 +188,21 @@
       result2 = JSON.parse(result[1]);
 
       if (result1 && result1.length > 0) {
+        html += '<div><button class="register-btn" onclick="testButton(result1, result2)">CSVダウンロード</button></div>';
+
+        //html += '<div><button class="register-btn" onclick="testButton()">CSVダウンロード</button></div>';
+
         // 商品別のテーブル表示
         html += '<h3>商品別集計</h3>';
         html += '<table class="table">';
-        html += '<tr><th>商品コード</th><th>商品名</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
+        html += '<tr><th>商品コード</th><th>商品名</th><th>売上目標</th><th>達成率</th><th>売上金額</th><th>売上数量</th><th>店舗数</th></tr>';
         
         for (const row of result1) {
           html += `<tr>
             <td>${row.商品コード}</td>
             <td>${row.商品名}</td>
+            <td>${row.目標値.toLocaleString()}</td>
+            <td>${percentFormatter.format(row.達成率)}</td>
             <td>${row.売上金額.toLocaleString()}</td>
             <td>${row.売上数量.toLocaleString()}</td>
             <td>${row.店舗名}</td>
@@ -220,15 +226,20 @@
         }
         html += '</table>';
 
-        // // CSVデータの作成
-        // let csvContent = "取引先コード,取引先名,商品コード,商品名,売上金額,売上数量,店舗数\n";
-        // result.forEach(row => {
-        //   csvContent += `${row.取引先コード},${row.取引先名},${row.商品コード},${row.商品名},${row.売上金額},${row.売上数量},${row.店舗名}\n`;
-        // });
-   
-        const shouldDownload = await showOkorCancelModal("CSVファイルをダウンロードしますか？");
+      }
 
-        if (shouldDownload) {
+      contentDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
+    }
+
+
+    // CSVダウンロードの処理
+    async function testButton(result1, result2) {
+      const shouldDownload = await showOkorCancelModal("CSVファイルをダウンロードしますか？");
+      if (shouldDownload) {
+
+        showToast('CSVダウンロード中・・・');
+
           let csvContent = "取引先コード,取引先名,商品コード,商品名,売上金額,売上数量,店舗数\n";
           // 商品別（result1）→ 取引先情報が空欄になるかも
           result1.forEach(row => {
@@ -240,7 +251,6 @@
           });
 
           // CSVファイルのダウンロード処理
-          console.info("CSVファイルをダウンロードしている");
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           const link = document.createElement("a");
           const date = new Date().toISOString().slice(0, 10);
@@ -250,11 +260,9 @@
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-        }
+      }else{
+        showToast('CSVダウンロードをキャンセルしました');
       }
-
-      contentDiv.innerHTML = html;
-      resultDiv.classList.remove('hidden');
     }
 
     // 初期表示時に商品一覧を読み込む

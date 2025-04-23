@@ -1,3 +1,9 @@
+const percentFormatter = new Intl.NumberFormat("ja-JP", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1
+});
+
 function showOkorCancelModal(message, onOk, onCancel) {
   return new Promise((resolve) => {
     // すでに表示中なら削除

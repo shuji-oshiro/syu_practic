@@ -86,46 +86,55 @@ async def process_csv_files(files: List[UploadFile]) -> dict:
 
     try:
         # すべてのデータフレームを結合
-        combined_df = pd.concat(all_data, ignore_index=True)
+        combined_df = pd.concat(all_data, ignore_index=True)  
 
 
-        # 抽出条件となる商品コードを取得
+       # 抽出条件となる商品コードを取得
         # テスト実行中のみファイルハンドラーで処理
         if sys.modules.get('pytest'):
             json_path = Path(__file__).parent.parent / "data" / "products.json"
         else:  
             json_path = "data/products.json"
 
-
+        # フィルタ条件をリスト化
         with open(json_path, "r", encoding="utf-8") as f:
             json_data = json.load(f)
-        # フィルタ条件をリスト化
-        conditions = [
-            int(item["product_code"])
-            for item in json_data.values()
+
+        df = pd.DataFrame(json_data.values())
+
+        combined_df = combined_df.loc[
+            combined_df['商品コード'].astype(str).isin(df['product_code'].astype(str))
         ]
 
-        # DataFrameから条件に合う行を抽出
-        combined_df = combined_df[combined_df.apply(lambda row: (row["商品コード"]) in conditions, axis=1)]
-
-        # 取引先・商品ごとの集計
-        summary_by_product = combined_df[combined_df['売上金額'] > 0].groupby(
-            ['商品コード', '商品名']
-        ).agg({
-            '売上金額': 'sum',
-            '売上数量': 'sum',
-            '店舗名': lambda x: x.nunique()  # 店舗数をカウント
-        }).reset_index()
-        
         # 取引先・商品ごとの集計
         summary_by_client_product = combined_df[combined_df['売上金額'] > 0].groupby(
             ['取引先コード', '取引先名', '商品コード', '商品名']
+            ).agg({
+                '売上金額': 'sum',
+                '売上数量': 'sum',
+                '店舗名': lambda x: x.nunique()  # 店舗数をカウント
+            }).reset_index()
+
+        # 取引先・商品ごとの集計
+        summary_by_product = combined_df[combined_df['売上金額'] > 0].groupby(
+            ['商品コード']
         ).agg({
             '売上金額': 'sum',
             '売上数量': 'sum',
             '店舗名': lambda x: x.nunique()  # 店舗数をカウント
         }).reset_index()
+
         
+        summary_by_product = pd.merge(
+            df.assign(product_code=df["product_code"].astype(str)),
+            summary_by_product.assign(商品コード=summary_by_product["商品コード"].astype(str)),
+            on=None, left_on="product_code", right_on="商品コード", how="inner"
+        )
+        summary_by_product["達成率"] = summary_by_product["売上金額"] / summary_by_product["sales_target"]
+
+        summary_by_product.rename(columns={"product_name": "商品名", "sales_target": "目標値"}, inplace=True)  
+
+
         # 売上金額の降順でソート
         summary_by_client_product = summary_by_client_product.sort_values(by='売上金額', ascending=False)
 
