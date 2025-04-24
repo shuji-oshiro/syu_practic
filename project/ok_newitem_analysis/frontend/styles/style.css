@@ -102,6 +102,10 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
+.register-btnTest {
+  background-color: #d30aee;
+  color: white;
+}
 .register-btn {
   background-color: #4CAF50;
   color: white;

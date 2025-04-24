@@ -21,7 +21,7 @@
     <label for="salesTarget">売上目標:</label>
     <input type="number" id="salesTarget" required>
 
-    <button class="register-btn" onclick="showToast('テストOK！！！！！')">テストボタン</button>
+    <button class="register-btnTest" onclick="showToast('テストOK！！！！！', 'info')">テストボタン</button>
     <button class="register-btn" onclick="registerProduct()">登録</button>
     <button class="delete-btn" onclick="deleteSelectedProducts()">選択した商品を削除</button>
     <button class="analyze-btn" onclick="document.getElementById('fileInput').click()">商品売上集計</button>
@@ -101,7 +101,7 @@
         });
 
         if (response.ok) {
-          showToast("商品情報を更新しました");
+          showToast("商品情報を更新しました", "success");
 
           // 入力フィールドをクリア
           document.getElementById('productCode').value = '';
@@ -112,7 +112,7 @@
           loadProducts();
         }else{
           const errorData = await response.json();
-          showToast(errorData.detail);
+          showToast(errorData.detail, "error");
         }
       } catch (error) {
         message = "商品の登録に失敗しました"; 
@@ -127,7 +127,7 @@
         .map(checkbox => checkbox.value);
 
       if (selectedProducts.length === 0) {
-        showToast('削除する商品を選択してください。');
+        showToast('削除する商品を選択してください。', "info");
         return;
       }
 
@@ -143,10 +143,10 @@
           });
 
           if (response.ok) {
-            showToast("商品情報を更新しました");
+            showToast("商品情報を更新しました", "success");
           }else{
             const errorData = await response.json();
-            showToast(errorData.detail);
+            showToast(errorData.detail, "error");
           }
         }
         
@@ -177,7 +177,7 @@
 
         if (!response.ok) {
           const errorData = await response.json();
-          showToast(errorData.detail);
+          showToast(errorData.detail, "error");
           return;
         }        
         const result = await response.json();
@@ -254,7 +254,7 @@
       const shouldDownload = await showOkorCancelModal("CSVファイルをダウンロードしますか？");
       if (shouldDownload) {
 
-        showToast('CSVダウンロード中・・・');
+        showToast('CSVダウンロード中・・・', "info");
 
           let csvContent = "取引先コード,取引先名,商品コード,商品名,売上金額,売上数量,店舗数\n";
           // 商品別（result1）→ 取引先情報が空欄になるかも
@@ -277,7 +277,7 @@
           link.click();
           document.body.removeChild(link);
       }else{
-        showToast('CSVダウンロードをキャンセルしました');
+        showToast('CSVダウンロードをキャンセルしました', "info");
       }
     }
 
