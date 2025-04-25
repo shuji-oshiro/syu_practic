@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>タスク管理</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label, input, button, select { margin: 10px 0; display: block; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+  </style>
+</head>
+<body>
+
+<h2>タスク管理</h2>
+
+<label>タスク名:</label>
+<input type="text" id="taskName">
+
+<label>日付:</label>
+<input type="date" id="taskDate">
+
+<button onclick="registerTask()">登録</button>
+
+<h3>タスクリスト</h3>
+<select id="taskList" size="5" onchange="fetchUsers()"></select>
+<button onclick="deleteTask()">削除</button>
+
+<div id="userList">
+  <h3>ユーザーリスト</h3>
+  <table>
+    <thead><tr><th>名前</th><th>メールアドレス</th></tr></thead>
+    <tbody id="userTableBody"></tbody>
+  </table>
+</div>
+
+<script>
+  async function loadTasks() {
+    const res = await fetch('/api/tasks');
+    const tasks = await res.json();
+    const list = document.getElementById('taskList');
+    list.innerHTML = "";
+    tasks.forEach(task => {
+      const opt = document.createElement("option");
+      opt.value = task.id;
+      opt.textContent = `${task.name} - ${task.date}`;
+      list.appendChild(opt);
+    });
+  }
+
+  async function registerTask() {
+    const name = document.getElementById('taskName').value;
+    const date = document.getElementById('taskDate').value;
+    if (!name || !date) return;
+
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, date })
+    });
+
+    document.getElementById('taskName').value = "";
+    document.getElementById('taskDate').value = "";
+    loadTasks();
+  }
+
+  async function fetchUsers() {
+    const taskId = document.getElementById('taskList').value;
+    const res = await fetch(`/api/tasks/${taskId}/users`);
+    const users = await res.json();
+
+    const tbody = document.getElementById('userTableBody');
+    tbody.innerHTML = "";
+    users.forEach(u => {
+      const row = `<tr><td>${u.name}</td><td>${u.email}</td></tr>`;
+      tbody.insertAdjacentHTML('beforeend', row);
+    });
+  }
+
+  async function deleteTask() {
+    const taskId = document.getElementById('taskList').value;
+    await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+    loadTasks();
+    document.getElementById('userTableBody').innerHTML = "";
+  }
+
+  window.onload = loadTasks;
+</script>
+
+</body>
+</html>

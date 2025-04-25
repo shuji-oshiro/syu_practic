@@ -1,12 +1,15 @@
 #プロジェクト単位で仮想環境構築
 
-python -m venv venv #1. 作成
+python -m venv .venv #1. 作成
 
-.\venv\Scripts\activate #2. 有効化
+.\.venv\Scripts\activate #2. 有効化
 
 pip install ... # 3. パッケージをインストール
 
 deactivate #4. 無効化
+
+
+Remove-Item -Recurse -Force .venv #仮想環境を完全に削除する
  
 
 #効率的なコマンド
