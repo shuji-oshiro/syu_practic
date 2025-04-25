@@ -13,20 +13,32 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 # ロギングの設定
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %Z',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('logs/app.log')
-    ]
+# ロガーの作成
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# フォーマッターの設定
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %Z'
 )
 
 # タイムゾーンを日本時間に設定
-logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
+formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
 
-logger = logging.getLogger(__name__)
+# テスト実行中でない場合のみファイルハンドラーを追加
+if not sys.modules.get('pytest'):
+    # ファイルハンドラーの作成
+    file_handler = logging.FileHandler('logs/app.log')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+# コンソールハンドラーは常に追加
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+
 
 app = FastAPI()
 
@@ -52,6 +64,7 @@ class User(BaseModel):
     name: str
     email: str
 
+json_data = None
 
 # タスク一覧を取得
 @app.get("/api/tasks", response_model=List[Task])
@@ -66,7 +79,9 @@ def get_tasks():
             content = f.read()
             if not content.strip():
                 return []
-            return json.loads(content)
+            
+            json_data = json.loads(content)
+            return json_data
         
     except Exception as e:
         logger.error(f"タスク一覧取得エラー: {e}")
