@@ -1,6 +1,7 @@
 # tests/test_main.py
 
 def test_get_tasks(client):
+
     response = client.get("/api/tasks")
     assert response.status_code == 200
 
