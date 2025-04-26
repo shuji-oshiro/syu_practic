@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>タスク管理システム</title>
+        <script src="script.js"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="title">タスク管理</h1>
+    
+            <div class="form-container">
+                <input type="text" id="title" placeholder="タスク名" class="input-field">
+                <input type="date" id="due_date" class="input-field">
+                <button onclick="addTask()" class="button">追加</button>
+            </div>
+    
+            <h2 class="task-list-title">タスク一覧</h2>
+            <ul id="task-list" class="task-list"></ul>
+        </div>
+    </body>
+</html>
