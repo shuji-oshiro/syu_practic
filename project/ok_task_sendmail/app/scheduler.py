@@ -8,7 +8,7 @@ import asyncio
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 TASK_FILE = os.path.join(DATA_DIR, "tasks.json")
-USER_FILE = os.path.join(DATA_DIR, "users.csv")
+USER_FILE = os.path.join(DATA_DIR, "users.json")
 
 
 
@@ -24,9 +24,12 @@ def save_tasks(tasks):
 
     
 def load_users():
-    with open(USER_FILE, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        return [row for row in reader]  # username, email 付きで返す
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, "r") as f:
+            return json.load(f)
+    # with open(USER_FILE, newline='', encoding='utf-8') as f:
+    #     reader = csv.DictReader(f)
+    #     return [row for row in reader]  # username, email 付きで返す
 
 def check_and_notify_tasks():
     asyncio.run(_check_and_notify_tasks_async())  # 同期関数内で安全に呼び出す

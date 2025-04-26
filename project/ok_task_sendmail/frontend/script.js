@@ -3,14 +3,31 @@ async function loadUsers() {
     const users = await res.json();
 }
 
+
 async function loadTasks() {
+    console.log("ユーザーデータ取得開始");
+    const res_user = await fetch('/api/users');
+    const users = await res_user.json();
+
+    const userList  = document.getElementById('userlist');
+    
+    // users配列をループしてリストに追加
+    users.forEach(user => {
+      const li = document.createElement('li');
+      console.log(user.email)
+      li.className = 'user-item';
+      li.innerHTML = `
+      <span><strong>${user.name}</strong> (${user.email})</span>
+      `;
+      userList.appendChild(li);
+    });
+
+
     console.log("タスクデータ取得開始");
     const res = await fetch('/api/task');
     const tasks = await res.json();
-        
     const list = document.getElementById('task-list');
     list.innerHTML = '';
-
     tasks.forEach(task => {
         const li = document.createElement('li');
         li.innerHTML = `
