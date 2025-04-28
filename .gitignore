@@ -5,7 +5,6 @@ logfile/
 modules/
 .metadata/
 .settings/
-logfile/
 build/
 dist/
 .venv/
@@ -13,9 +12,8 @@ instance/
 
 #none file
 .env
-*.ini
 *.bak
-*.json
 *.code-workspace
 *.project
 *.log
+.*.json

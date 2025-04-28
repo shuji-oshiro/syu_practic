@@ -1,0 +1,12 @@
+{
+  "2006": {
+    "product_code": "2006",
+    "product_name": "あああああ",
+    "sales_target": 8000
+  },
+  "2002": {
+    "product_code": "2002",
+    "product_name": "あああ",
+    "sales_target": 1300
+  }
+}
