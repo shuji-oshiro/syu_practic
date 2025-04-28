@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>売上情報集計ツール</title>
+</head>
+<body>
+    <h1>売上情報集計ツール</h1>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">売上情報取得</button>
+    
+    <h2>店舗リスト</h2>
+    <select id="storeList" size="10"></select>
+    <button onclick="viewDetails()">詳細表示</button>
+
+    <h2>商品別集計</h2>
+    <div id="productDetails"></div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('ファイルを選択してください');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            console.log(data)
+            const storeList = document.getElementById('storeList');
+            storeList.innerHTML = '';
+            data.stores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store;
+                option.text = store;
+                storeList.appendChild(option);
+            });
+        }
+
+        async function viewDetails() {
+            const storeList = document.getElementById('storeList');
+            const selectedStore = storeList.value;
+
+            if (!selectedStore) {
+                alert('店舗を選択してください');
+                return;
+            }
+
+            const response = await fetch(`/api/details?store=${encodeURIComponent(selectedStore)}`);
+            const data = await response.json();
+
+            const detailsDiv = document.getElementById('productDetails');
+            detailsDiv.innerHTML = '<ul>' + data.products.map(p => `<li>${p.item_name}: 売上金額 ${p.re_amout}円, 売上数量 ${p.re_count}個</li>`).join('') + '</ul>';
+        }
+    </script>
+</body>
+</html>
