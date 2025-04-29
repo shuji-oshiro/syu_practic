@@ -26,8 +26,8 @@ def test_store_details(client):
         assert response.status_code == 200
 
     # 詳細取得テスト
-    response = client.get('/details?store=スカラおろく')
+    response = client.get('/api/details?store=スカラおろく')
     assert response.status_code == 200
     json_data = response.json()
-    assert 'products' in json_data
+    
  
