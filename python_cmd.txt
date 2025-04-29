@@ -27,3 +27,6 @@ pipreqs . --force --encoding=utf-8 #shift-jisだとエラーが出る場合
 #pip freeze は仮想環境にインストールされているすべてのパッケージを含むため、
 プロジェクトに不要なものも混ざることがあります。
 pip freeze > requirements.txt
+
+PyPI パッケージをアップデートするには pip install に --upgrade オプションを付けて実行します。
+$ python pip install --upgrade pip # upgrade -> -U オプションを使うこともできます。

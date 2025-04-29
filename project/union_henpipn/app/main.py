@@ -17,11 +17,11 @@ async def upload(file: UploadFile = File(...)):
     # 特定の得意先のみ抽出
     sales_data = sales_data[sales_data["t_code"] == 112000]
     stores = sales_data.groupby(["tenpo_name"]).sum(numeric_only=True).reset_index()
+    stores = stores.sort_values("re_amout",ascending=False)
     stores = stores.loc[:, ['tenpo_name', "sales_amount", "sales_count", "re_amout", "re_count"]]
 
-    stores_list = stores.to_dict(orient="records")
-
-    return JSONResponse(content={"stores": stores.loc[:,"tenpo_name"].tolist()})
+    stores = stores.to_dict(orient="records")
+    return JSONResponse(content={"stores": stores})
 
 @app.get("/api/details")
 async def store_details(store: str):
@@ -31,9 +31,17 @@ async def store_details(store: str):
         're_amout': 'sum',
         're_count': 'sum'
     }).reset_index()
-    
+
+    print(products)
+        
     products = products[products["re_amout"] > 0]
     products = products.sort_values("re_amout",ascending=False)
+    products = products.loc[:, ['item_name', "re_amout", "re_count"]]
+    products = products.to_dict(orient="records")
 
-    return JSONResponse(content={"products": products.to_dict(orient='records')})
+    if len(products)== 0:
+        return JSONResponse(content={"message": "No data found for the specified store."}, status_code=404)
+    else:
+        return JSONResponse(content={"products": products}, status_code=200)
+        
     
