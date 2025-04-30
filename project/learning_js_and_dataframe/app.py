@@ -17,7 +17,7 @@ def index():
             js_courses = json.load(f)
 
         #return render_template("table.html", table=df_gp.to_html(classes='table table-bordered', index=False))
-        return render_template("table.html")
+        return render_template("index.html")
    
     except Exception as e:
         print(f"Error: {e}")
@@ -100,6 +100,120 @@ def get_items():
 def get_courses():
     return jsonify(js_courses)
 
+@app.route("/api/courses/add", methods=['POST'])
+def add_course():
+    try:
+        data = request.get_json()
+        with open("cours_info.json", "r", encoding="utf-8") as f:
+            courses = json.load(f)
+        
+        # 新しいコースを追加
+        courses.append({
+            "course_name": data["course_name"],
+            "course_charge": data["course_charge"],
+            "course_stors_code": data["course_stors_code"],
+            "course_stors_name": data["course_stors_name"]
+        })
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "コースが追加されました"}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "コースの追加に失敗しました"}), 500
+
+@app.route("/api/courses/update", methods=['PUT'])
+def update_course():
+    try:
+        data = request.get_json()
+        with open("cours_info.json", "r", encoding="utf-8") as f:
+            courses = json.load(f)
+        
+        # コースを更新
+        for course in courses:
+            if course["course_name"] == data["old_course_name"]:
+                course["course_name"] = data["course_name"]
+                course["course_charge"] = data["course_charge"]
+                course["course_stors_code"] = data["course_stors_code"]
+                course["course_stors_name"] = data["course_stors_name"]
+                break
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "コースが更新されました"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "コースの更新に失敗しました"}), 500
+
+@app.route("/api/courses/delete", methods=['DELETE'])
+def delete_course():
+    try:
+        data = request.get_json()
+        with open("cours_info.json", "r", encoding="utf-8") as f:
+            courses = json.load(f)
+        
+        # コースを削除
+        courses = [course for course in courses if course["course_name"] != data["course_name"]]
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "コースが削除されました"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "コースの削除に失敗しました"}), 500
+
+@app.route("/api/courses/add_store", methods=['POST'])
+def add_store():
+    try:
+        data = request.get_json()
+        with open("cours_info.json", "r", encoding="utf-8") as f:
+            courses = json.load(f)
+        
+        # コースを検索して店舗を追加
+        for course in courses:
+            if course["course_name"] == data["course_name"]:
+                course["course_stors_code"].append(data["store_code"])
+                course["course_stors_name"].append(data["store_name"])
+                break
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "店舗が追加されました"}), 201
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "店舗の追加に失敗しました"}), 500
+
+@app.route("/api/courses/delete_store", methods=['POST'])
+def delete_store():
+    try:
+        data = request.get_json()
+        with open("cours_info.json", "r", encoding="utf-8") as f:
+            courses = json.load(f)
+        
+        # コースを検索して店舗を削除
+        for course in courses:
+            if course["course_name"] == data["course_name"]:
+                index = course["course_stors_code"].index(data["store_code"])
+                course["course_stors_code"].pop(index)
+                course["course_stors_name"].pop(index)
+                break
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "店舗が削除されました"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "店舗の削除に失敗しました"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

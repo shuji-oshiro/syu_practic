@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>表データテスト</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+         html, body {
+            height: 100%;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+
+        .select-container {
+            /* position: fixed; 固定表示 */
+            top: 20px; /* 上からの距離 */
+            left: 20px; /* 左からの距離 */
+            display: flex;
+            gap: 20px; /* 要素間のスペース */
+            background-color: #fff;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 1000; /* 他の要素より前面に表示 */
+        }
+
+        .table-container {
+            margin-top: 150px; /* テーブルの位置調整 */
+            width: 1000px;   /* テーブル全体の固定幅 */
+            height: 200px;  /* 高さ固定 */
+            overflow: auto; /* 中でスクロール */
+            background: #fff;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        table.dataTable {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        table.dataTable td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        select {
+            width: 200px; /* 各セレクトボックスの幅 */
+            height: 200px; /* 各セレクトボックスの高さ */
+        }
+
+        .edit-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .button-group {
+            margin-top: 15px;
+        }
+
+        .button-group button {
+            padding: 8px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .add-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .update-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>ユニオン返品管理システム</h1>
+    <p><button onclick="uploadFile()">売上情報の読み込み</button> *販売管理システムより取得したCSVファイル</p>
+
+    <div class="edit-container">
+        <h2>コース管理</h2>
+        <div class="form-group">
+            <label for="courseName">コース名:</label>
+            <input type="text" id="courseName" placeholder="コース名を入力">
+        </div>
+        <div class="form-group">
+            <label for="courseCharge">担当者名:</label>
+            <input type="text" id="courseCharge" placeholder="担当者名を入力">
+        </div>
+        <div class="form-group">
+            <label for="storeCodes">店舗コード（カンマ区切り）:</label>
+            <input type="text" id="storeCodes" placeholder="例: 112020,112015,112003">
+        </div>
+        <div class="form-group">
+            <label for="storeNames">店舗名（カンマ区切り）:</label>
+            <input type="text" id="storeNames" placeholder="例: ユニオン津嘉山店,ユニオン真嘉比店,ユニオン新城店">
+        </div>
+        <div class="button-group">
+            <button class="add-btn" onclick="addCourse()">追加</button>
+            <button class="update-btn" onclick="updateCourse()">更新</button>
+            <button class="delete-btn" onclick="deleteCourse()">削除</button>
+        </div>
+    </div>
+
+    <div class="select-container">
+        <!-- 左：コースと担当者 -->
+        <select id="courseList" size="10"></select>
+
+        <!-- 右：店舗リストと店舗管理 -->
+        <div class="store-management-container" style="display: flex; flex-direction: column; gap: 10px;">
+            <select id="storeList" size="10"></select>
+            
+            <div class="store-input-container" style="display: none;">
+                <div class="form-group">
+                    <label for="newStoreCode">店舗コード:</label>
+                    <input type="text" id="newStoreCode" placeholder="店舗コードを入力">
+                </div>
+                <div class="form-group">
+                    <label for="newStoreName">店舗名:</label>
+                    <input type="text" id="newStoreName" placeholder="店舗名を入力">
+                </div>
+                <div class="button-group">
+                    <button class="add-btn" onclick="addStore()">店舗追加</button>
+                    <button class="delete-btn" onclick="deleteStore()">店舗削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable" class="display" style="width:100%"></table>
+    </div>
+        <h3>選択されたコースの詳細</h3>
+        <div id="courslabelArea"></div>
+        <table id="dataTable_tenpo" class="display" style="width:100%"></table>
+        <div id="storelabelArea"></div>
+        <table id="dataTable_items" class="display" style="width:100%"></table>
+
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+        // グローバル変数として定義
+        let selectedCourseName = "";
+        let selectedCourseData = null;
+
+        //* 初期処理　コースリストの取得と表示 */
+        fetch("/api/initialize")
+            .then(response => {
+                console.log("Responseオブジェクト(/api/courses):", response);
+                if (!response.ok) {
+                    throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Data:", data);
+                data.forEach((course, index) => {
+                    const option = document.createElement("option");
+                    option.text = `${course.course_name}　${course.course_charge}`;
+                    option.value = index;
+                    courseList.add(option);
+                });
+
+                courseList.addEventListener("change", function () {
+                    const selectedIndex = this.value;
+                    selectedCourseData = data[selectedIndex];
+                    selectedCourseName = selectedCourseData.course_name;
+                    
+                    // 店舗リストを更新
+                    storeList.innerHTML = "";
+                    selectedCourseData.course_stors_code.forEach((code, index) => {
+                        const opt = document.createElement("option");
+                        opt.text = `${code} - ${selectedCourseData.course_stors_name[index]}`;
+                        opt.value = code;
+                        storeList.add(opt);
+                    });
+                    
+                    // 店舗管理UIを表示
+                    document.querySelector('.store-input-container').style.display = 'block';
+                    
+                    // 入力フィールドをリセット
+                    document.getElementById('newStoreCode').value = '';
+                    document.getElementById('newStoreName').value = '';
+                });
+            })
+            .catch(err => console.error("コース情報に関するデータ取得失敗:", err));
+
+        //* TODO:売上情報を取得処理 */
+        async function uploadFile() {
+            // ファイル選択処理を関数内で完結
+            // const fileInput = document.createElement('input');
+            // fileInput.type = 'file';
+            
+            // // ファイル選択ダイアログを表示
+            // fileInput.click();
+            // // ファイル選択後の処理
+            // fileInput.onchange = async () => {
+            //     const file = fileInput.files[0];
+            //     createview_course();
+            // }
+            createview_course();
+        }
+
+
+        async function createview_course(){
+            fetch("/api/courses")
+                .then(response => {
+                    console.log("Responseオブジェクト(/api/get):", response); // デバッグ用
+                    if (!response.ok) {
+                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("取得したデータ:", data); // デバッグ用
+
+                    // DataTableを初期化
+                    if ($.fn.DataTable.isDataTable('#dataTable')) {
+                        console.log("dataTable -> DataTable削除。"); // デバッグ用
+                        $('#dataTable').DataTable().clear().destroy();
+                        $('#dataTable_tenpo').DataTable().clear().destroy();
+                        $('#dataTable_items').DataTable().clear().destroy();
+                    } // 既存のDataTableを破棄
+
+                    const table = $('#dataTable').DataTable({
+                        data: data, // APIから取得したデータを設定
+                        columns: [
+                            { title: "コース名", data: "course_name" },
+                            { title: "担当者名", data: "course_charge" },
+                            { title: "当年純売数量", data: "当年純売数量" },
+                            { title: "当年純売金額", data: "当年純売金額" }
+                        ],
+                        scrollY: '400px',
+                        scrollX: true,
+                        scrollCollapse: true,
+                        paging: false
+                    });
+
+                    // 行クリック時のイベントリスナー
+                    $('#dataTable tbody').on('click', 'tr', function () {
+                        const rowData = table.row(this).data();
+                        createview_store(rowData["course_name"],rowData["course_charge"]); // 選択されたコース名を引数に渡す
+                    });
+                })
+            .catch(err => console.error("データ取得失敗:", err)); 
+        };
+        
+        
+
+        async function createview_store(p_course_name, p_course_charge) {
+
+            document.getElementById("courslabelArea").innerHTML = `<label>${p_course_name} ： ${p_course_charge}</label>`;
+            fetch(`/api/stores?course_name=${encodeURIComponent(p_course_name)}`)
+                .then(response => {
+                    console.log("Responseオブジェクト(/api/stores?course_name):", response); // デバッグ用
+                    if (!response.ok) {
+                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("取得したデータ:", data); // デバッグ用
+
+                    // DataTableを初期化
+                    if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
+                        console.log("dataTable_tenpo -> DataTable削除。"); // デバッグ用
+                        $('#dataTable_tenpo').DataTable().clear().destroy();
+                    } // 既存のDataTableを破棄
+
+                    // DataTableを初期化
+                    if ($.fn.DataTable.isDataTable('#dataTable_items')) {
+                        console.log("dataTable_items -> DataTable削除。"); // デバッグ用
+                        $('#dataTable_items').DataTable().clear().destroy();
+                    } // 既存のDataTableを破棄
+
+                    const table = $('#dataTable_tenpo').DataTable({
+                        data: data, // APIから取得したデータを設定
+                        columns: [
+                            { title: "店舗名", data: "course_stors_code" },
+                            { title: "当年純売数量", data: "当年純売数量" },
+                            { title: "当年純売金額", data: "当年純売金額" }
+                        ],
+                        scrollY: '400px',
+                        scrollX: true,
+                        scrollCollapse: true,
+                        paging: false
+                    });
+
+                    // イベントリスナーを一度解除してから再登録
+                    $('#dataTable_tenpo tbody').off('click').on('click', 'tr', function () {
+                        const rowData = table.row(this).data();
+                        if (rowData) {
+                            const select_value = rowData["course_stors_code"];
+                            createview_items(select_value);
+                        } else {
+                            console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
+                        }
+                    });
+                    // // 行クリック時のイベントリスナー
+                    // $('#dataTable_tenpo tbody').on('click', 'tr', function () {
+                    //     const rowData = table.row(this).data();
+                    //     const select_value = rowData["course_stors_code"];
+                    //     createview_items(select_value); // 選択された店舗名を引数に渡す
+                    // });
+                })
+                .catch(err => console.error("データ取得失敗:", err)); 
+        }
+
+
+        async function createview_items( p_stors_code) {
+            document.getElementById("storelabelArea").innerHTML = `<label>店舗名：${p_stors_code}</label>`;
+            fetch(`/api/items?store_code=${encodeURIComponent(p_stors_code)}`)
+                .then(response => {
+                    console.log("Responseオブジェクト(/api/stores?course_name):", response); // デバッグ用
+                    if (!response.ok) {
+                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("取得したデータ:", data); // デバッグ用
+
+                    // DataTableを初期化
+                    if ($.fn.DataTable.isDataTable('#dataTable_items')) {
+                        console.log("dataTable_items -> DataTable削除。"); // デバッグ用
+                        $('#dataTable_items').DataTable().clear().destroy();
+                    } // 既存のDataTableを破棄
+
+                    const table = $('#dataTable_items').DataTable({
+                        data: data, // APIから取得したデータを設定
+                        columns: [
+                            { title: "商品名", data: "商品コード" },
+                            { title: "当年純売数量", data: "当年純売数量" },
+                            { title: "当年純売金額", data: "当年純売金額" }
+                        ],
+                        scrollY: '400px',
+                        scrollX: true,
+                        scrollCollapse: true,
+                        paging: false
+                    });
+                })
+                .catch(err => console.error("データ取得失敗:", err)); 
+        }
+
+        async function addCourse() {
+            const courseName = document.getElementById('courseName').value;
+            const courseCharge = document.getElementById('courseCharge').value;
+            const storeCodes = document.getElementById('storeCodes').value.split(',').map(code => parseInt(code.trim()));
+            const storeNames = document.getElementById('storeNames').value.split(',').map(name => name.trim());
+
+            try {
+                const response = await fetch('/api/courses/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_name: courseName,
+                        course_charge: courseCharge,
+                        course_stors_code: storeCodes,
+                        course_stors_name: storeNames
+                    })
+                });
+
+                if (response.ok) {
+                    alert('コースが追加されました');
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'コースの追加に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('コースの追加に失敗しました');
+            }
+        }
+
+        async function updateCourse() {
+            const courseName = document.getElementById('courseName').value;
+            const courseCharge = document.getElementById('courseCharge').value;
+            const storeCodes = document.getElementById('storeCodes').value.split(',').map(code => parseInt(code.trim()));
+            const storeNames = document.getElementById('storeNames').value.split(',').map(name => name.trim());
+
+            try {
+                const response = await fetch('/api/courses/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        old_course_name: courseName,
+                        course_name: courseName,
+                        course_charge: courseCharge,
+                        course_stors_code: storeCodes,
+                        course_stors_name: storeNames
+                    })
+                });
+
+                if (response.ok) {
+                    alert('コースが更新されました');
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'コースの更新に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('コースの更新に失敗しました');
+            }
+        }
+
+        async function deleteCourse() {
+            const courseName = document.getElementById('courseName').value;
+
+            if (!confirm(`本当にコース「${courseName}」を削除しますか？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/courses/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_name: courseName
+                    })
+                });
+
+                if (response.ok) {
+                    alert('コースが削除されました');
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'コースの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('コースの削除に失敗しました');
+            }
+        }
+
+        async function addStore() {
+            if (!selectedCourseName || !selectedCourseData) {
+                alert('コースを選択してください');
+                return;
+            }
+
+            const storeCode = document.getElementById('newStoreCode').value;
+            const storeName = document.getElementById('newStoreName').value;
+
+            if (!storeCode || !storeName) {
+                alert('店舗コードと店舗名を入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/courses/add_store', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_name: selectedCourseName,
+                        store_code: parseInt(storeCode),
+                        store_name: storeName
+                    })
+                });
+
+                if (response.ok) {
+                    // 入力フィールドをリセット
+                    document.getElementById('newStoreCode').value = '';
+                    document.getElementById('newStoreName').value = '';
+                    
+                    // 店舗リストを更新
+                    const opt = document.createElement("option");
+                    opt.text = `${storeCode} - ${storeName}`;
+                    opt.value = storeCode;
+                    storeList.add(opt);
+                    
+                    // 選択されたコースのデータを更新
+                    selectedCourseData.course_stors_code.push(parseInt(storeCode));
+                    selectedCourseData.course_stors_name.push(storeName);
+                    
+                    alert('店舗が追加されました');
+                } else {
+                    const data = await response.json();
+                    alert(data.error || '店舗の追加に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('店舗の追加に失敗しました');
+            }
+        }
+
+        async function deleteStore() {
+            if (!selectedCourseName || !selectedCourseData) {
+                alert('コースを選択してください');
+                return;
+            }
+
+            const selectedStore = storeList.options[storeList.selectedIndex];
+            if (!selectedStore) {
+                alert('削除する店舗を選択してください');
+                return;
+            }
+
+            const storeCode = selectedStore.value;
+            const storeName = selectedStore.text.split(' - ')[1];
+
+            if (!confirm(`本当に店舗「${storeCode} - ${storeName}」を削除しますか？`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/courses/delete_store', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_name: selectedCourseName,
+                        store_code: parseInt(storeCode)
+                    })
+                });
+
+                if (response.ok) {
+                    // 選択された店舗をリストから削除
+                    const selectedIndex = storeList.selectedIndex;
+                    storeList.remove(selectedIndex);
+                    
+                    // 選択されたコースのデータを更新
+                    const codeIndex = selectedCourseData.course_stors_code.indexOf(parseInt(storeCode));
+                    if (codeIndex > -1) {
+                        selectedCourseData.course_stors_code.splice(codeIndex, 1);
+                        selectedCourseData.course_stors_name.splice(codeIndex, 1);
+                    }
+                    
+                    alert('店舗が削除されました');
+                } else {
+                    const data = await response.json();
+                    alert(data.error || '店舗の削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('店舗の削除に失敗しました');
+            }
+        }
+    </script>
+
+    <script>
+                        
+
+    </script>
+</body>
+</html>

@@ -2,11 +2,29 @@
     {
         "course_name": "Aコース",
         "course_charge": "田中",
-        "course_stors_code": [112020, 112015]       
+        "course_stors_code": [
+            112020,
+            112015,
+            112016
+        ],
+        "course_stors_name": [
+            "ユニオン津嘉山店",
+            "ユニオン真嘉比店",
+            "ユニオン真嘉比店2"
+        ]
     },
     {
         "course_name": "Bコース",
         "course_charge": "鈴木",
-        "course_stors_code": [112021, 112029, 112009]
-    }  
+        "course_stors_code": [
+            112021,
+            112022,
+            112023
+        ],
+        "course_stors_name": [
+            "ユニオン新城店",
+            "ユニオンテスト店",
+            "ユニオンテスト2店"
+        ]
+    }
 ]
