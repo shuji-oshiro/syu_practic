@@ -31,8 +31,6 @@ async def store_details(store: str):
         're_amout': 'sum',
         're_count': 'sum'
     }).reset_index()
-
-    print(products)
         
     products = products[products["re_amout"] > 0]
     products = products.sort_values("re_amout",ascending=False)

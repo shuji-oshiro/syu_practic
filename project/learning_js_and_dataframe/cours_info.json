@@ -1,0 +1,12 @@
+[
+    {
+        "course_name": "Aコース",
+        "course_charge": "田中",
+        "course_stors_code": [112020, 112015]       
+    },
+    {
+        "course_name": "Bコース",
+        "course_charge": "鈴木",
+        "course_stors_code": [112021, 112029, 112009]
+    }  
+]
