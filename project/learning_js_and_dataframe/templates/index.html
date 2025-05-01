@@ -21,18 +21,18 @@
             box-shadow: 0 0 10px rgba(219, 198, 198, 0.1);
             border-radius: 8px;
             z-index: 1000;
+            height: 100px;
         }
 
         .table-container {
             margin-top: 0px;
             width: 1000px;
-            height: 100%;
+            height: calc(100vh - 300px); /* ブラウザの高さから上部の要素の高さを引いた値に設定 */
             overflow: auto;
             background: #fff;
             padding: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             border-radius: 8px;
-            
         }
 
         table.dataTable {
@@ -48,7 +48,7 @@
 
         select {
             width: 200px;
-            height: 200px;
+            height: 100px;
         }
 
         .edit-container {
@@ -64,12 +64,12 @@
         }
 
         .form-group label {
-            display: block;
+            display: inline;
             margin-bottom: 5px;
         }
 
         .form-group input {
-            width: 100%;
+            width: 120px;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -117,6 +117,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            height: 100px;
         }
 
         .store-input-container {
@@ -126,7 +127,7 @@
 </head>
 
 <body>
-    <h1>ユニオン返品管理システム</h1>
+    <h1>ユニオン返品情報管理</h1>
     <p><button onclick="uploadFile()">売上情報の読み込み</button> *販売管理システムより取得したCSVファイル</p>
 
     <!-- <div class="edit-container">
@@ -168,7 +169,34 @@
         </div>
             
         <div class="store-input-container">
-            <div class="form-group">
+            <table>
+                <tr>
+                    <td>
+                        店舗コード:
+                    </td>
+                    <td>
+                        <input type="text" id="newStoreCode" placeholder="店舗コードを入力">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        店舗名:
+                    </td>
+                    <td>
+                        <input type="text" id="newStoreName" placeholder="店舗名を入力">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button class="add-btn" onclick="addStore()">店舗追加</button>
+                    </td>
+                    <td>
+                        <button class="delete-btn" onclick="deleteStore()">店舗削除</button>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- <div class="form-group">
                 <label for="newStoreCode">店舗コード:</label>
                 <input type="text" id="newStoreCode" placeholder="店舗コードを入力">
             </div>
@@ -179,9 +207,8 @@
             <div class="button-group">
                 <button class="add-btn" onclick="addStore()">店舗追加</button>
                 <button class="delete-btn" onclick="deleteStore()">店舗削除</button>
-            </div>
+            </div> -->
         </div>
-        
     </div>
 
     <div class="table-container">
