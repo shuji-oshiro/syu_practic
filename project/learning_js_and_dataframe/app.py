@@ -147,5 +147,56 @@ def delete_store():
         print(f"Error: {e}")
         return jsonify({"error": "店舗の削除に失敗しました"}), 500
 
+
+@app.route("/api/courses/update", methods=['POST'])
+def update_courses():
+    try:
+        # ファイルを直接取得
+        file = request.get_data()
+        
+        # バイト列を文字列にデコード
+        csv_data = file.decode('utf-8')
+        
+        # CSVデータを行に分割
+        rows = csv_data.strip().split('\n')
+        
+        # コース情報を格納する辞書
+        courses_dict = {}
+        
+        # CSVデータから店舗情報を収集
+        for row in rows[2:]:  # ヘッダー2行をスキップ
+            cols = row.strip().split(',')
+            course_name = cols[0]  # コース名
+            charge_name = cols[1]  # 担当者名
+            store_code = int(cols[2])  # 店舗コード
+            store_name = cols[3]  # 店舗名
+            
+            # コース名と担当者名をキーとして使用
+            course_key = (course_name, charge_name)
+            
+            if course_key not in courses_dict:
+                courses_dict[course_key] = {
+                    "course_name": course_name,
+                    "course_charge": charge_name,
+                    "course_stors_code": [],
+                    "course_stors_name": []
+                }
+            
+            courses_dict[course_key]["course_stors_code"].append(store_code)
+            courses_dict[course_key]["course_stors_name"].append(store_name)
+        
+        # 辞書の値のリストを作成
+        new_courses = list(courses_dict.values())
+        
+        # ファイルに保存
+        with open("cours_info.json", "w", encoding="utf-8") as f:
+            json.dump(new_courses, f, ensure_ascii=False, indent=4)
+        
+        return jsonify({"message": "コース情報が更新されました"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "コース情報の更新に失敗しました"}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)

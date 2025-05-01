@@ -127,9 +127,9 @@
 </head>
 
 <body>
-    <h1>ユニオン返品情報管理</h1>
-    <p><button onclick="uploadFile()">売上情報の読み込み</button> *販売管理システムより取得したCSVファイル</p>
 
+    <h1>ユニオン返品情報管理</h1>
+    
     <!-- <div class="edit-container">
         <h2>コース管理</h2>
         <div class="form-row">
@@ -156,18 +156,21 @@
             <button class="delete-btn" onclick="deleteCourse()">削除</button>
         </div>
     </div> -->
-    <h3>コース管理</h3>
+    <div style="margin-bottom: 10px;">
+        <button onclick="uploadFile(this)", data-id="course">コース情報更新</button>
+    </div>
 
+    
     <div class="select-container">
         
         <!-- 左：コースと担当者 -->
         <select id="courseList" size="10"></select>
-
+        
         <!-- 右：店舗リストと店舗管理 -->
         <div class="store-management-container">
             <select id="storeList" size="10"></select>
         </div>
-            
+        
         <div class="store-input-container">
             <table>
                 <tr>
@@ -195,7 +198,7 @@
                     </td>
                 </tr>
             </table>
-
+            
             <!-- <div class="form-group">
                 <label for="newStoreCode">店舗コード:</label>
                 <input type="text" id="newStoreCode" placeholder="店舗コードを入力">
@@ -210,7 +213,8 @@
             </div> -->
         </div>
     </div>
-
+    
+    <p><button onclick="uploadFile(this)", data-id="sales">売上情報の読み込み</button> *販売管理システムより取得したCSVファイル</p>
     <div class="table-container">
         <table id="dataTable" class="display" style="width:100%"></table>
         <h3>選択されたコースの詳細</h3>
@@ -226,6 +230,8 @@
         // グローバル変数として定義
         let selectedCourseName = "";
         let selectedCourseData = null;
+
+        
 
         function initialize(){
 
@@ -307,8 +313,9 @@
         }
         
 
+
         //* TODO:売上情報を取得処理 */
-        function uploadFile() {
+        function uploadFile(button) {
             //ファイル選択処理を関数内で完結
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
@@ -317,12 +324,52 @@
             fileInput.onchange = () => {
                 const file = fileInput.files[0];
                 // console.log("選択されたファイル:", file.name);
-                initialize();
-                createview_course();
+
+                switch (button.dataset.id) {
+                    case "course":
+                        updateCourseInfo(file); 
+                        initialize();
+                        break;
+                    case "sales":
+                        initialize();
+                        createview_course();
+                        break;
+                }
             };
             
             // ファイル選択ダイアログを表示
             fileInput.click();
+        }
+
+
+        function updateCourseInfo(file) {
+
+            const formData = new FormData();
+            formData.append('file', file);
+  
+                
+            // CSVデータをサーバーに送信
+            fetch('/api/courses/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/csv'
+                },
+                body: file
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('エラー: ' + data.error);
+                } else {
+                    alert('コース情報が更新されました');
+                    // 初期化処理を実行
+                    initialize();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('更新処理中にエラーが発生しました');
+            });
         }
 
 
@@ -388,7 +435,6 @@
         };
         
         
-
         function createview_store(p_course_name, p_course_charge) {
 
             document.getElementById("courslabelArea").innerHTML = `<label>${p_course_name} ： ${p_course_charge}</label>`;
