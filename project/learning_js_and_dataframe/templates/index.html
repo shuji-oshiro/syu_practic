@@ -197,48 +197,85 @@
         let selectedCourseName = "";
         let selectedCourseData = null;
 
-        //* 初期処理　コースリストの取得と表示 */
-        fetch("/api/initialize")
-            .then(response => {
-                console.log("Responseオブジェクト(/api/courses):", response);
-                if (!response.ok) {
-                    throw new Error(`HTTPエラー! ステータス: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // console.log("Data:", data);
-                data.forEach((course, index) => {
-                    const option = document.createElement("option");
-                    option.text = `${course.course_name}　${course.course_charge}`;
-                    option.value = index;
-                    courseList.add(option);
-                });
+        function initialize(){
 
-                courseList.addEventListener("change", function () {
-                    const selectedIndex = this.value;
-                    selectedCourseData = data[selectedIndex];
-                    selectedCourseName = selectedCourseData.course_name;
-                    
-                    // 店舗リストを更新
-                    storeList.innerHTML = "";
-                    selectedCourseData.course_stors_code.forEach((code, index) => {
-                        const opt = document.createElement("option");
-                        opt.text = `${code} - ${selectedCourseData.course_stors_name[index]}`;
-                        opt.value = code;
-                        storeList.add(opt);
+            // すべてのコントロールを初期化
+            document.getElementById('courseName').value = '';
+            document.getElementById('courseCharge').value = '';
+            document.getElementById('storeCodes').value = '';
+            document.getElementById('storeNames').value = '';
+            document.getElementById('newStoreCode').value = '';
+            document.getElementById('newStoreName').value = '';
+            
+            // コースリストと店舗リストをクリア
+            document.getElementById('courseList').innerHTML = '';
+            document.getElementById('storeList').innerHTML = '';
+            
+            // 店舗管理UIを非表示
+            document.querySelector('.store-input-container').style.display = 'none';
+            
+            // グローバル変数をリセット
+            selectedCourseName = '';
+            selectedCourseData = null;
+            
+            // ラベルをクリア
+            document.getElementById('courslabelArea').innerHTML = '';
+            document.getElementById('storelabelArea').innerHTML = '';
+            
+            // テーブルをクリア
+            if ($.fn.DataTable.isDataTable('#dataTable')) {
+                $('#dataTable').DataTable().clear().destroy();
+            }
+            if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
+                $('#dataTable_tenpo').DataTable().clear().destroy();
+            }
+            if ($.fn.DataTable.isDataTable('#dataTable_items')) {
+                $('#dataTable_items').DataTable().clear().destroy();
+            }
+
+            //* 初期処理　コースリストの取得と表示 */
+            fetch("/api/initialize")
+                .then(response => {
+                    console.log("Responseオブジェクト(/api/courses):", response);
+                    if (!response.ok) {
+                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // console.log("Data:", data);
+                    data.forEach((course, index) => {
+                        const option = document.createElement("option");
+                        option.text = `${course.course_name}　${course.course_charge}`;
+                        option.value = index;
+                        courseList.add(option);
                     });
-                    
-                    // 店舗管理UIを表示
-                    document.querySelector('.store-input-container').style.display = 'block';
-                    
-                    // 入力フィールドをリセット
-                    document.getElementById('newStoreCode').value = '';
-                    document.getElementById('newStoreName').value = '';
-                });
-            })
-            .catch(err => console.error("コース情報に関するデータ取得失敗:", err));
 
+                    courseList.addEventListener("change", function () {
+                        const selectedIndex = this.value;
+                        selectedCourseData = data[selectedIndex];
+                        selectedCourseName = selectedCourseData.course_name;
+                        
+                        // 店舗リストを更新
+                        storeList.innerHTML = "";
+                        selectedCourseData.course_stors_code.forEach((code, index) => {
+                            const opt = document.createElement("option");
+                            opt.text = `${code} - ${selectedCourseData.course_stors_name[index]}`;
+                            opt.value = code;
+                            storeList.add(opt);
+                        });
+                        
+                        // 店舗管理UIを表示
+                        document.querySelector('.store-input-container').style.display = 'block';
+                        
+                        // 入力フィールドをリセット
+                        document.getElementById('newStoreCode').value = '';
+                        document.getElementById('newStoreName').value = '';
+                    });
+                })
+                .catch(err => console.error("コース情報に関するデータ取得失敗:", err));
+        }
+        
 
         //* TODO:売上情報を取得処理 */
         function uploadFile() {
@@ -250,60 +287,7 @@
             fileInput.onchange = () => {
                 const file = fileInput.files[0];
                 // console.log("選択されたファイル:", file.name);
-                
-
-                // すべてのコントロールを初期化
-                document.getElementById('courseName').value = '';
-                document.getElementById('courseCharge').value = '';
-                document.getElementById('storeCodes').value = '';
-                document.getElementById('storeNames').value = '';
-                document.getElementById('newStoreCode').value = '';
-                document.getElementById('newStoreName').value = '';
-                
-                // コースリストと店舗リストをクリア
-                document.getElementById('courseList').innerHTML = '';
-                document.getElementById('storeList').innerHTML = '';
-                
-                // 店舗管理UIを非表示
-                document.querySelector('.store-input-container').style.display = 'none';
-                
-                // グローバル変数をリセット
-                selectedCourseName = '';
-                selectedCourseData = null;
-                
-                // ラベルをクリア
-                document.getElementById('courslabelArea').innerHTML = '';
-                document.getElementById('storelabelArea').innerHTML = '';
-                
-                // テーブルをクリア
-                if ($.fn.DataTable.isDataTable('#dataTable')) {
-                    $('#dataTable').DataTable().clear().destroy();
-                }
-                if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
-                    $('#dataTable_tenpo').DataTable().clear().destroy();
-                }
-                if ($.fn.DataTable.isDataTable('#dataTable_items')) {
-                    $('#dataTable_items').DataTable().clear().destroy();
-                }
-                
-                // コース情報を再取得
-                fetch("/api/initialize")
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTPエラー! ステータス: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        data.forEach((course, index) => {
-                            const option = document.createElement("option");
-                            option.text = `${course.course_name}　${course.course_charge}`;
-                            option.value = index;
-                            courseList.add(option);
-                        });
-                    })
-                    .catch(err => console.error("コース情報の取得に失敗しました:", err));
-                
+                initialize();
                 createview_course();
             };
             
@@ -676,9 +660,5 @@
         }
     </script>
 
-    <script>
-                        
-
-    </script>
 </body>
 </html>
