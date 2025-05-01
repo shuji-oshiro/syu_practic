@@ -9,6 +9,8 @@ app = Flask(__name__)
 df_courses = None # coursesはグローバル変数として定義
 js_courses = None # js_coursesはグローバル変数として定義
 
+SUM_COLUMN = {"当年純売数量":"sum","当年純売金額":"sum","当年納品金額":"sum","当年納品数量":"sum","当年返品金額":"sum", "当年返品数量":"sum"}
+SORT_COLUMN = ["当年返品金額","当年返品数量","当年純売金額","当年純売数量","当年納品金額","当年納品数量"]
 @app.route("/")
 def index():
     global df_courses, js_courses
@@ -24,12 +26,14 @@ def index():
         return "cours_info.json file not found.", 404
 
 
-@app.route("/api/courses")
+@app.route("/api/courses", methods=['POST'])
 def get_data():
     global df_courses
+    file = request.get_data()
+    
     try:
         # CSVファイルを読み込む
-        df = pd.read_csv("test.csv", encoding="CP932", header=1)
+        df = pd.read_csv(pd.io.common.BytesIO(file), encoding="CP932", header=1)
         
         # DataFrameに変換
         df_courses = pd.DataFrame(js_courses)
@@ -38,10 +42,9 @@ def get_data():
         df_courses["course_stors_code"] = df_courses["course_stors_code"].astype(int)
         # コース別に店舗コードを関連付ける
         df_courses =pd.merge(df_courses, df, left_on='course_stors_code', right_on='店舗コード', how='left')
+
         # コース名と店舗コードをキーにして、コース毎の集計を行う
-        df_gp = df_courses.groupby(['course_name','course_charge'], as_index=False).agg({
-            "当年純売数量":"sum","当年純売金額":"sum"
-            })
+        df_gp = df_courses.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
 
         # JSON形式でデータを返す
         return jsonify(json.loads(df_gp.to_json(orient="records", force_ascii=False)))
@@ -63,7 +66,10 @@ def get_stores():
         # コース名をキーにして、コース情報を取得
         df_select_courses = df_courses[df_courses["course_name"] == key]
         # コースコードをキーにして、店舗毎の集計を行う
-        df_select_courses = df_select_courses.groupby(['course_stors_code'], as_index=False).agg({"当年純売数量":"sum","当年純売金額":"sum"})
+        df_select_courses = df_select_courses.groupby(['course_stors_code',"店舗名"], as_index=False).agg(SUM_COLUMN)
+
+        df_select_courses["key_and_name"] = df_select_courses["course_stors_code"].astype(str) + ":" + df_select_courses["店舗名"].astype(str)
+       
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
         df_select_courses = json.loads(df_select_courses.to_json(orient="records", force_ascii=False))
 
@@ -86,8 +92,10 @@ def get_items():
             (df_courses["course_stors_code"] == int(key))
         ]
         # 商品コードをキーにして、商品毎の集計を行う
-        df_select_courses = df_select_courses.groupby(['商品コード'], as_index=False).agg({"当年純売数量":"sum","当年純売金額":"sum"})
+        df_select_courses = df_select_courses.groupby(['商品コード',"商品名"], as_index=False).agg(SUM_COLUMN)
         
+        df_select_courses["key_and_name"] = df_select_courses["商品コード"].astype(str) + ":" + df_select_courses["商品名"].astype(str)
+       
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
         df_select_courses = json.loads(df_select_courses.to_json(orient="records", force_ascii=False))
 

@@ -26,7 +26,7 @@
 
         .table-container {
             margin-top: 0px;
-            width: 1000px;
+            width: 100%;
             height: calc(100vh - 300px); /* ブラウザの高さから上部の要素の高さを引いた値に設定 */
             overflow: auto;
             background: #fff;
@@ -130,32 +130,6 @@
 
     <h1>ユニオン返品情報管理</h1>
     
-    <!-- <div class="edit-container">
-        <h2>コース管理</h2>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="courseName">コース名:</label>
-                <input type="text" id="courseName" placeholder="コース名を入力">
-            </div>
-            <div class="form-group">
-                <label for="courseCharge">担当者名:</label>
-                <input type="text" id="courseCharge" placeholder="担当者名を入力">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="storeCodes">店舗コード（カンマ区切り）:</label>
-            <input type="text" id="storeCodes" placeholder="例: 112020,112015,112003">
-        </div>
-        <div class="form-group">
-            <label for="storeNames">店舗名（カンマ区切り）:</label>
-            <input type="text" id="storeNames" placeholder="例: ユニオン津嘉山店,ユニオン真嘉比店,ユニオン新城店">
-        </div>
-        <div class="button-group">
-            <button class="add-btn" onclick="addCourse()">追加</button>
-            <button class="update-btn" onclick="updateCourse()">更新</button>
-            <button class="delete-btn" onclick="deleteCourse()">削除</button>
-        </div>
-    </div> -->
     <div style="margin-bottom: 10px;">
         <button onclick="uploadFile(this)", data-id="course">コース情報更新</button>
     </div>
@@ -236,11 +210,6 @@
         function initialize(){
 
             // すべてのコントロールを初期化
-            // document.getElementById('courseName').value = '';
-            // document.getElementById('courseCharge').value = '';
-            // document.getElementById('storeCodes').value = '';
-            // document.getElementById('storeNames').value = '';
-            document.getElementById('newStoreCode').value = '';
             document.getElementById('newStoreName').value = '';
             
             // コースリストと店舗リストをクリア
@@ -272,7 +241,7 @@
             //* 初期処理　コースリストの取得と表示 */
             fetch("/api/initialize")
                 .then(response => {
-                    console.log("Responseオブジェクト(/api/courses):", response);
+                    console.log("Responseオブジェクト(/api/initialize):", response);
                     if (!response.ok) {
                         throw new Error(`HTTPエラー! ステータス: ${response.status}`);
                     }
@@ -332,7 +301,7 @@
                         break;
                     case "sales":
                         initialize();
-                        createview_course();
+                        createview_course(file);
                         break;
                 }
             };
@@ -373,64 +342,74 @@
         }
 
 
-        function createview_course(){
-            fetch("/api/courses")
-                .then(response => {
-                    console.log("Responseオブジェクト(/api/get):", response); // デバッグ用
-                    if (!response.ok) {
-                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // console.log("取得したデータ:", data); // デバッグ用
+        function createview_course(file){
 
-                    // DataTableを初期化
-                    if ($.fn.DataTable.isDataTable('#dataTable')) {
-                        console.log("dataTable -> DataTable削除。"); // デバッグ用
-                        $('#dataTable').DataTable().clear().destroy();
-                    } // 既存のDataTableを破棄
-                    // DataTableを初期化
-                    if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
-                        console.log("dataTable_tenpo -> DataTable削除。"); // デバッグ用
-                        $('#dataTable_tenpo').DataTable().clear().destroy();
-                    } // 既存のDataTableを破棄
+            const formData = new FormData();
+            formData.append('file', file);
 
-                    // DataTableを初期化
-                    if ($.fn.DataTable.isDataTable('#dataTable_items')) {
-                        console.log("dataTable_items -> DataTable削除。"); // デバッグ用
-                        $('#dataTable_items').DataTable().clear().destroy();
-                    } // 既存のDataTableを破棄
+            fetch("/api/courses", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/csv'
+                },
+                body: file
+            })  
 
-                    const table = $('#dataTable').DataTable({
-                        data: data, // APIから取得したデータを設定
-                        columns: [
-                            { title: "コース名", data: "course_name" },
-                            { title: "担当者名", data: "course_charge" },
-                            { title: "当年純売数量", data: "当年純売数量" },
-                            { title: "当年純売金額", data: "当年純売金額" }
-                        ],
-                        scrollY: '400px',
-                        scrollX: true,
-                        scrollCollapse: true,
-                        paging: false
-                    });
-                    // イベントリスナーを一度解除してから再登録
-                    $('#dataTable tbody').off('click').on('click', 'tr', function () {
+            .then(response => {
+                console.log("Responseオブジェクト(/api/courses):", response); // デバッグ用
+                if (!response.ok) {
+                    throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // console.log("取得したデータ:", data); // デバッグ用
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable')) {
+                    console.log("dataTable -> DataTable削除。"); // デバッグ用
+                    $('#dataTable').DataTable().clear().destroy();
+                } // 既存のDataTableを破棄
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
+                    console.log("dataTable_tenpo -> DataTable削除。"); // デバッグ用
+                    $('#dataTable_tenpo').DataTable().clear().destroy();
+                } // 既存のDataTableを破棄
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_items')) {
+                    console.log("dataTable_items -> DataTable削除。"); // デバッグ用
+                    $('#dataTable_items').DataTable().clear().destroy();
+                } // 既存のDataTableを破棄
+
+                const table = $('#dataTable').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "コース名", data: "course_name" },
+                        { title: "担当者名", data: "course_charge"},
+                        { title: "返品金額", data: "当年返品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "当年返品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "当年純売金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "当年純売数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "当年納品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "当年納品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
                         const rowData = table.row(this).data();
-                        if (rowData) {
-                            const rowData = table.row(this).data();
-                            createview_store(rowData["course_name"],rowData["course_charge"]); // 選択されたコース名を引数に渡す
-                        } else {
-                            console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
-                        }
-                    });
-                    // // 行クリック時のイベントリスナー
-                    // $('#dataTable tbody').on('click', 'tr', function () {
-                    //     const rowData = table.row(this).data();
-                    //     createview_store(rowData["course_name"],rowData["course_charge"]); // 選択されたコース名を引数に渡す
-                    // });
-                })
+                        createview_store(rowData["course_name"],rowData["course_charge"]); // 選択されたコース名を引数に渡す
+                    } else {
+                        console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
+                    }
+                });
+            })
             .catch(err => console.error("データ取得失敗:", err)); 
         };
         
@@ -464,9 +443,13 @@
                     const table = $('#dataTable_tenpo').DataTable({
                         data: data, // APIから取得したデータを設定
                         columns: [
-                            { title: "店舗名", data: "course_stors_code" },
-                            { title: "当年純売数量", data: "当年純売数量" },
-                            { title: "当年純売金額", data: "当年純売金額" }
+                            { title: "店舗名", data: "key_and_name"},
+                            { title: "返品金額", data: "当年返品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "返品数量", data: "当年返品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "純売金額", data: "当年純売金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "純売数量", data: "当年純売数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "納品金額", data: "当年納品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "納品数量", data: "当年納品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)}
                         ],
                         scrollY: '400px',
                         scrollX: true,
@@ -478,8 +461,10 @@
                     $('#dataTable_tenpo tbody').off('click').on('click', 'tr', function () {
                         const rowData = table.row(this).data();
                         if (rowData) {
-                            const select_value = rowData["course_stors_code"];
-                            createview_items(select_value);
+                            const select_value1 = rowData["course_stors_code"];
+                            const select_value2 = rowData["key_and_name"];
+                            
+                            createview_items(select_value1, select_value2);
                         } else {
                             console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
                         }
@@ -495,8 +480,8 @@
         }
 
 
-        function createview_items( p_stors_code) {
-            document.getElementById("storelabelArea").innerHTML = `<label>店舗名：${p_stors_code}</label>`;
+        function createview_items( p_stors_code, p_stors_name) {
+            document.getElementById("storelabelArea").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
             fetch(`/api/items?store_code=${encodeURIComponent(p_stors_code)}`)
                 .then(response => {
                     console.log("Responseオブジェクト(/api/stores?course_name):", response); // デバッグ用
@@ -517,9 +502,13 @@
                     const table = $('#dataTable_items').DataTable({
                         data: data, // APIから取得したデータを設定
                         columns: [
-                            { title: "商品名", data: "商品コード" },
-                            { title: "当年純売数量", data: "当年純売数量" },
-                            { title: "当年純売金額", data: "当年純売金額" }
+                            { title: "商品名", data: "key_and_name"},
+                            { title: "返品金額", data: "当年返品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "返品数量", data: "当年返品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "純売金額", data: "当年純売金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "純売数量", data: "当年純売数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "納品金額", data: "当年納品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                            { title: "納品数量", data: "当年納品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)}
                         ],
                         scrollY: '400px',
                         scrollX: true,
