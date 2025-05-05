@@ -1,23 +1,22 @@
 # app.py
 
-from flask import Flask, render_template, jsonify, request
-import pandas as pd
 import json
+import pandas as pd
+from io import StringIO
+from flask import Flask, render_template, jsonify, request
+
+DATA_PAHT = "cours_info.json"
+SUM_COLUMN = {"当年純売数量":"sum","当年純売金額":"sum","当年納品金額":"sum","当年納品数量":"sum","当年返品金額":"sum", "当年返品数量":"sum"}
+SORT_COLUMN = ["当年返品金額","当年返品数量","当年純売金額","当年純売数量","当年納品金額","当年納品数量"]
 
 app = Flask(__name__)
 
-df_courses = None # coursesはグローバル変数として定義
-js_courses = None # js_coursesはグローバル変数として定義
+df_sales = None # coursesはグローバル変数として定義
 
-SUM_COLUMN = {"当年純売数量":"sum","当年純売金額":"sum","当年納品金額":"sum","当年納品数量":"sum","当年返品金額":"sum", "当年返品数量":"sum"}
-SORT_COLUMN = ["当年返品金額","当年返品数量","当年純売金額","当年純売数量","当年納品金額","当年納品数量"]
 @app.route("/")
 def index():
-    global df_courses, js_courses
+    global df_sales
     try:        
-        with open("cours_info.json", "r", encoding="utf-8") as f:
-            js_courses = json.load(f)
-
         #return render_template("table.html", table=df_gp.to_html(classes='table table-bordered', index=False))
         return render_template("index.html")
    
@@ -26,25 +25,38 @@ def index():
         return "cours_info.json file not found.", 404
 
 
-@app.route("/api/courses", methods=['POST'])
-def get_data():
-    global df_courses
-    file = request.get_data()
+@app.route("/api/sales", methods=['POST'])
+def set_salesdata():
+    global df_sales
     
     try:
-        # CSVファイルを読み込む
-        df = pd.read_csv(pd.io.common.BytesIO(file), encoding="CP932", header=1)
-        
-        # DataFrameに変換
-        df_courses = pd.DataFrame(js_courses)
-        # course_stors_code列を展開
-        df_courses = df_courses.explode('course_stors_code')
-        df_courses["course_stors_code"] = df_courses["course_stors_code"].astype(int)
-        # コース別に店舗コードを関連付ける
-        df_courses =pd.merge(df_courses, df, left_on='course_stors_code', right_on='店舗コード', how='left')
+        file = request.files['file']
 
+        df = pd.read_csv(StringIO(file.read().decode('cp932')),header=1)
+                
+        df_sales = pd.DataFrame(json.load(open(DATA_PAHT, encoding="utf-8")))
+
+        # course_stors_code列を展開
+        df_sales = df_sales.explode('course_stors_code')
+        df_sales["course_stors_code"] = df_sales["course_stors_code"].astype(int)
+
+        # コース別に店舗コードを関連付ける
+        df_sales =pd.merge(df_sales, df, left_on='course_stors_code', right_on='店舗コード', how='left')
+
+        # JSON形式でデータを返す
+        return jsonify({"message": "データ読み込みに成功しました"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "データ読み込みに失敗しました"}), 500
+
+
+@app.route("/api/sales", methods=['GET'])
+def get_salesdata():
+    global df_sales
+    
+    try:
         # コース名と店舗コードをキーにして、コース毎の集計を行う
-        df_gp = df_courses.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
+        df_gp = df_sales.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
 
         # JSON形式でデータを返す
         return jsonify(json.loads(df_gp.to_json(orient="records", force_ascii=False)))
@@ -52,10 +64,11 @@ def get_data():
         print(f"Error: {e}")
         return jsonify({"error": "データ取得に失敗しました"}), 500
 
-@app.route("/api/stores")
+
+@app.route("/api/stores",methods=['GET'])
 def get_stores():
 
-    global df_courses
+    global df_sales
     try:
         # クエリパラメータからコース名を取得
         key = request.args.get("course_name", default=None)
@@ -64,7 +77,7 @@ def get_stores():
             return jsonify({"error": "course_name is required"}), 400
         
         # コース名をキーにして、コース情報を取得
-        df_select_courses = df_courses[df_courses["course_name"] == key]
+        df_select_courses = df_sales[df_sales["course_name"] == key]
         # コースコードをキーにして、店舗毎の集計を行う
         df_select_courses = df_select_courses.groupby(['course_stors_code',"店舗名"], as_index=False).agg(SUM_COLUMN)
 
@@ -79,17 +92,18 @@ def get_stores():
         print(f"Error: {e}")
         return "cours_info.json file not found.", 404
 
-@app.route("/api/items")
+
+@app.route("/api/items",methods=['GET'])
 def get_items():
 
-    global df_courses
+    global df_sales
     try:
         # クエリパラメータからコース名、店舗名を取得
         key = request.args.get("store_code", default=None)
 
         # コース名と店舗コードをキーにして、店舗p情報を絞り込む
-        df_select_courses = df_courses[
-            (df_courses["course_stors_code"] == int(key))
+        df_select_courses = df_sales[
+            (df_sales["course_stors_code"] == int(key))
         ]
         # 商品コードをキーにして、商品毎の集計を行う
         df_select_courses = df_select_courses.groupby(['商品コード',"商品名"], as_index=False).agg(SUM_COLUMN)
@@ -104,11 +118,14 @@ def get_items():
         print(f"Error: {e}")
         return "cours_info.json file not found.", 404
     
-@app.route("/api/initialize")
+
+@app.route("/api/courses",methods=['GET'])
 def get_courses():
+    js_courses = json.load(open(DATA_PAHT, encoding="utf-8"))
     return jsonify(js_courses)
 
-@app.route("/api/courses/add_store", methods=['POST'])
+
+@app.route("/api/courses", methods=['PATCH'])
 def add_store():
     try:
         data = request.get_json()
@@ -130,8 +147,9 @@ def add_store():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": "店舗の追加に失敗しました"}), 500
+    
 
-@app.route("/api/courses/delete_store", methods=['POST'])
+@app.route("/api/courses", methods=['DELETE'])
 def delete_store():
     try:
         data = request.get_json()
@@ -156,9 +174,10 @@ def delete_store():
         return jsonify({"error": "店舗の削除に失敗しました"}), 500
 
 
-@app.route("/api/courses/update", methods=['POST'])
+@app.route("/api/courses", methods=['PUT'])
 def update_courses():
     try:
+
         # ファイルを直接取得
         file = request.get_data()
         

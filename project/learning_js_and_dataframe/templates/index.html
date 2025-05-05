@@ -131,7 +131,7 @@
     <h1>ユニオン返品情報管理</h1>
     
     <div style="margin-bottom: 10px;">
-        <button onclick="uploadFile(this)", data-id="course">コース情報更新</button>
+        <button onclick="updateCourseInfo()", data-id="course">コース情報更新</button>
     </div>
 
     
@@ -215,6 +215,8 @@
             // コースリストと店舗リストをクリア
             document.getElementById('courseList').innerHTML = '';
             document.getElementById('storeList').innerHTML = '';
+            document.getElementById('courseList').options.length = 0;
+            document.getElementById('storeList').options.length = 0;
             
             // 店舗管理UIを非表示
             document.querySelector('.store-input-container').style.display = 'none';
@@ -239,15 +241,17 @@
             }
 
             //* 初期処理　コースリストの取得と表示 */
-            fetch("/api/initialize")
+            fetch("/api/courses",{
+                method: 'GET',
+                })
                 .then(response => {
-                    console.log("Responseオブジェクト(/api/initialize):", response);
+                    console.log("Responseオブジェクト(GET/api/get_courses):", response);
                     if (!response.ok) {
                         throw new Error(`HTTPエラー! ステータス: ${response.status}`);
                     }
                     return response.json();
                 })
-                .then(data => {
+                .then(data => {     
                     // console.log("Data:", data);
                     data.forEach((course, index) => {
                         const option = document.createElement("option");
@@ -282,9 +286,8 @@
         }
         
 
-
-        //* TODO:売上情報を取得処理 */
-        function uploadFile(button) {
+         //* コース情報の更新処理 */
+        function updateCourseInfo() {
             //ファイル選択処理を関数内で完結
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
@@ -292,18 +295,33 @@
             // ファイル選択後の処理
             fileInput.onchange = () => {
                 const file = fileInput.files[0];
-                // console.log("選択されたファイル:", file.name);
+                // console.log("選択されたファイル:", file.name);               
+                const formData = new FormData();
+                formData.append('file', file);
+    
 
-                switch (button.dataset.id) {
-                    case "course":
-                        updateCourseInfo(file); 
+                // CSVデータをサーバーに送信
+                fetch('PUT/api/courses', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'text/csv'
+                    },
+                    body: file
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('エラー: ' + data.error);
+                    } else {
+                        alert(data.message);
+                        // 初期化処理を実行
                         initialize();
-                        break;
-                    case "sales":
-                        initialize();
-                        createview_course(file);
-                        break;
-                }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('エラー: ' + data.error);
+                });
             };
             
             // ファイル選択ダイアログを表示
@@ -311,52 +329,48 @@
         }
 
 
-        function updateCourseInfo(file) {
+        //* 売上情報を取得処理 */
+        async function uploadFile() {
+            
+            //ファイル選択処理を関数内で完結
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            
+            // ファイル選択後の処理
+            fileInput.onchange = () => {
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
 
-            const formData = new FormData();
-            formData.append('file', file);
-  
-                
-            // CSVデータをサーバーに送信
-            fetch('/api/courses/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/csv'
-                },
-                body: file
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert('エラー: ' + data.error);
+                fetch("/api/sales", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+
+                if (response.ok) {
+                    console.log("データ読み込みに成功しました");
+                    createview_course();
+
                 } else {
-                    alert('コース情報が更新されました');
-                    // 初期化処理を実行
-                    initialize();
+                    console.log("データ読み込みに失敗しました");
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('更新処理中にエラーが発生しました');
-            });
+                })
+                .catch(err => console.error("データ取得失敗:", err)); 
+
+            };            
+            // ファイル選択ダイアログを表示
+            fileInput.click();
         }
 
 
-        function createview_course(file){
+        function createview_course(){
 
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch("/api/courses", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/csv'
-                },
-                body: file
+            fetch("/api/sales", {
+                method: 'GET',
             })  
-
             .then(response => {
-                console.log("Responseオブジェクト(/api/courses):", response); // デバッグ用
+                console.log("Responseオブジェクト(GET/api/sales):", response); // デバッグ用
                 if (!response.ok) {
                     throw new Error(`HTTPエラー! ステータス: ${response.status}`);
                 }
@@ -417,75 +431,73 @@
         function createview_store(p_course_name, p_course_charge) {
 
             document.getElementById("courslabelArea").innerHTML = `<label>${p_course_name} ： ${p_course_charge}</label>`;
-            fetch(`/api/stores?course_name=${encodeURIComponent(p_course_name)}`)
-                .then(response => {
-                    console.log("Responseオブジェクト(/api/stores?course_name):", response); // デバッグ用
-                    if (!response.ok) {
-                        throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+            fetch(`/api/stores?course_name=${p_course_name}`,{
+                method: 'GET',
+            })
+            .then(response => {
+                console.log("Responseオブジェクト(GET/api/stores?course_name):", response); // デバッグ用
+                if (!response.ok) {
+                    throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // console.log("取得したデータ:", data); // デバッグ用
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
+                    console.log("dataTable_tenpo -> DataTable削除。"); // デバッグ用
+                    $('#dataTable_tenpo').DataTable().clear().destroy();
+                } // 既存のDataTableを破棄
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_items')) {
+                    console.log("dataTable_items -> DataTable削除。"); // デバッグ用
+                    $('#dataTable_items').DataTable().clear().destroy();
+                } // 既存のDataTableを破棄
+
+                const table = $('#dataTable_tenpo').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "店舗名", data: "key_and_name"},
+                        { title: "返品金額", data: "当年返品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "当年返品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "当年純売金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "当年純売数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "当年納品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "当年納品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_tenpo tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        const select_value1 = rowData["course_stors_code"];
+                        const select_value2 = rowData["key_and_name"];
+                        
+                        createview_items(select_value1, select_value2);
+                    } else {
+                        console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    // console.log("取得したデータ:", data); // デバッグ用
-
-                    // DataTableを初期化
-                    if ($.fn.DataTable.isDataTable('#dataTable_tenpo')) {
-                        console.log("dataTable_tenpo -> DataTable削除。"); // デバッグ用
-                        $('#dataTable_tenpo').DataTable().clear().destroy();
-                    } // 既存のDataTableを破棄
-
-                    // DataTableを初期化
-                    if ($.fn.DataTable.isDataTable('#dataTable_items')) {
-                        console.log("dataTable_items -> DataTable削除。"); // デバッグ用
-                        $('#dataTable_items').DataTable().clear().destroy();
-                    } // 既存のDataTableを破棄
-
-                    const table = $('#dataTable_tenpo').DataTable({
-                        data: data, // APIから取得したデータを設定
-                        columns: [
-                            { title: "店舗名", data: "key_and_name"},
-                            { title: "返品金額", data: "当年返品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                            { title: "返品数量", data: "当年返品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                            { title: "純売金額", data: "当年純売金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                            { title: "純売数量", data: "当年純売数量" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                            { title: "納品金額", data: "当年納品金額" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                            { title: "納品数量", data: "当年納品数量" ,render: $.fn.dataTable.render.number(',', '.', 0)}
-                        ],
-                        scrollY: '400px',
-                        scrollX: true,
-                        scrollCollapse: true,
-                        paging: false
-                    });
-
-                    // イベントリスナーを一度解除してから再登録
-                    $('#dataTable_tenpo tbody').off('click').on('click', 'tr', function () {
-                        const rowData = table.row(this).data();
-                        if (rowData) {
-                            const select_value1 = rowData["course_stors_code"];
-                            const select_value2 = rowData["key_and_name"];
-                            
-                            createview_items(select_value1, select_value2);
-                        } else {
-                            console.warn("rowDataが取得できませんでした。クリックされた行が不正かも。");
-                        }
-                    });
-                    // // 行クリック時のイベントリスナー
-                    // $('#dataTable_tenpo tbody').on('click', 'tr', function () {
-                    //     const rowData = table.row(this).data();
-                    //     const select_value = rowData["course_stors_code"];
-                    //     createview_items(select_value); // 選択された店舗名を引数に渡す
-                    // });
-                })
-                .catch(err => console.error("データ取得失敗:", err)); 
+                });
+            })
+            .catch(err => console.error("データ取得失敗:", err)); 
         }
 
 
         function createview_items( p_stors_code, p_stors_name) {
             document.getElementById("storelabelArea").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
-            fetch(`/api/items?store_code=${encodeURIComponent(p_stors_code)}`)
-                .then(response => {
-                    console.log("Responseオブジェクト(/api/stores?course_name):", response); // デバッグ用
-                    if (!response.ok) {
+            fetch(`/api/items?store_code=${p_stors_code}`,{
+                method: 'GET',
+            })
+            .then(response => {
+                console.log("Responseオブジェクト(GET/api/stores):", response); // デバッグ用
+                if (!response.ok) {
                         throw new Error(`HTTPエラー! ステータス: ${response.status}`);
                     }
                     return response.json();
@@ -515,9 +527,10 @@
                         scrollCollapse: true,
                         paging: false
                     });
-                })
-                .catch(err => console.error("データ取得失敗:", err)); 
+            })
+            .catch(err => console.error("データ取得失敗:", err)); 
         }
+
 
         function addStore() {
             if (!selectedCourseName || !selectedCourseData) {
@@ -534,8 +547,8 @@
             }
 
             try {
-                const response = fetch('/api/courses/add_store', {
-                    method: 'POST',
+                const response = fetch('PATCH/api/courses', {
+                    method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -572,6 +585,7 @@
             }
         }
 
+
         function deleteStore() {
             if (!selectedCourseName || !selectedCourseData) {
                 alert('コースを選択してください');
@@ -592,8 +606,8 @@
             }
 
             try {
-                const response = fetch('/api/courses/delete_store', {
-                    method: 'POST',
+                const response = fetch('DELETE/api/courses', {
+                    method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -625,6 +639,9 @@
                 alert('店舗の削除に失敗しました');
             }
         }
+    
+        initialize();
+
     </script>
 
 </body>
