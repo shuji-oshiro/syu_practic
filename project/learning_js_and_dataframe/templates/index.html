@@ -55,302 +55,9 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
 
-        let is_dataTable_course_view = false;
 
-        //* 初期化処理 */
-        function initialize(){
-            
-            // ラベルをクリア
-            document.getElementById('labelArea_layer1').innerHTML = '';
-            document.getElementById('labelArea_layer2').innerHTML = '';
-            
-            // テーブルをクリア＆ヘッダーも削除
-            const tableIds = [
-                '#dataTable_course_sales',
-                '#dataTable_course_tenpo',
-                '#dataTable_course_items',
-                '#dataTable_customer_sales',
-                '#dataTable_customer_tenpo',
-                '#dataTable_customer_items',
-                '#dataTable_items_sales',
-                '#dataTable_items_customer',
-                '#dataTable_items_tenpo'
-            ];
-            tableIds.forEach(id => {
-                if ($.fn.DataTable.isDataTable(id)) {
-                    $(id).DataTable().clear().destroy();
-                }
-                // テーブルの中身を空にする（ヘッダーも消す）
-                $(id).empty();
-            });
-        }
-        
-        //* コース情報と取引先ビューの切り替え */
-        function changeViewType(){
-            if (document.getElementById('chainStore').checked) {
-                document.querySelector('.dataTable_sales_view').style.display = 'block';
-                document.querySelector('.dataTable_course_view').style.display = 'none';
-                document.querySelector('.dataTable_item_view').style.display = 'none';
-
-                is_dataTable_course_view = false;
-
-            } else if (document.getElementById('byCourse').checked) {
-                document.querySelector('.dataTable_sales_view').style.display = 'none';
-                document.querySelector('.dataTable_course_view').style.display = 'block';
-                document.querySelector('.dataTable_item_view').style.display = 'none';
-                is_dataTable_course_view = true;
-
-            }else if (document.getElementById('byItems').checked) {
-                document.querySelector('.dataTable_sales_view').style.display = 'none';
-                document.querySelector('.dataTable_course_view').style.display = 'none';
-                document.querySelector('.dataTable_item_view').style.display = 'block';
-
-                is_dataTable_course_view = false;
-            }
-        }
-
-       
-        //* 売上情報を取得処理 */
-        async function uploadFile() {
-            
-            //ファイル選択処理を関数内で完結
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            
-            // ファイル選択後の処理
-            fileInput.onchange = () => {
-                const file = fileInput.files[0];
-                const formData = new FormData();
-                formData.append('file', file);
-
-                fetch("/api/sales", {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(async response => {
-                    const data = await response.json();
-                if (response.ok) {
-                    console.log(data.message);
-                    initialize();   
-                    createview_sales();
-                    createview_course();
-                    changeViewType();
-
-                } else {
-                    alert(data.error);
-                }
-                })
-                .catch(err => alert("データ読み込みに失敗しました。:", err)); 
-
-            };            
-            // ファイル選択ダイアログを表示
-            fileInput.click();
-        }
-
-
-        //* 売上情報を取得処理 */
-        function createview_sales(){
-            fetch("/api/sales", {
-                method: 'GET',
-            })  
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    alert(data.error);
-                }
-                return data;
-            })
-            .then(data => {
-                const table = $('#dataTable_customer_sales').DataTable({
-                    data: data, // APIから取得したデータを設定
-                    columns: [
-                        { title: "取引先名", data: "customer_name" },
-                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
-                    ],
-                    scrollY: '400px',
-                    scrollX: true,
-                    scrollCollapse: true,
-                    paging: false
-                });
-                // イベントリスナーを一度解除してから再登録
-                $('#dataTable_customer_sales tbody').off('click').on('click', 'tr', function () {
-                    const rowData = table.row(this).data();
-                    if (rowData) {
-                        const rowData = table.row(this).data();
-                        createview_store({
-                            p_bpname: rowData["customer_name"],
-                            p_bpcode: rowData["customer_code"]}); // 選択された取引先名を引数に渡す
-                    } else {
-                        console.warn("rowDataが取得できませんでした。");
-                    }
-                });
-            })
-            .catch(err => alert("売上情報取得失敗:", err)); 
-            };
-
-
-        //* コース情報を取得処理 */
-        function createview_course(){
-
-            fetch(`/api/courses`, {
-                method: 'GET',
-            })  
-            .then(async response => {
-                const data = await response.json(); 
-                if (!response.ok) {
-                    alert(data.error);
-                }
-                return data;
-            })
-            .then(data => {
-                const table = $('#dataTable_course_sales').DataTable({
-                    data: data, // APIから取得したデータを設定
-                    columns: [
-                        { title: "コース名", data: "course_name" },
-                        { title: "担当者名", data: "course_charge"},
-                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
-                    ],
-                    scrollY: '400px',
-                    scrollX: true,
-                    scrollCollapse: true,
-                    paging: false
-                });
-                // イベントリスナーを一度解除してから再登録
-                $('#dataTable_course_sales tbody').off('click').on('click', 'tr', function () {
-                    const rowData = table.row(this).data();
-                    if (rowData) {
-                        const rowData = table.row(this).data();
-                        createview_store({
-                                p_course_name: rowData["course_name"],
-                                p_course_person: rowData["course_charge"]}); // 選択されたコース名を引数に渡す
-                    } else {
-                        console.warn("rowDataが取得できませんでした。");
-                    }
-                });
-            })
-            .catch(err => alert("コース情報取得失敗:", err)); 
-        };
-        
-        //* 店舗情報を取得処理 */
-        function createview_store({p_course_name, p_course_person, p_bpname, p_bpcode}) {
-
-            // コース名とコース担当者名、またはBP名を表示
-            let displayLabel = is_dataTable_course_view ? `${p_course_name} ： ${p_course_person}` : `${p_bpname}`;
-            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
-
-            // APIエンドポイントのパラメータを設定
-            let queryParam = is_dataTable_course_view ? `course_name=${p_course_name}` : `bpcode=${p_bpcode}`;
-            
-            fetch(`/api/stores?${queryParam}`,{
-                method: 'GET',
-            })
-            .then(async response => {
-                const data = await response.json();     
-                if (!response.ok) {
-                    alert(data.error);
-                }
-                return data;
-            })
-            .then(data => {
-                // DataTableを初期化
-                let tableId = is_dataTable_course_view ? '#dataTable_course_tenpo' :  '#dataTable_customer_tenpo';
-                let table_chainId = is_dataTable_course_view ? '#dataTable_course_items' :  '#dataTable_customer_items';
-                if ($.fn.DataTable.isDataTable(tableId)) {
-                    $(tableId).DataTable().clear().destroy();
-                }
-                // DataTableを初期化
-                if ($.fn.DataTable.isDataTable(table_chainId)) {
-                    $(table_chainId).DataTable().clear().destroy();
-                }
-
-                const table = $(tableId).DataTable({
-                    data: data,
-                    columns: [
-                        { title: "店舗名", data: "key_and_name"},
-                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
-                    ],
-                    scrollY: '400px',
-                    scrollX: true,
-                    scrollCollapse: true,
-                    paging: false
-                });
-
-                // イベントリスナーを一度解除してから再登録
-                $(tableId + ' tbody').off('click').on('click', 'tr', function () {
-                    const rowData = table.row(this).data();
-                    if (rowData) {
-                        const select_value1 = rowData["store_code"];
-                        const select_value2 = rowData["store_name"];
-                        
-                        createview_items(select_value1, select_value2);
-                    } else {
-                        console.warn("rowDataが取得できませんでした。");
-                    }
-                });
-            })
-            .catch(err => alert("店舗情報取得失敗:", err)); 
-        }
-
-        //* 商品情報を取得処理 */
-        function createview_items( p_stors_code, p_stors_name) {
-            document.getElementById("labelArea_layer2").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
-            fetch(`/api/items?store_code=${p_stors_code}`,{
-                method: 'GET',
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    alert(data.error);
-                }
-                return data;
-            })
-            .then(data => {
-   
-                // DataTableを初期化
-                let table_chainId = is_dataTable_course_view ? '#dataTable_course_items' :  '#dataTable_customer_items';
-
-                if ($.fn.DataTable.isDataTable(table_chainId)) {
-                    $(table_chainId).DataTable().clear().destroy();
-                }
-
-                const table = $(table_chainId).DataTable({
-                    data: data, // APIから取得したデータを設定
-                    columns: [
-                        { title: "商品名", data: "key_and_name"},
-                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
-                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
-                    ],
-                    scrollY: '400px',
-                    scrollX: true,
-                    scrollCollapse: true,
-                    paging: false
-                });
-            })
-            .catch(err => alert("商品情報取得失敗:", err)); 
-        }
-
-
-          //* コース情報の更新処理 */
-        function updateCourseInfo() {
+       //* コース情報の更新処理 */
+       function updateCourseInfo() {
             //ファイル選択処理を関数内で完結
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
@@ -390,9 +97,630 @@
             fileInput.click();
         }
 
+
+        //* 初期化処理 */
+        function initialize(){
+            
+            // ラベルをクリア
+            document.getElementById('labelArea_layer1').innerHTML = '';
+            document.getElementById('labelArea_layer2').innerHTML = '';
+            
+            // テーブルをクリア＆ヘッダーも削除
+            const tableIds = [
+                '#dataTable_course_sales',
+                '#dataTable_course_tenpo',
+                '#dataTable_course_items',
+                '#dataTable_customer_sales',
+                '#dataTable_customer_tenpo',
+                '#dataTable_customer_items',
+                '#dataTable_items_sales',
+                '#dataTable_items_customer',
+                '#dataTable_items_tenpo'
+            ];
+            tableIds.forEach(id => {
+                if ($.fn.DataTable.isDataTable(id)) {
+                    $(id).DataTable().clear().destroy();
+                }
+                // テーブルの中身を空にする（ヘッダーも消す）
+                $(id).empty();
+            });
+        }
         
+        //* コース情報と取引先ビューの切り替え */
+        function changeViewType(){
+            if (document.getElementById('chainStore').checked) {
+                document.querySelector('.dataTable_sales_view').style.display = 'block';
+                document.querySelector('.dataTable_course_view').style.display = 'none';
+                document.querySelector('.dataTable_item_view').style.display = 'none';
+
+                if (!$.fn.DataTable.isDataTable('#dataTable_customer_sales')) {
+                    fetch(`/api/check_data`,{
+                        method: 'GET',
+                    })
+                    .then(async response => {   
+                        if (response.ok) {
+                            createview_customer();
+                        }  
+                    })
+                }    
+
+            } else if (document.getElementById('byCourse').checked) {
+                document.querySelector('.dataTable_sales_view').style.display = 'none';
+                document.querySelector('.dataTable_course_view').style.display = 'block';
+                document.querySelector('.dataTable_item_view').style.display = 'none';
+
+                if (!$.fn.DataTable.isDataTable('#dataTable_course_sales')) {
+                    fetch(`/api/check_data`,{
+                        method: 'GET',
+                    })
+                    .then(async response => {   
+                        if (response.ok) {
+                            createview_course();
+                        }  
+                    })
+                }                                
+
+            }else if (document.getElementById('byItems').checked) {
+                document.querySelector('.dataTable_sales_view').style.display = 'none';
+                document.querySelector('.dataTable_course_view').style.display = 'none';
+                document.querySelector('.dataTable_item_view').style.display = 'block';
+
+                if (!$.fn.DataTable.isDataTable('#dataTable_items_sales')) {
+
+                    fetch(`/api/check_data`,{
+                    method: 'GET',
+                    })
+                    .then(async response => {   
+                        if (response.ok) {
+                            createview_items_items();
+                        }  
+                    })                        
+                }                
+
+            }
+        }
+
+       
+        //* 売上情報を取得処理 */
+        async function uploadFile() {
+            
+            //ファイル選択処理を関数内で完結
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            
+            // ファイル選択後の処理
+            fileInput.onchange = () => {
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch("/api/sales", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(async response => {
+                    const data = await response.json();
+                if (response.ok) {
+                    console.log(data.message);
+                    initialize();   
+                    changeViewType();
+
+                } else {
+                    alert(data.error);
+                }
+                })
+                .catch(err => alert("データ読み込みに失敗しました。:", err)); 
+
+            };            
+            // ファイル選択ダイアログを表示
+            fileInput.click();
+        }
+
+        
+
+        //取引先別売上　-＞　店舗別　-＞　商品別
+
+        //* 売上情報を取得処理 */
+        function createview_customer(){
+
+            document.getElementById('labelArea_layer1').innerHTML = '';
+
+            fetch("/api/sales", {
+                method: 'GET',
+            })  
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                const table = $('#dataTable_customer_sales').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "取引先名", data: "customer_name" },
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_customer_sales tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        createview_store({
+                            p_bpcode: rowData["customer_code"],
+                            p_bpname: rowData["customer_name"]
+                        }); // 選択された取引先名を引数に渡す
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("売上情報取得失敗:", err)); 
+            };
+
+        //* 店舗情報を取得処理 */
+        function createview_store({p_bpcode, p_bpname}) {
+
+            document.getElementById('labelArea_layer2').innerHTML = '';
+            // コース名とコース担当者名、またはBP名を表示
+            let displayLabel = `${p_bpcode} ： ${p_bpname}`;
+            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+
+            // APIエンドポイントのパラメータを設定
+            let queryParam = `bpcode=${p_bpcode}`;
+            
+            fetch(`/api/stores?${queryParam}`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();     
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_customer_tenpo')) {
+                    $('#dataTable_customer_tenpo').DataTable().clear().destroy();
+                }
+                $('#dataTable_customer_tenpo').empty();
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_customer_items')) {
+                    $('#dataTable_customer_items').DataTable().clear().destroy();
+                }
+                $('#dataTable_customer_items').empty();
+
+                const table = $('#dataTable_customer_tenpo').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "店舗名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_customer_tenpo' + ' tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        createview_items({
+                            p_bpcode: p_bpcode,
+                            p_stors_code: rowData["store_code"],
+                            p_stors_name: rowData["store_name"]
+                        });
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("店舗情報取得失敗:", err)); 
+        }
+
+        //* 商品情報を取得処理 */
+        function createview_items({p_bpcode, p_stors_code, p_stors_name}) {
+
+            document.getElementById("labelArea_layer2").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
+
+            // APIエンドポイントのパラメータを設定  
+            let queryParam = `bpcode=${p_bpcode}&store_code=${p_stors_code}`;
+
+
+            fetch(`/api/items?${queryParam}`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                if ($.fn.DataTable.isDataTable('#dataTable_customer_items')) {
+                    $('#dataTable_customer_items').DataTable().clear().destroy();
+                }
+                $('#dataTable_customer_items').empty();
+
+                const table = $('#dataTable_customer_items').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "商品名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+            })
+            .catch(err => alert("商品情報取得失敗:", err)); 
+        }
+
+
+
+        //コース別売上　-＞　店舗別売上　-＞　商品別売上
+
+        //* コース情報を取得処理 */
+        function createview_course(){
+            document.getElementById('labelArea_layer1').innerHTML = '';
+
+            fetch(`/api/courses`, {
+                method: 'GET',
+            })  
+            .then(async response => {
+                const data = await response.json(); 
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                const table = $('#dataTable_course_sales').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "コース名", data: "course_name" },
+                        { title: "担当者名", data: "course_charge"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_course_sales tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        const rowData = table.row(this).data();
+                        createview_store_course({
+                                p_course_name: rowData["course_name"],
+                                p_course_person: rowData["course_charge"]}); // 選択されたコース名を引数に渡す
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("コース情報取得失敗:", err)); 
+        };
+
+        //* 店舗情報を取得処理 */
+        function createview_store_course({p_course_name, p_course_person}) {
+
+            document.getElementById('labelArea_layer2').innerHTML = '';
+            // コース名とコース担当者名、またはBP名を表示
+            let displayLabel = `${p_course_name} ： ${p_course_person}`;
+            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+
+            // APIエンドポイントのパラメータを設定
+            let queryParam = `course_name=${p_course_name}`;
+
+            fetch(`/api/stores?${queryParam}`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();     
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_course_tenpo')) {
+                    $('#dataTable_course_tenpo').DataTable().clear().destroy();
+                }
+                $('#dataTable_course_tenpo').empty();
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_course_items')) {
+                    $('#dataTable_course_items').DataTable().clear().destroy();
+                }
+                $('#dataTable_course_items').empty();
+
+                const table = $('#dataTable_course_tenpo').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "店舗名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_course_tenpo' + ' tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        createview_items_course({
+                            p_stors_code: rowData["store_code"],
+                            p_stors_name: rowData["store_name"]
+                        });
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("店舗情報取得失敗:", err)); 
+            }
+
+            //* 商品情報を取得処理 */
+        function createview_items_course({p_stors_code, p_stors_name}) {
+
+            document.getElementById("labelArea_layer2").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
+
+            // APIエンドポイントのパラメータを設定  
+            let queryParam = `store_code=${p_stors_code}`;
+
+            fetch(`/api/items?${queryParam}`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                if ($.fn.DataTable.isDataTable('#dataTable_course_items')) {
+                    $('#dataTable_course_items').DataTable().clear().destroy();
+                }
+                $('#dataTable_course_items').empty();
+
+                const table = $('#dataTable_course_items').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "商品名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+            })
+            .catch(err => alert("商品情報取得失敗:", err)); 
+        }
+
+
+        //商品別売上-＞　取引先別売上　-＞　店舗別売上
+
+        //* 商品情報を取得処理 */
+        function createview_items_items() {
+
+            document.getElementById('labelArea_layer1').innerHTML = '';
+
+            fetch(`/api/items`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                const table = $('#dataTable_items_sales').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "商品名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+                            // イベントリスナーを一度解除してから再登録
+                $('#dataTable_items_sales tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        createview_customer_items({
+                            p_item_code: rowData["product_code"],
+                            p_item_name: rowData["product_name"]
+                        }); // 選択された取引先名を引数に渡す
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("商品情報取得失敗:", err)); 
+            }
+
+        //* 売上情報を取得処理 */
+        function createview_customer_items({p_item_code, p_item_name}){
+
+            document.getElementById('labelArea_layer2').innerHTML = '';
+
+            let param = `item_code=${p_item_code}`;
+            // コース名とコース担当者名、またはBP名を表示
+            let displayLabel = `${p_item_code} ： ${p_item_name}`;
+            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+
+            fetch(`/api/sales?${param}`, {
+                method: 'GET',
+            })  
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            
+            .then(data => {
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_items_customer')) {
+                    $('#dataTable_items_customer').DataTable().clear().destroy();
+                }
+                $('#dataTable_items_customer').empty();
+
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_items_tenpo')) {
+                    $('#dataTable_items_tenpo').DataTable().clear().destroy();
+                }
+                $('#dataTable_items_tenpo').empty();
+                const table = $('#dataTable_items_customer').DataTable({
+                    data: data, // APIから取得したデータを設定
+                    columns: [
+                        { title: "取引先名", data: "customer_name" },
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+                // イベントリスナーを一度解除してから再登録
+                $('#dataTable_items_customer tbody').off('click').on('click', 'tr', function () {
+                    const rowData = table.row(this).data();
+                    if (rowData) {
+                        createview_store_items({
+                            p_bpcode: rowData["customer_code"],
+                            p_bpname: rowData["customer_name"],
+                            p_item_code: p_item_code
+                        }); // 選択された取引先名を引数に渡す
+                    } else {
+                        console.warn("rowDataが取得できませんでした。");
+                    }
+                });
+            })
+            .catch(err => alert("売上情報取得失敗:", err)); 
+            };
+
+        //* 店舗情報を取得処理 */
+        function createview_store_items({p_bpcode, p_bpname, p_item_code}) {
+
+            // コース名とコース担当者名、またはBP名を表示
+            let displayLabel = `${p_bpcode} ： ${p_bpname}`;
+            document.getElementById("labelArea_layer2").innerHTML = `<label>${displayLabel}</label>`;
+            //console.log("p_bpcode=", p_bpcode, "p_bpname=", p_bpname, "p_item_code=", p_item_code, "p_item_name=", p_item_name);
+            // APIエンドポイントのパラメータを設定
+            let queryParam = `bpcode=${p_bpcode}&item_code=${p_item_code}`;
+            
+
+            fetch(`/api/stores?${queryParam}`,{
+                method: 'GET',
+            })
+            .then(async response => {
+                const data = await response.json();     
+                if (!response.ok) {
+                    alert(data.error);
+                }
+                return data;
+            })
+            .then(data => {
+                // DataTableを初期化
+                if ($.fn.DataTable.isDataTable('#dataTable_items_tenpo')) {
+                    $('#dataTable_items_tenpo').DataTable().clear().destroy();
+                }
+                $('#dataTable_items_tenpo').empty();
+                const table = $('#dataTable_items_tenpo').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "店舗名", data: "key_and_name"},
+                        { title: "返品金額", data: "return_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "返品数量", data: "return_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
+                        { title: "納品数量", data: "delivery_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)}
+                    ],
+                    scrollY: '400px',
+                    scrollX: true,
+                    scrollCollapse: true,
+                    paging: false
+                });
+            })
+            .catch(err => alert("店舗情報取得失敗:", err)); 
+            }
+
         initialize(); 
 
+        // ブラウザを閉じる時の処理
+        window.addEventListener('beforeunload', function() {
+            // APIを呼び出してグローバル変数を初期化
+            fetch('/api/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .catch(err => console.error('初期化処理でエラーが発生しました:', err));
+        });
     </script>
 
 </body>

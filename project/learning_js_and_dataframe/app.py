@@ -33,8 +33,41 @@ USE_COLUMNS = {
 
 app = Flask(__name__)
 
+
 df_sales = None # salesはグローバル変数として定義
 df_courses = None # coursesはグローバル変数として定義
+
+@app.route('/api/check_data', methods=['GET'])
+def check_data():
+    """
+    グローバル変数の値の有無をチェックするエンドポイント
+    """
+    global df_sales, df_courses
+
+    if df_sales is not None and df_courses is not None:
+        return jsonify({"message": "データが存在します"}), 200
+    else:
+        return jsonify({"message": "データが存在しません"}), 404
+
+
+@app.after_request
+def add_header(response):
+    """
+    ブラウザを閉じた時にキャッシュをクリアし、グローバル変数を初期化するためのヘッダーを追加
+    """
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+@app.route('/api/clear', methods=['POST'])
+def clear_data():
+    """
+    グローバル変数を初期化するエンドポイント
+    """
+    global df_sales, df_courses
+    df_sales = None
+    df_courses = None
+    return jsonify({"message": "データがクリアされました"}), 200
+
 
 @app.route("/")
 def index():
@@ -60,6 +93,7 @@ def set_salesdata():
     
     try:
         file = request.files['file']
+
         df_sales = pd.read_csv(StringIO(file.read().decode('cp932')),header=1)
         
         # USE_COLUMNに含まれていないカラムを抽出
@@ -86,20 +120,20 @@ def get_salesdata():
     bpname_list=[112000,104000,103000] #
 
     try:
-        # クエリパラメータからコース名、店舗名を取得
-        item_code = request.args.get("item_code", default=None)
-
-        df_bp = df_sales[df_sales["customer_code"].isin(bpname_list)]
+        df_select_data = df_sales
+        df_select_data = df_select_data[df_select_data["customer_code"].isin(bpname_list)]
         
+        # クエリパラメータからコース名、店舗名を取得
+        item_code = request.args.get("item_code", default=None, type=int)
         if item_code:
-            df_bp = df_bp[df_bp["product_code"] == int(item_code)]
+            df_select_data = df_select_data[df_select_data["product_code"] == item_code]
 
         
         # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
-        df_bp = df_bp.groupby(['customer_code','customer_name'], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['customer_code','customer_name'], as_index=False).agg(SUM_COLUMN)
 
         # JSON形式でデータを返す
-        return jsonify(json.loads(df_bp.to_json(orient="records", force_ascii=False))), 200
+        return jsonify(json.loads(df_select_data.to_json(orient="records", force_ascii=False))), 200
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": f"売上データ取得に失敗しました。{str(e)}"}), 500
@@ -110,16 +144,16 @@ def get_course():
     global df_sales
     global df_courses
     
-    try:
+    try:    
+        # コースに該当する店舗のデータを取得
+        df_select_data =pd.merge(df_courses, df_sales, left_on='store_code', right_on='store_code', how='left')
 
-        # コース別に店舗コードを関連付ける
-        df_courses_sales =pd.merge(df_courses,df_sales, left_on='store_code', right_on='store_code', how='left')
-
+        
         # コース名と店舗コードをキーにして、コース毎の集計を行う
-        df_courses_sales = df_courses_sales.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
 
         # JSON形式でデータを返す
-        return jsonify(json.loads(df_courses_sales.to_json(orient="records", force_ascii=False)))
+        return jsonify(json.loads(df_select_data.to_json(orient="records", force_ascii=False)))
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": f"コース売上データ取得に失敗しました。{str(e)}"}), 500
@@ -132,39 +166,36 @@ def get_stores():
     global df_courses
     try:
         # クエリパラメータからコース名またはBPコードを取得
-        course_name = request.args.get("course_name", default=None)
         bpcode = request.args.get("bpcode", default=None, type=int)
-        item_code = request.args.get("item_code", default=None)
+        item_code = request.args.get("item_code", default=None, type=int)
+        course_name = request.args.get("course_name", default=None)
 
 
-        if not course_name and not bpcode:
-            return jsonify({"error": "course_name or bpcode is required"}), 400
+        if not course_name and not bpcode and not item_code:
+            return jsonify({"error": "course_name or bpcode or item_code is required"}), 400
         
-        # コース名をキーにして、コース情報を取得
+        df_select_data = df_sales
+        if bpcode:
+            df_select_data = df_select_data[df_select_data["customer_code"] == bpcode]
+
+        if item_code:
+            df_select_data = df_select_data[df_select_data["product_code"] == item_code]
+
         if course_name:
-            df_select_data = df_courses[df_courses["course_name"] == course_name]
-            # コースに該当する店舗のデータを取得
-            df_select_data_sales =pd.merge(df_select_data, df_sales, left_on='store_code', right_on='store_code', how='left')
+            l = df_courses[df_courses["course_name"] == course_name]["store_code"].tolist()
+            df_select_data = df_select_data[df_select_data["store_code"].isin(l)]
 
-        elif bpcode :
-            # 得意先に該当する店舗のデータを取得
-            df_select_data_sales = df_sales[df_sales["customer_code"] == bpcode]
-            
-        elif item_code:
-            # 商品に該当する店舗のデータを取得
-            df_select_data_sales = df_sales[df_sales["product_code"] == item_code]
-            
-
+         
         # 店舗コードと店舗名をキーにして、店舗毎の集計を行う
-        df_select_data_sales = df_select_data_sales.groupby(['store_code',"store_name"], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['store_code',"store_name"], as_index=False).agg(SUM_COLUMN)
 
         # 店舗コードと店舗名を結合して、表示用キーとして使用
-        df_select_data_sales["key_and_name"] = df_select_data_sales["store_code"].astype(str) + ":" + df_select_data_sales["store_name"].astype(str)
+        df_select_data["key_and_name"] = df_select_data["store_code"].astype(str) + ":" + df_select_data["store_name"].astype(str)
        
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
-        df_select_data_sales = json.loads(df_select_data_sales.to_json(orient="records", force_ascii=False))
+        df_select_data = json.loads(df_select_data.to_json(orient="records", force_ascii=False))
 
-        return jsonify(df_select_data_sales)
+        return jsonify(df_select_data)
     
     except Exception as e:
         print(f"Error: {e}")
@@ -175,22 +206,34 @@ def get_stores():
 def get_items():
 
     global df_sales
+    global df_courses
     try:
         # クエリパラメータからコース名、店舗名を取得
-        key = request.args.get("store_code", default=None)
+        bpcode = request.args.get("bpcode", default=None, type=int)
+        stor_code = request.args.get("store_code", default=None, type=int)
+        course_name = request.args.get("course_name", default=None)
 
-        if key:
-            df_select_store = df_sales[df_sales["store_code"] == int(key)]
+        df_select_data = df_sales
+        if bpcode:
+            df_select_data = df_select_data[df_select_data["customer_code"] == bpcode]
+
+        if stor_code:
+            df_select_data = df_select_data[df_select_data["store_code"] == stor_code]
+        
+        if course_name:
+            l = df_courses[df_courses["course_name"] == course_name]["store_code"].tolist()
+            df_select_data = df_select_data[df_select_data["store_code"].isin(l)]
+
 
         # 商品コードをキーにして、商品毎の集計を行う
-        df_select_store = df_select_store.groupby(['product_code',"product_name"], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['product_code',"product_name"], as_index=False).agg(SUM_COLUMN)
         
-        df_select_store["key_and_name"] = df_select_store["product_code"].astype(str) + ":" + df_select_store["product_name"].astype(str)
+        df_select_data["key_and_name"] = df_select_data["product_code"].astype(str) + ":" + df_select_data["product_name"].astype(str)
        
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
-        df_select_store = json.loads(df_select_store.to_json(orient="records", force_ascii=False))
+        df_select_data = json.loads(df_select_data.to_json(orient="records", force_ascii=False))
 
-        return jsonify(df_select_store)
+        return jsonify(df_select_data)
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": f"商品売上データ取得に失敗しました。{str(e)}"}), 500
