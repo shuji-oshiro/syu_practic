@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ToDoリスト</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    ul { padding-left: 0; list-style: none; }
+    li { padding: 0.5em 0; }
+    .todo-list {
+      list-style: none;
+      padding: 0;
+    }
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+    }
+    .todo-title.done {
+      text-decoration: line-through;
+      color: #888;
+    }
+    .delete-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #888;
+    }
+  </style>
+  <link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+  crossorigin="anonymous"
+  />
+</head>
+<body>
+  <div class="container mt-4">
+    <h1 class="mb-4">ToDoリスト</h1>
+    
+    <div class="mb-4">
+      <select id="filter-select" class="form-select" onchange="loadTodos()">
+        <option value="all">すべて</option>
+        <option value="undone">未完了</option>
+        <option value="done">完了済</option>
+      </select>
+    </div>
+
+    <ul id="todo-list" class="list-group mb-4"></ul>
+
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title h4 mb-3">新しいToDoを追加</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <input type="text" id="todo-input" class="form-control" placeholder="やることを入力" />
+          </div>
+          <div class="col-md-4">
+            <input type="email" id="email" class="form-control" placeholder="あなたのメールアドレス" required />
+          </div>
+          <div class="col-md-2">
+            <button onclick="addTodo()" class="btn btn-primary w-100">追加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+
+    async function loadTodos() {
+      const filterSelect = document.getElementById('filter-select');
+      const filter = filterSelect.value;
+
+      const res = await fetch(`/todos?filter=${filter}`);
+      const todos = await res.json();
+      const list = document.getElementById('todo-list');
+      list.innerHTML = '';
+
+      todos.forEach(todo => {
+        // リストアイテムの作成
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        
+        // チェックボックスの作成
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = todo.done;
+        checkbox.className = 'form-check-input me-2';
+        checkbox.onchange = () => toggleTodo({id: todo.id, done: checkbox.checked});
+        
+        // タイトルの作成
+        const title = document.createElement('span');
+        title.textContent = todo.title;
+        title.className = 'flex-grow-1 ms-2';
+        
+        // メールアドレスの作成
+        const email = document.createElement('span');
+        email.textContent = todo.email;
+        email.className = 'text-muted ms-2';
+        
+        // 削除ボタンの作成
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '✖';
+        deleteButton.className = 'btn btn-sm btn-danger ms-2';
+        deleteButton.onclick = () => deleteTodo({id: todo.id, title: todo.title});
+        
+        // 要素の追加
+        li.appendChild(checkbox);
+        li.appendChild(title);
+        li.appendChild(email);
+        li.appendChild(deleteButton);
+        list.appendChild(li);
+      });
+    }
+
+    function deleteTodo({id,title}) {
+      if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
+        return;
+      }
+      fetch(`/todos/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      .then(() => loadTodos()); // 更新して再表示
+    }
+
+    function toggleTodo({id,done}) { 
+      fetch(`/todos/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, done })
+      })
+        .then(() => loadTodos()); // 更新して再表示
+    }
+
+    function addTodo() {
+      const input = document.getElementById('todo-input');
+      const email = document.getElementById('email');
+      const title = input.value;
+      const emailValue = email.value;
+      if (!title) return;
+      fetch('/todos/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, email: emailValue })
+      })
+        .then(() => loadTodos()); // 更新して再表示
+      input.value = '';
+      email.value = '';
+    } 
+
+    loadTodos();
+  </script>
+</body>
+</html>
