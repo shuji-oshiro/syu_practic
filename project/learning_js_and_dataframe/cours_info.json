@@ -1,28 +1,100 @@
 [
     {
-        "course_name": "コースA",
-        "course_charge": "田中",
-        "store_code": [
-            112015,
-            112003
-        ]
-    },
-    {
         "course_name": "コースB",
-        "course_charge": "新城",
+        "course_charge": "高良賢二",
         "store_code": [
-            112021,
-            112029,
-            112012,
-            112009
+            112005,
+            112019,
+            112002
         ]
     },
     {
         "course_name": "コースC",
-        "course_charge": "大城",
+        "course_charge": "幸地安彦",
         "store_code": [
-            112010,
+            112001,
+            112003
+        ]
+    },
+    {
+        "course_name": "コースD",
+        "course_charge": "知念良博",
+        "store_code": [
+            112015,
+            112022,
+            112027
+        ]
+    },
+    {
+        "course_name": "コースE",
+        "course_charge": "松岡一志",
+        "store_code": [
+            112006
+        ]
+    },
+    {
+        "course_name": "コースF",
+        "course_charge": "佐久田淳",
+        "store_code": [
+            112012
+        ]
+    },
+    {
+        "course_name": "コースG",
+        "course_charge": "与那嶺聡",
+        "store_code": [
+            112016,
+            112029
+        ]
+    },
+    {
+        "course_name": "コースH",
+        "course_charge": "大野雄祐嗣",
+        "store_code": [
+            112023
+        ]
+    },
+    {
+        "course_name": "コースI",
+        "course_charge": "吉田賢栄",
+        "store_code": [
             112018
+        ]
+    },
+    {
+        "course_name": "コースＪ",
+        "course_charge": "国場大輝",
+        "store_code": [
+            112013
+        ]
+    },
+    {
+        "course_name": "コースK",
+        "course_charge": "小波津健一",
+        "store_code": [
+            112014
+        ]
+    },
+    {
+        "course_name": "コースL",
+        "course_charge": "上江洲勉",
+        "store_code": [
+            112021,
+            112017
+        ]
+    },
+    {
+        "course_name": "コースМ",
+        "course_charge": "山川潔",
+        "store_code": [
+            112009
+        ]
+    },
+    {
+        "course_name": "コースＮ",
+        "course_charge": "國吉紀代之",
+        "store_code": [
+            112010
         ]
     }
 ]

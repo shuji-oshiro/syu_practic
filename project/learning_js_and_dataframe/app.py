@@ -50,13 +50,13 @@ def check_data():
         return jsonify({"message": "データが存在しません"}), 404
 
 
-@app.after_request
-def add_header(response):
-    """
-    ブラウザを閉じた時にキャッシュをクリアし、グローバル変数を初期化するためのヘッダーを追加
-    """
-    response.headers['Cache-Control'] = 'no-store'
-    return response
+# @app.after_request
+# def add_header(response):
+#     """
+#     ブラウザを閉じた時にキャッシュをクリアし、グローバル変数を初期化するためのヘッダーを追加
+#     """
+#     response.headers['Cache-Control'] = 'no-store'
+#     return response
 
 @app.route('/api/clear', methods=['POST'])
 def clear_data():
