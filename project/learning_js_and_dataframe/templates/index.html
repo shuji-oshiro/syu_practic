@@ -275,7 +275,7 @@
             // コース名とコース担当者名、またはBP名を表示
             let displayLabel = `${p_bpcode} ： ${p_bpname}`;
             document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
-
+            console.log(p_bpcode);
             // APIエンドポイントのパラメータを設定
             let queryParam = `bpcode=${p_bpcode}`;
             

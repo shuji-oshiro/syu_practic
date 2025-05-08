@@ -6,6 +6,7 @@ from io import StringIO
 from flask import Flask, render_template, jsonify, request
 
 DATA_PAHT = "cours_info.json"
+DISP_CUSTOMER_CODE_PATH = "disp_customer_code.csv"
 
 SUM_COLUMN = {
     "net_sales_quantity":"sum",
@@ -18,7 +19,6 @@ SUM_COLUMN = {
 
 USE_COLUMNS = {
     "得意先コード": "customer_code",
-    "得意先名": "customer_name", 
     "商品コード": "product_code",
     "商品名": "product_name",
     "店舗コード": "store_code",
@@ -50,13 +50,13 @@ def check_data():
         return jsonify({"message": "データが存在しません"}), 404
 
 
-# @app.after_request
-# def add_header(response):
-#     """
-#     ブラウザを閉じた時にキャッシュをクリアし、グローバル変数を初期化するためのヘッダーを追加
-#     """
-#     response.headers['Cache-Control'] = 'no-store'
-#     return response
+@app.after_request
+def add_header(response):
+    """
+    ブラウザを閉じた時にキャッシュをクリアし、グローバル変数を初期化するためのヘッダーを追加
+    """
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 @app.route('/api/clear', methods=['POST'])
 def clear_data():
@@ -66,6 +66,7 @@ def clear_data():
     global df_sales, df_courses
     df_sales = None
     df_courses = None
+    
     return jsonify({"message": "データがクリアされました"}), 200
 
 
@@ -94,16 +95,23 @@ def set_salesdata():
     try:
         file = request.files['file']
 
-        df_sales = pd.read_csv(StringIO(file.read().decode('cp932')),header=1)
-        
+        df_customer = pd.read_csv(DISP_CUSTOMER_CODE_PATH)
+
+        df_temp = pd.read_csv(StringIO(file.read().decode('cp932')),header=1)
+
         # USE_COLUMNに含まれていないカラムを抽出
-        missing_columns = [col for col in USE_COLUMNS.keys() if col not in df_sales.columns]
+        missing_columns = [col for col in USE_COLUMNS.keys() if col not in df_temp.columns]
         if missing_columns:
             return jsonify({
                 "error": f"集計に必要な項目値が含まれていません：{', '.join(missing_columns)}"
-            }), 422
-            
-        df_sales = df_sales.rename(columns=USE_COLUMNS)[list(USE_COLUMNS.values())]
+            }), 422        
+        
+        df_temp = df_temp.rename(columns=USE_COLUMNS)[list(USE_COLUMNS.values())]        
+
+        temp2 = pd.merge(df_customer, df_temp, left_on='customer_code', right_on='customer_code', how='left')
+        temp3 = temp2[~temp2['customer_code'].isin(df_customer['customer_code'])]
+        temp3['customer_name'] = 'その他'
+        df_sales = pd.concat([temp2, temp3])
 
         # JSON形式でデータを返す
         return jsonify({"message": f"データ読み込みに成功しました。ファイル名：{file.filename}"}), 200
@@ -116,12 +124,8 @@ def set_salesdata():
 def get_salesdata():
     global df_sales
     
-
-    bpname_list=[112000,104000,103000] #
-
     try:
         df_select_data = df_sales
-        df_select_data = df_select_data[df_select_data["customer_code"].isin(bpname_list)]
         
         # クエリパラメータからコース名、店舗名を取得
         item_code = request.args.get("item_code", default=None, type=int)
@@ -130,7 +134,10 @@ def get_salesdata():
 
         
         # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
-        df_select_data = df_select_data.groupby(['customer_code','customer_name'], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['customer_name'], as_index=False).agg({
+            **SUM_COLUMN,
+            'customer_code': lambda x: ','.join(map(str, x.unique()))
+        })
 
         # JSON形式でデータを返す
         return jsonify(json.loads(df_select_data.to_json(orient="records", force_ascii=False))), 200
@@ -166,7 +173,11 @@ def get_stores():
     global df_courses
     try:
         # クエリパラメータからコース名またはBPコードを取得
-        bpcode = request.args.get("bpcode", default=None, type=int)
+        bpcode = request.args.get("bpcode", default=None)
+
+        if bpcode:
+            bpcode = [int(code) for code in bpcode.split(',')]
+
         item_code = request.args.get("item_code", default=None, type=int)
         course_name = request.args.get("course_name", default=None)
 
@@ -176,7 +187,7 @@ def get_stores():
         
         df_select_data = df_sales
         if bpcode:
-            df_select_data = df_select_data[df_select_data["customer_code"] == bpcode]
+            df_select_data = df_select_data[df_select_data["customer_code"].isin(bpcode)]
 
         if item_code:
             df_select_data = df_select_data[df_select_data["product_code"] == item_code]

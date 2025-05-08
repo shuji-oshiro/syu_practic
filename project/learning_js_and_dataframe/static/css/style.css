@@ -117,14 +117,6 @@ select {
     cursor: pointer;
 }
 
-/* テーブルコンテナ */
-/* .table-container {
-    margin: 20px;
-    padding: 20px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-} */
 
 .table-container {
     height: calc(100vh - 150px); /* 上部の高さに応じて調整 */
