@@ -131,17 +131,35 @@ def set_salesdata():
                 "error": f"集計に必要な項目値が含まれていません：{', '.join(missing_columns)}"
             }), 422        
         
+        # カラム名を変更し、型を変換
         df_temp = df_temp.rename(columns=USE_COLUMNS)[list(USE_COLUMNS.values())]     
         df_temp = df_temp.astype(USE_COLUMNS_TYPES)
 
+        # 取引先コードと取引先名を結合
         temp2 = pd.merge(df_customer, df_temp, left_on='customer_code', right_on='customer_code', how='left')
-        temp3 = df_temp[~df_temp['customer_code'].isin(df_customer['customer_code'])]
-        temp3["customer_code"] = "999999"
-        temp3['customer_name'] = 'その他'
-        temp3['store_code'] = '999999'
-        temp3['store_name'] = 'その他'
 
-        df_sales = pd.concat([temp2, temp3])
+        # 取引先コードがdf_customerに含まれていない場合、その他に置き換える
+        temp3 = df_temp[~df_temp['customer_code'].isin(df_customer['customer_code'])].copy()
+        temp3.loc[:, "customer_code"] = "999999"
+        temp3.loc[:, "customer_name"] = 'その他'
+        temp3.loc[:, "store_code"] = '999999'
+        temp3.loc[:, "store_name"] = 'その他'
+
+        temp4 = pd.concat([temp2, temp3])
+
+        # 取引先コードの先頭1文字が"1"以外の場合、"1"に置き換える
+        temp4["customer_code"] = temp4["customer_code"].apply(lambda x: "1" + str(x)[1:] if not str(x).startswith("1") else str(x))
+        #  店舗コードの先頭1文字が"1"以外の場合、"1"に置き換える
+        temp4["store_code"] = temp4["store_code"].apply(lambda x: "1" + str(x)[1:] if not str(x).startswith("1") else str(x))
+
+        # 取引先コード、店舗コード、商品コード、商品名をキーにして、取引先、店舗、商品毎の集計を行う
+        # 高速化のため、必要な集計のみを実行
+        agg_dict = {
+            **SUM_COLUMN,
+            'store_name': 'first',  # unique()と結合より高速
+            'product_name': 'first'  # unique()と結合より高速
+        }
+        df_sales = temp4.groupby(['customer_code','customer_name','store_code','product_code'], as_index=False).agg(agg_dict)
 
         # JSON形式でデータを返す
         return jsonify({"message": f"データ読み込みに成功しました。ファイル名：{file.filename}"}), 200
@@ -165,9 +183,8 @@ def get_salesdata():
         
         # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
         df_select_data["store_count"] = df_select_data["store_code"]
-        df_select_data = df_select_data.groupby(['customer_name'], as_index=False).agg({
+        df_select_data = df_select_data.groupby(['customer_code','customer_name'], as_index=False).agg({
             **SUM_COLUMN,
-            'customer_code': lambda x: ','.join(map(str, x.unique())),
             'store_count': lambda x: len(x.unique())
         })
 
@@ -186,7 +203,6 @@ def get_course():
     try:    
         # コースに該当する店舗のデータを取得
         df_select_data =pd.merge(df_courses, df_sales, left_on='store_code', right_on='store_code', how='left')
-
         
         # コース名と店舗コードをキーにして、コース毎の集計を行う
         df_select_data = df_select_data.groupby(['course_name','course_charge'], as_index=False).agg(SUM_COLUMN)
@@ -207,8 +223,8 @@ def get_stores():
         # クエリパラメータからコース名またはBPコードを取得
         bpcode = request.args.get("bpcode", default=None)
 
-        if bpcode:
-            bpcode = [code for code in bpcode.split(',')]
+        # if bpcode:
+        #     bpcode = [code for code in bpcode.split(',')]
 
         item_code = request.args.get("item_code", default=None)
         course_name = request.args.get("course_name", default=None)
@@ -219,7 +235,8 @@ def get_stores():
         
         df_select_data = df_sales
         if bpcode:
-            df_select_data = df_select_data[df_select_data["customer_code"].isin(bpcode)]
+            # df_select_data = df_select_data[df_select_data["customer_code"].isin(bpcode)]
+            df_select_data = df_select_data[df_select_data["customer_code"] == bpcode]
 
         if item_code:
             df_select_data = df_select_data[df_select_data["product_code"] == item_code]
@@ -229,16 +246,9 @@ def get_stores():
             df_select_data = df_select_data[df_select_data["store_code"].isin(l)]
 
          
-        # 店舗コードと店舗名をキーにして、店舗毎の集計を行う
-        #df_select_data = df_select_data.groupby(['store_code',"store_name"], as_index=False).agg(SUM_COLUMN)
-
-        
-        # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
-        df_select_data = df_select_data.groupby(['store_name'], as_index=False).agg({
-            **SUM_COLUMN,
-            'store_code': lambda x: ','.join(map(str, x.unique()))
+        df_select_data = df_select_data.groupby(['store_code','store_name'], as_index=False).agg({
+            **SUM_COLUMN
         })
-
 
         # 店舗コードと店舗名を結合して、表示用キーとして使用
         df_select_data["key_and_name"] = df_select_data["store_code"] + ":" + df_select_data["store_name"]
@@ -276,13 +286,7 @@ def get_items():
             l = df_courses[df_courses["course_name"] == course_name]["store_code"].tolist()
             df_select_data = df_select_data[df_select_data["store_code"].isin(l)]
 
-        # temp = df_select_data.groupby(['customer_name',"product_code","product_name"], as_index=False).agg({
-        #     **SUM_COLUMN
-        # })
-        # temp2 = temp.groupby(["product_code","product_name"], as_index=False).agg({
-        #     **SUM_COLUMN,
-        #     'customer_name' : 'size'
-        # })
+
         df_select_data["customer_count"] = df_select_data["customer_name"]
         # 商品コードをキーにして、商品毎の集計を行う
         df_select_data = df_select_data.groupby(['product_code',"product_name"], as_index=False).agg({

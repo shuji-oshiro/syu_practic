@@ -30,23 +30,23 @@
     <div class="table-container scroll-content">
         <div class="dataTable_sales_view">
             <table id="dataTable_customer_sales" class="display" ></table>
-            <div id="labelArea_layer1"></div>
+            <div id="labelArea_1_customer"></div>
             <table id="dataTable_customer_tenpo" class="display" ></table>
-            <div id="labelArea_layer2"></div>
+            <div id="labelArea_1_tenpo"></div>
             <table id="dataTable_customer_items" class="display" ></table>
         </div>
         <div class="dataTable_course_view">
             <table id="dataTable_course_sales" class="display" ></table>
-            <div id="labelArea_layer1"></div>
+            <div id="labelArea_2_course"></div>
             <table id="dataTable_course_tenpo" class="display" ></table>
-            <div id="labelArea_layer2"></div>
+            <div id="labelArea_2_tenpo"></div>
             <table id="dataTable_course_items" class="display" ></table>
         </div>
         <div class="dataTable_item_view">
             <table id="dataTable_items_sales" class="display" ></table>
-            <div id="labelArea_layer1"></div>
+            <div id="labelArea_3_item"></div>
             <table id="dataTable_items_customer" class="display" ></table>
-            <div id="labelArea_layer2"></div>
+            <div id="labelArea_3_customer"></div>
             <table id="dataTable_items_tenpo" class="display" ></table>
         </div>
     </div>
@@ -100,11 +100,15 @@
 
         //* 初期化処理 */
         function initialize(){
+            document.getElementById('labelArea_1_customer').innerHTML = '';
+            document.getElementById('labelArea_1_tenpo').innerHTML = '';
             
-            // ラベルをクリア
-            document.getElementById('labelArea_layer1').innerHTML = '';
-            document.getElementById('labelArea_layer2').innerHTML = '';
+            document.getElementById('labelArea_2_course').innerHTML = '';
+            document.getElementById('labelArea_2_tenpo').innerHTML = '';
             
+            document.getElementById('labelArea_3_item').innerHTML = '';
+            document.getElementById('labelArea_3_customer').innerHTML = '';
+
             // テーブルをクリア＆ヘッダーも削除
             const tableIds = [
                 '#dataTable_course_sales',
@@ -223,7 +227,7 @@
         //* 売上情報を取得処理 */
         function createview_customer(){
 
-            document.getElementById('labelArea_layer1').innerHTML = '';
+            document.getElementById('labelArea_1_customer').innerHTML = '';
 
             fetch("/api/sales", {
                 method: 'GET',
@@ -240,6 +244,7 @@
                     data: data, // APIから取得したデータを設定
                     columns: [
                         { title: "取引先名", data: "customer_name" },
+                        { title: "店舗数", data: "store_count" },
                         { title: "純売金額", data: "net_sales_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
                         { title: "純売数量", data: "net_sales_quantity" ,render: $.fn.dataTable.render.number(',', '.', 0)},
                         { title: "納品金額", data: "delivery_amount" ,render: $.fn.dataTable.render.number(',', '.', 0)},
@@ -271,10 +276,10 @@
         //* 店舗情報を取得処理 */
         function createview_store({p_bpcode, p_bpname}) {
 
-            document.getElementById('labelArea_layer2').innerHTML = '';
+            document.getElementById('labelArea_1_tenpo').innerHTML = '';
             // コース名とコース担当者名、またはBP名を表示
             let displayLabel = `${p_bpcode} ： ${p_bpname}`;
-            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+            document.getElementById("labelArea_1_customer").innerHTML = `<label>${displayLabel}</label>`;
             console.log(p_bpcode);
             // APIエンドポイントのパラメータを設定
             let queryParam = `bpcode=${p_bpcode}`;
@@ -339,7 +344,7 @@
         //* 商品情報を取得処理 */
         function createview_items({p_bpcode, p_stors_code, p_stors_name}) {
 
-            document.getElementById("labelArea_layer2").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
+            document.getElementById("labelArea_1_tenpo").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
 
             // APIエンドポイントのパラメータを設定  
             let queryParam = `bpcode=${p_bpcode}&store_code=${p_stors_code}`;
@@ -387,7 +392,7 @@
 
         //* コース情報を取得処理 */
         function createview_course(){
-            document.getElementById('labelArea_layer1').innerHTML = '';
+            document.getElementById('labelArea_2_course').innerHTML = '';
 
             fetch(`/api/courses`, {
                 method: 'GET',
@@ -436,10 +441,10 @@
         //* 店舗情報を取得処理 */
         function createview_store_course({p_course_name, p_course_person}) {
 
-            document.getElementById('labelArea_layer2').innerHTML = '';
+            document.getElementById('labelArea_2_tenpo').innerHTML = '';
             // コース名とコース担当者名、またはBP名を表示
             let displayLabel = `${p_course_name} ： ${p_course_person}`;
-            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+            document.getElementById("labelArea_2_course").innerHTML = `<label>${displayLabel}</label>`;
 
             // APIエンドポイントのパラメータを設定
             let queryParam = `course_name=${p_course_name}`;
@@ -503,7 +508,7 @@
             //* 商品情報を取得処理 */
         function createview_items_course({p_stors_code, p_stors_name}) {
 
-            document.getElementById("labelArea_layer2").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
+            document.getElementById("labelArea_2_tenpo").innerHTML = `<label>店舗名：${p_stors_name}</label>`;
 
             // APIエンドポイントのパラメータを設定  
             let queryParam = `store_code=${p_stors_code}`;
@@ -550,7 +555,7 @@
         //* 商品情報を取得処理 */
         function createview_items_items() {
 
-            document.getElementById('labelArea_layer1').innerHTML = '';
+            document.getElementById('labelArea_3_item').innerHTML = '';
 
             fetch(`/api/items`,{
                 method: 'GET',
@@ -599,12 +604,13 @@
         //* 売上情報を取得処理 */
         function createview_customer_items({p_item_code, p_item_name}){
 
-            document.getElementById('labelArea_layer2').innerHTML = '';
+            document.getElementById('labelArea_3_customer').innerHTML = '';
 
             let param = `item_code=${p_item_code}`;
             // コース名とコース担当者名、またはBP名を表示
             let displayLabel = `${p_item_code} ： ${p_item_name}`;
-            document.getElementById("labelArea_layer1").innerHTML = `<label>${displayLabel}</label>`;
+            // console.log("displayLabel=", displayLabel);
+            document.getElementById("labelArea_3_item").innerHTML = `<label>${displayLabel}</label>`;
 
             fetch(`/api/sales?${param}`, {
                 method: 'GET',
@@ -668,7 +674,7 @@
 
             // コース名とコース担当者名、またはBP名を表示
             let displayLabel = `${p_bpcode} ： ${p_bpname}`;
-            document.getElementById("labelArea_layer2").innerHTML = `<label>${displayLabel}</label>`;
+            document.getElementById("labelArea_3_customer").innerHTML = `<label>${displayLabel}</label>`;
             //console.log("p_bpcode=", p_bpcode, "p_bpname=", p_bpname, "p_item_code=", p_item_code, "p_item_name=", p_item_name);
             // APIエンドポイントのパラメータを設定
             let queryParam = `bpcode=${p_bpcode}&item_code=${p_item_code}`;
