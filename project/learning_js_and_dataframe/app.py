@@ -30,6 +30,30 @@ USE_COLUMNS = {
     "当年納品金額": "delivery_amount",
     "当年納品数量": "delivery_quantity"
 }
+USE_COLUMNS_TYPES = {
+    "customer_code": str,
+    "product_code": str,
+    "product_name": str,
+    "store_code": str,
+    "store_name": str,
+    "return_amount": int,
+    "return_quantity": int,
+    "net_sales_amount": int, 
+    "net_sales_quantity": int,
+    "delivery_amount": int,
+    "delivery_quantity": int
+}
+
+USE_COLUMNS_DISP_CUSTOMER_CODE = {
+    "customer_code": str,
+    "customer_name": str
+}
+
+USE_COURSE_CODE_TYPES = {
+    "course_name": str,
+    "course_charge": str,
+    "store_code": str
+}
 
 app = Flask(__name__)
 
@@ -79,7 +103,7 @@ def index():
 
         # course_stors_code列を展開
         df_courses = df_temp.explode(['store_code'])
-        df_courses["store_code"] = df_courses["store_code"].astype(int)
+        df_courses = df_courses.astype(USE_COURSE_CODE_TYPES)
 
         return render_template("index.html")
    
@@ -96,6 +120,7 @@ def set_salesdata():
         file = request.files['file']
 
         df_customer = pd.read_csv(DISP_CUSTOMER_CODE_PATH)
+        df_customer = df_customer.astype(USE_COLUMNS_DISP_CUSTOMER_CODE)
 
         df_temp = pd.read_csv(StringIO(file.read().decode('cp932')),header=1)
 
@@ -106,11 +131,16 @@ def set_salesdata():
                 "error": f"集計に必要な項目値が含まれていません：{', '.join(missing_columns)}"
             }), 422        
         
-        df_temp = df_temp.rename(columns=USE_COLUMNS)[list(USE_COLUMNS.values())]        
+        df_temp = df_temp.rename(columns=USE_COLUMNS)[list(USE_COLUMNS.values())]     
+        df_temp = df_temp.astype(USE_COLUMNS_TYPES)
 
         temp2 = pd.merge(df_customer, df_temp, left_on='customer_code', right_on='customer_code', how='left')
-        temp3 = temp2[~temp2['customer_code'].isin(df_customer['customer_code'])]
+        temp3 = df_temp[~df_temp['customer_code'].isin(df_customer['customer_code'])]
+        temp3["customer_code"] = "999999"
         temp3['customer_name'] = 'その他'
+        temp3['store_code'] = '999999'
+        temp3['store_name'] = 'その他'
+
         df_sales = pd.concat([temp2, temp3])
 
         # JSON形式でデータを返す
@@ -128,15 +158,17 @@ def get_salesdata():
         df_select_data = df_sales
         
         # クエリパラメータからコース名、店舗名を取得
-        item_code = request.args.get("item_code", default=None, type=int)
+        item_code = request.args.get("item_code", default=None)
         if item_code:
             df_select_data = df_select_data[df_select_data["product_code"] == item_code]
 
         
         # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
+        df_select_data["store_count"] = df_select_data["store_code"]
         df_select_data = df_select_data.groupby(['customer_name'], as_index=False).agg({
             **SUM_COLUMN,
-            'customer_code': lambda x: ','.join(map(str, x.unique()))
+            'customer_code': lambda x: ','.join(map(str, x.unique())),
+            'store_count': lambda x: len(x.unique())
         })
 
         # JSON形式でデータを返す
@@ -176,9 +208,9 @@ def get_stores():
         bpcode = request.args.get("bpcode", default=None)
 
         if bpcode:
-            bpcode = [int(code) for code in bpcode.split(',')]
+            bpcode = [code for code in bpcode.split(',')]
 
-        item_code = request.args.get("item_code", default=None, type=int)
+        item_code = request.args.get("item_code", default=None)
         course_name = request.args.get("course_name", default=None)
 
 
@@ -198,10 +230,18 @@ def get_stores():
 
          
         # 店舗コードと店舗名をキーにして、店舗毎の集計を行う
-        df_select_data = df_select_data.groupby(['store_code',"store_name"], as_index=False).agg(SUM_COLUMN)
+        #df_select_data = df_select_data.groupby(['store_code',"store_name"], as_index=False).agg(SUM_COLUMN)
+
+        
+        # 得意先コードと得意先名をキーにして、得意先毎の集計を行う
+        df_select_data = df_select_data.groupby(['store_name'], as_index=False).agg({
+            **SUM_COLUMN,
+            'store_code': lambda x: ','.join(map(str, x.unique()))
+        })
+
 
         # 店舗コードと店舗名を結合して、表示用キーとして使用
-        df_select_data["key_and_name"] = df_select_data["store_code"].astype(str) + ":" + df_select_data["store_name"].astype(str)
+        df_select_data["key_and_name"] = df_select_data["store_code"] + ":" + df_select_data["store_name"]
        
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
         df_select_data = json.loads(df_select_data.to_json(orient="records", force_ascii=False))
@@ -220,8 +260,8 @@ def get_items():
     global df_courses
     try:
         # クエリパラメータからコース名、店舗名を取得
-        bpcode = request.args.get("bpcode", default=None, type=int)
-        stor_code = request.args.get("store_code", default=None, type=int)
+        bpcode = request.args.get("bpcode", default=None)
+        stor_code = request.args.get("store_code", default=None)
         course_name = request.args.get("course_name", default=None)
 
         df_select_data = df_sales
@@ -229,17 +269,28 @@ def get_items():
             df_select_data = df_select_data[df_select_data["customer_code"] == bpcode]
 
         if stor_code:
-            df_select_data = df_select_data[df_select_data["store_code"] == stor_code]
+            stor_code = [code for code in stor_code.split(',')]
+            df_select_data = df_select_data[df_select_data["store_code"].isin(stor_code)]
         
         if course_name:
             l = df_courses[df_courses["course_name"] == course_name]["store_code"].tolist()
             df_select_data = df_select_data[df_select_data["store_code"].isin(l)]
 
-
+        # temp = df_select_data.groupby(['customer_name',"product_code","product_name"], as_index=False).agg({
+        #     **SUM_COLUMN
+        # })
+        # temp2 = temp.groupby(["product_code","product_name"], as_index=False).agg({
+        #     **SUM_COLUMN,
+        #     'customer_name' : 'size'
+        # })
+        df_select_data["customer_count"] = df_select_data["customer_name"]
         # 商品コードをキーにして、商品毎の集計を行う
-        df_select_data = df_select_data.groupby(['product_code',"product_name"], as_index=False).agg(SUM_COLUMN)
+        df_select_data = df_select_data.groupby(['product_code',"product_name"], as_index=False).agg({
+            **SUM_COLUMN,
+            'customer_count': lambda x: len(x.unique())
+        })
         
-        df_select_data["key_and_name"] = df_select_data["product_code"].astype(str) + ":" + df_select_data["product_name"].astype(str)
+        df_select_data["key_and_name"] = df_select_data["product_code"] + ":" + df_select_data["product_name"]
        
         # 店舗情報をJSON形式で返す　*array形式に変換できるloadsで返さないとエラーが発生する
         df_select_data = json.loads(df_select_data.to_json(orient="records", force_ascii=False))
