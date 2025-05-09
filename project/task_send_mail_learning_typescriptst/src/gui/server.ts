@@ -94,6 +94,7 @@ app.get('/todos', (req, res) => {
 
   //console.info(sql);
   
+  // データベースから取得
   db.all(sql, params, (err, rows) => {
     if (err) {
       res.status(500).send('Database error');
@@ -111,6 +112,7 @@ app.post('/todos/add', (req, res) => {
   const { title, email } = req.body;
   const db = new sqlite3.Database(DB_PATH);
 
+  
   db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', [title, false, email], function (err) {
     if (err) {
       console.error(err);
