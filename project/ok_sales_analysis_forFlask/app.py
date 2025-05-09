@@ -5,8 +5,15 @@ import pandas as pd
 from io import StringIO
 from flask import Flask, render_template, jsonify, request
 
-DATA_PAHT = "cours_info.json"
-DISP_CUSTOMER_CODE_PATH = "disp_customer_code.csv"
+from pathlib import Path
+
+# スクリプトのあるディレクトリを基準にパスを取得
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "cours_info.json"
+DISP_CUSTOMER_CODE_PATH = BASE_DIR / "disp_customer_code.csv"
+
+# DATA_PAHT = "cours_info.json"
+# DISP_CUSTOMER_CODE_PATH = "disp_customer_code.csv"
 
 SUM_COLUMN = {
     "net_sales_quantity":"sum",
@@ -99,7 +106,7 @@ def index():
     global df_courses
 
     try:
-        df_temp = pd.DataFrame(json.load(open(DATA_PAHT, encoding="utf-8")))
+        df_temp = pd.DataFrame(json.load(open(DATA_PATH, encoding="utf-8")))
 
         # course_stors_code列を展開
         df_courses = df_temp.explode(['store_code'])
@@ -347,7 +354,7 @@ def update_coursesinfo():
         with open("cours_info.json", "w", encoding="utf-8") as f:
             json.dump(new_courses, f, ensure_ascii=False, indent=4)
         
-        df_temp = pd.DataFrame(json.load(open(DATA_PAHT, encoding="utf-8")))
+        df_temp = pd.DataFrame(json.load(open(DATA_PATH, encoding="utf-8")))
 
         # course_stors_code列を展開
         df_courses = df_temp.explode(['store_code'])
@@ -360,4 +367,5 @@ def update_coursesinfo():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    
+    app.run(host="0.0.0.0", port=5000, debug=True)
