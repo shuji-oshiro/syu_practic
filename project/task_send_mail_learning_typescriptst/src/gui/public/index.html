@@ -55,9 +55,6 @@
           <div class="col-md-6">
             <input type="text" id="todo-input" class="form-control" placeholder="やることを入力" />
           </div>
-          <div class="col-md-4">
-            <input type="email" id="email" class="form-control" placeholder="あなたのメールアドレス" required />
-          </div>
           <div class="col-md-2">
             <button onclick="addTodo()" class="btn btn-primary w-100">追加</button>
           </div>
@@ -68,7 +65,6 @@
 
 
   <script>
-
     async function loadTodos() {
       const filterSelect = document.getElementById('filter-select');
       const filter = filterSelect.value;
@@ -78,42 +74,196 @@
       const list = document.getElementById('todo-list');
       list.innerHTML = '';
 
-      todos.forEach(todo => {
+      // タイトルごとにグループ化
+      const groupedTodos = todos.reduce((acc, todo) => {
+        if (!acc[todo.title]) {
+          acc[todo.title] = [];
+        }
+        acc[todo.title].push(todo);
+        return acc;
+      }, {});
+
+      // グループ化されたToDoを表示
+      Object.entries(groupedTodos).forEach(([title, todoGroup]) => {
         // リストアイテムの作成
         const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.className = 'list-group-item';
+        
+        // ヘッダー部分（タイトルとチェックボックス）
+        const header = document.createElement('div');
+        header.className = 'd-flex justify-content-between align-items-center mb-2';
         
         // チェックボックスの作成
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.checked = todo.done;
+        checkbox.checked = todoGroup.every(todo => todo.done);
         checkbox.className = 'form-check-input me-2';
-        checkbox.onchange = () => toggleTodo({id: todo.id, done: checkbox.checked});
+        checkbox.onchange = () => {
+          const newDone = checkbox.checked;
+          todoGroup.forEach(todo => toggleTodo({id: todo.id, done: newDone}));
+        };
         
+
         // タイトルの作成
-        const title = document.createElement('span');
-        title.textContent = todo.title;
-        title.className = 'flex-grow-1 ms-2';
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = title;
+        titleSpan.className = 'flex-grow-1 ms-2';
+        titleSpan.contentEditable = true;
         
-        // メールアドレスの作成
-        const email = document.createElement('span');
-        email.textContent = todo.email;
-        email.className = 'text-muted ms-2';
+        // エンターキーとタブキーが押された時の処理を追加
+        titleSpan.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault(); // デフォルトの改行を防止
+            const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
+            if (newTitle && newTitle !== title) {
+              updateTodoTitle({id: todoGroup[0].id, oldTitle: title, newTitle: newTitle});
+            } else {
+              // 無効な入力の場合は元のタイトルに戻す
+              titleSpan.textContent = title;
+            }
+            titleSpan.blur(); // フォーカスを外す
+          }
+        });
+
+        titleSpan.addEventListener('blur', () => {
+          const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
+          if (newTitle && newTitle !== title) {
+            updateTodoTitle({id: todoGroup[0].id, oldTitle: title, newTitle: newTitle});
+          } else {
+            // 無効な入力の場合は元のタイトルに戻す
+            titleSpan.textContent = title;
+          }
+        });
+
         
+
+        // メールアドレス選択用のコンボボックスを作成
+        const emailSelect = document.createElement('select');
+        emailSelect.className = 'form-select form-select-sm ms-2';
+        emailSelect.style.width = '200px';
+        
+        // デフォルトのメールアドレスを追加
+        const defaultEmails = ['test@example.com', 'test2@example.com', 'test3@example.com'];
+        defaultEmails.forEach(email => {
+          const option = document.createElement('option');
+          option.value = email;
+          option.textContent = email;
+          emailSelect.appendChild(option);
+        });
+
+
         // 削除ボタンの作成
         const deleteButton = document.createElement('button');
         deleteButton.textContent = '✖';
         deleteButton.className = 'btn btn-sm btn-danger ms-2';
-        deleteButton.onclick = () => deleteTodo({id: todo.id, title: todo.title});
+        deleteButton.onclick = () => deleteTodo({id: todoGroup[0].id, title: title});
+
+
+        // 追加ボタンの作成
+        const addButton = document.createElement('button');
+        addButton.textContent = '追加';
+        addButton.className = 'btn btn-sm btn-danger ms-2';
+        addButton.onclick = () => {
+          const selectedEmail = emailSelect.value;
+          add_address_to_todo({title: title, email: selectedEmail});
+        };
+      
         
-        // 要素の追加
-        li.appendChild(checkbox);
-        li.appendChild(title);
-        li.appendChild(email);
-        li.appendChild(deleteButton);
+        header.appendChild(checkbox);
+        header.appendChild(titleSpan);
+        header.appendChild(emailSelect);
+        header.appendChild(addButton);
+        header.appendChild(deleteButton);
+        
+        
+        // メールアドレスリストの作成
+        const emailList = document.createElement('div');
+        emailList.className = 'ms-4';
+        todoGroup.forEach(todo => {
+          const emailContainer = document.createElement('div');
+          emailContainer.className = 'd-flex justify-content-between align-items-center mb-1';
+          
+          const emailItem = document.createElement('div');
+          emailItem.className = 'text-muted small';
+          emailItem.textContent = todo.email;
+          
+          const emailDeleteButton = document.createElement('button');
+          emailDeleteButton.textContent = '×';
+          emailDeleteButton.className = 'btn btn-sm btn-outline-danger';
+          emailDeleteButton.onclick = () => deleteEmail({id: todo.id, title: title, email: todo.email});
+          
+          emailContainer.appendChild(emailItem);
+          emailContainer.appendChild(emailDeleteButton);
+          emailList.appendChild(emailContainer);
+        });
+        
+        li.appendChild(header);
+        li.appendChild(emailList);
         list.appendChild(li);
       });
     }
+
+
+    function updateTodoTitle({id, oldTitle, newTitle}) {
+      fetch(`/todos/updateTitle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, oldTitle, newTitle })
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(text);
+          });
+        } 
+        return response.json(); 
+      })
+      .then(data => {
+        console.log(data);
+        loadTodos();
+      })
+      .catch(error => {
+        alert('エラー: ' + error.message);
+      });
+    }
+
+    function add_address_to_todo({title,email}) {
+      console.log("add_address_to_todo",title,email);
+      fetch('/todos/add_address_to_todo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({title, email })
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(text);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(data);
+        loadTodos();
+      })
+      .catch(error => {
+        alert('エラー: ' + error.message);
+      });
+    }
+
+
+    function deleteEmail({id,title,email}) {
+      if (!confirm(`「${title}」の「${email}」を削除してもよろしいですか？`)) {
+        return;
+      }
+      fetch(`/todos/deleteEmail`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, email })
+      })
+        .then(() => loadTodos()); // 更新して再表示
+    } 
+
 
     function deleteTodo({id,title}) {
       if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
@@ -127,6 +277,7 @@
       .then(() => loadTodos()); // 更新して再表示
     }
 
+
     function toggleTodo({id,done}) { 
       fetch(`/todos/toggle`, {
         method: 'PATCH',
@@ -136,21 +287,23 @@
         .then(() => loadTodos()); // 更新して再表示
     }
 
+
     function addTodo() {
       const input = document.getElementById('todo-input');
-      const email = document.getElementById('email');
+      // const email = document.getElementById('email');
       const title = input.value;
-      const emailValue = email.value;
+      // const emailValue = email.value;
       if (!title) return;
       fetch('/todos/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, email: emailValue })
+        body: JSON.stringify({ title })
       })
         .then(() => loadTodos()); // 更新して再表示
       input.value = '';
       email.value = '';
     } 
+
 
     loadTodos();
   </script>

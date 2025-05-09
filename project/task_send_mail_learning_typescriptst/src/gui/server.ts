@@ -8,10 +8,8 @@ const app = express();
 const PORT = 3000;
 
 
-const DATA_PATH = path.resolve('src/data/todos.json');
+//nst DATA_PATH = path.resolve('src/data/todos.json');
 const DB_PATH = path.resolve('src/data/todos.db');
-
-
 
 
 // 中間処理
@@ -65,6 +63,8 @@ nodeCron.schedule('* * * * *', () => {
   });
 });
 
+
+
 // データベースから取得
 app.get('/todos', (req, res) => {
 
@@ -110,16 +110,40 @@ app.get('/todos', (req, res) => {
 //データ追加
 app.post('/todos/add', (req, res) => {
   const { title, email } = req.body;
-  const db = new sqlite3.Database(DB_PATH);
 
+  const defaultEmail = ["test@example.com","test2@example.com","test3@example.com"];
+
+  const db = new sqlite3.Database(DB_PATH);
   
-  db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', [title, false, email], function (err) {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Database error');
-    }
-    res.status(201).json({ id: this.lastID, title, done: false });
+  // デフォルトメールアドレスをすべて登録
+  const insertPromises = defaultEmail.map(email => {
+    return new Promise((resolve, reject) => {
+      db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
+        [title, false, email], 
+        function(err) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(this.lastID);
+        }
+      );
+    });
   });
+
+  Promise.all(insertPromises)
+    .then(ids => {
+      res.status(201).json({ 
+        ids, 
+        title, 
+        done: false,
+        emails: defaultEmail 
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).send('Database error');
+    });
 });
 
 //データ更新
@@ -155,6 +179,66 @@ app.delete('/todos/delete', (req, res) => {
   });
 });
 
+
+app.delete('/todos/deleteEmail', (req, res) => {
+  // console.info("call!! deleteEmail",req.body);
+  const { id, title, email } = req.body;
+  const todoId = Number(id);
+  const db = new sqlite3.Database(DB_PATH);
+  db.run('DELETE FROM todos WHERE id = ? AND title = ? AND email = ?', [todoId, title, email], function (err) {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error');
+    }
+    res.json({ id, title, email });
+  });
+});
+
+app.post('/todos/add_address_to_todo', (req, res) => {
+  // console.info("call!! add_address_to_todo",req.body);
+
+  const db = new sqlite3.Database(DB_PATH);
+  
+  if (req.body.email) {
+    db.get('SELECT * FROM todos WHERE title = ? AND email = ?', [req.body.title, req.body.email], (err, row) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database error');
+      }
+      if (row) {
+        return res.status(400).send('このメールアドレスは既に登録されています');
+      }
+      
+      const { title, email } = req.body;
+      
+      db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
+        [title, false, email], 
+        function(err) {
+          if (err) {
+            console.error(err);
+            return res.status(500).send('Database error');
+          }
+          res.json({ title, email });
+        }
+      );
+    });
+  }
+});
+
+
+app.patch('/todos/updateTitle', (req, res) => {
+  const { id, oldTitle, newTitle } = req.body;
+  const todoId = Number(id);
+  const db = new sqlite3.Database(DB_PATH);
+
+  db.run('UPDATE todos SET title = ? WHERE id = ?', [newTitle, todoId], function (err) {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error');
+    }
+    res.json({ id, oldTitle, newTitle });
+  }); 
+});
 
 
 

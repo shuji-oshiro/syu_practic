@@ -44,3 +44,7 @@ tsconfig.json に outDir オプションを設定します。
   },
   "include": ["src"]           // src配下だけをコンパイル対象にする
 }
+
+
+****直接ファイルを実行する****
+ npx ts-node src/gui/server.ts
