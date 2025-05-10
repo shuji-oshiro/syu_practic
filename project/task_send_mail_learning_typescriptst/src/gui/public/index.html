@@ -40,7 +40,7 @@
     
     <div class="mb-4">
       <select id="filter-select" class="form-select" onchange="loadTodos()">
-        <option value="all">すべて</option>
+        <option value="all">すべてALL</option>
         <option value="undone">未完了</option>
         <option value="done">完了済</option>
       </select>
@@ -65,10 +65,12 @@
 
 
   <script>
+
+    //初期処理　タスク情報を取得し画面に表示する
     async function loadTodos() {
       const filterSelect = document.getElementById('filter-select');
       const filter = filterSelect.value;
-
+      console.log("call!! loadTodos",filter);
       const res = await fetch(`/todos?filter=${filter}`);
       const todos = await res.json();
       const list = document.getElementById('todo-list');
@@ -93,15 +95,6 @@
         const header = document.createElement('div');
         header.className = 'd-flex justify-content-between align-items-center mb-2';
         
-        // チェックボックスの作成
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = todoGroup.every(todo => todo.done);
-        checkbox.className = 'form-check-input me-2';
-        checkbox.onchange = () => {
-          const newDone = checkbox.checked;
-          todoGroup.forEach(todo => toggleTodo({id: todo.id, done: newDone}));
-        };
         
 
         // タイトルの作成
@@ -113,29 +106,28 @@
         // エンターキーとタブキーが押された時の処理を追加
         titleSpan.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === 'Tab') {
-            e.preventDefault(); // デフォルトの改行を防止
-            const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
-            if (newTitle && newTitle !== title) {
-              updateTodoTitle({id: todoGroup[0].id, oldTitle: title, newTitle: newTitle});
-            } else {
-              // 無効な入力の場合は元のタイトルに戻す
-              titleSpan.textContent = title;
-            }
+            // e.preventDefault(); // デフォルトの改行を防止
+            // const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
+            // if (newTitle && newTitle !== title) {
+            //   updateTodoTitle({oldTitle: title, newTitle: newTitle});
+            // } else {
+            //   // 無効な入力の場合は元のタイトルに戻す
+            //   titleSpan.textContent = title;
+            // }
             titleSpan.blur(); // フォーカスを外す
           }
         });
 
+        // フォーカスを外した時の処理
         titleSpan.addEventListener('blur', () => {
           const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
-          if (newTitle && newTitle !== title) {
-            updateTodoTitle({id: todoGroup[0].id, oldTitle: title, newTitle: newTitle});
-          } else {
-            // 無効な入力の場合は元のタイトルに戻す
+          if (newTitle && newTitle !== title && updateTodoTitle({oldTitle: title, newTitle: newTitle})) {
+            titleSpan.textContent = newTitle;
+          }else{
             titleSpan.textContent = title;
           }
         });
-
-        
+       
 
         // メールアドレス選択用のコンボボックスを作成
         const emailSelect = document.createElement('select');
@@ -156,7 +148,7 @@
         const deleteButton = document.createElement('button');
         deleteButton.textContent = '✖';
         deleteButton.className = 'btn btn-sm btn-danger ms-2';
-        deleteButton.onclick = () => deleteTodo({id: todoGroup[0].id, title: title});
+        deleteButton.onclick = () => deleteTodo({title: title});
 
 
         // 追加ボタンの作成
@@ -169,7 +161,7 @@
         };
       
         
-        header.appendChild(checkbox);
+        // header.appendChild(checkbox);
         header.appendChild(titleSpan);
         header.appendChild(emailSelect);
         header.appendChild(addButton);
@@ -187,10 +179,11 @@
           emailItem.className = 'text-muted small';
           emailItem.textContent = todo.email;
           
-          const emailDeleteButton = document.createElement('button');
-          emailDeleteButton.textContent = '×';
-          emailDeleteButton.className = 'btn btn-sm btn-outline-danger';
-          emailDeleteButton.onclick = () => deleteEmail({id: todo.id, title: title, email: todo.email});
+          const emailDeleteButton = document.createElement('input');
+          emailDeleteButton.type = 'checkbox';
+          emailDeleteButton.className = 'form-check-input';
+          emailDeleteButton.checked = todo.done;
+          emailDeleteButton.onchange = () => toggleTodo({title: todo.title, done: emailDeleteButton.checked, email: todo.email});
           
           emailContainer.appendChild(emailItem);
           emailContainer.appendChild(emailDeleteButton);
@@ -203,30 +196,33 @@
       });
     }
 
-
+    //タスクのタイトルを更新する処理　同じタイトルのタスクは更新しない
     function updateTodoTitle({id, oldTitle, newTitle}) {
-      fetch(`/todos/updateTitle`, {
+      
+      const response = fetch(`/todos/updateTitle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, oldTitle, newTitle })
       })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(text);
-          });
-        } 
-        return response.json(); 
-      })
-      .then(data => {
-        console.log(data);
-        loadTodos();
-      })
-      .catch(error => {
-        alert('エラー: ' + error.message);
-      });
+        .then(response => {
+          if (!response.ok) {
+            return response.text().then(text => {
+              throw new Error(text);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log(data);
+          loadTodos();
+        })
+        .catch(error => {
+          alert('エラー: ' + error.message);
+        });
+      
     }
 
+    //タスクにメールアドレスを追加する処理　すでに
     function add_address_to_todo({title,email}) {
       console.log("add_address_to_todo",title,email);
       fetch('/todos/add_address_to_todo', {
@@ -251,43 +247,47 @@
       });
     }
 
-
-    function deleteEmail({id,title,email}) {
-      if (!confirm(`「${title}」の「${email}」を削除してもよろしいですか？`)) {
-        return;
-      }
-      fetch(`/todos/deleteEmail`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, title, email })
-      })
-        .then(() => loadTodos()); // 更新して再表示
-    } 
-
-
-    function deleteTodo({id,title}) {
+    //タスクを削除する処理
+    function deleteTodo({title}) {
       if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
         return;
       }
       fetch(`/todos/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ title })
       })
-      .then(() => loadTodos()); // 更新して再表示
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(text);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(data);
+        loadTodos();
+      })
+      .catch(error => {
+        alert('エラー: ' + error.message);
+      });
     }
 
 
-    function toggleTodo({id,done}) { 
+    //メールアドレス単位でタスクを完了にする処理
+    function toggleTodo({title,done,email}) { 
+      
       fetch(`/todos/toggle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, done })
+        body: JSON.stringify({ title, done, email })
       })
         .then(() => loadTodos()); // 更新して再表示
     }
 
 
+    //タスクを追加する処理　初期処理では登録されているメールアドレスすべてにタスクを追加する
     function addTodo() {
       const input = document.getElementById('todo-input');
       // const email = document.getElementById('email');
