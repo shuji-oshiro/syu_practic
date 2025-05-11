@@ -56,7 +56,7 @@
             <input type="text" id="todo-input" class="form-control" placeholder="やることを入力" />
           </div>
           <div class="col-md-2">
-            <button onclick="addTodo()" class="btn btn-primary w-100">追加</button>
+            <button onclick="addTodo()" id="add-button" class="btn btn-primary w-100">追加</button>
           </div>
         </div>
       </div>
@@ -70,20 +70,41 @@
     async function loadTodos() {
       const filterSelect = document.getElementById('filter-select');
       const filter = filterSelect.value;
-      console.log("call!! loadTodos",filter);
-      const res = await fetch(`/todos?filter=${filter}`);
-      const todos = await res.json();
+
+      let groupedTodos = {};
+      let addtaskflag = false;
+      // ToDoの取得
+      await fetch(`/todos?filter=${filter}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`ToDoの取得に失敗しました: ${res.status}`);
+          return res.json();
+        })
+        .then(todos => {
+          // 以降の処理
+          // タイトルごとにグループ化
+          addtaskflag = todos.addtaskflag;
+          groupedTodos = todos.rows.reduce((acc, todo) => {
+            if (!acc[todo.title]) {
+              acc[todo.title] = [];
+            }
+            acc[todo.title].push(todo);
+            return acc;
+          }, {});
+
+          if (!addtaskflag) {
+            document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';
+            document.getElementById('todo-input').disabled = true;
+            document.getElementById('add-button').disabled = true;
+          }
+        })
+        .catch(error => {
+          console.error('エラーが発生しました:', error);
+          alert('ToDoの取得に失敗しました');
+        });
+
       const list = document.getElementById('todo-list');
       list.innerHTML = '';
-
-      // タイトルごとにグループ化
-      const groupedTodos = todos.reduce((acc, todo) => {
-        if (!acc[todo.title]) {
-          acc[todo.title] = [];
-        }
-        acc[todo.title].push(todo);
-        return acc;
-      }, {});
+      
 
       // グループ化されたToDoを表示
       Object.entries(groupedTodos).forEach(([title, todoGroup]) => {
@@ -94,8 +115,6 @@
         // ヘッダー部分（タイトルとチェックボックス）
         const header = document.createElement('div');
         header.className = 'd-flex justify-content-between align-items-center mb-2';
-        
-        
 
         // タイトルの作成
         const titleSpan = document.createElement('span');
@@ -106,14 +125,6 @@
         // エンターキーとタブキーが押された時の処理を追加
         titleSpan.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === 'Tab') {
-            // e.preventDefault(); // デフォルトの改行を防止
-            // const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
-            // if (newTitle && newTitle !== title) {
-            //   updateTodoTitle({oldTitle: title, newTitle: newTitle});
-            // } else {
-            //   // 無効な入力の場合は元のタイトルに戻す
-            //   titleSpan.textContent = title;
-            // }
             titleSpan.blur(); // フォーカスを外す
           }
         });
@@ -128,28 +139,28 @@
           }
         });
        
-
         // メールアドレス選択用のコンボボックスを作成
         const emailSelect = document.createElement('select');
         emailSelect.className = 'form-select form-select-sm ms-2';
         emailSelect.style.width = '200px';
-        
-        // デフォルトのメールアドレスを追加
-        const defaultEmails = ['test@example.com', 'test2@example.com', 'test3@example.com'];
-        defaultEmails.forEach(email => {
-          const option = document.createElement('option');
-          option.value = email;
-          option.textContent = email;
-          emailSelect.appendChild(option);
-        });
 
+        // デフォルトのメールアドレスを追加
+        fetch('/todos/default_email')
+          .then(res => res.json())
+          .then(data => {
+            (data.email || []).forEach(email => {
+              const option = document.createElement('option');
+              option.value = option.textContent = email;
+              emailSelect.appendChild(option);
+            });
+          })
+          .catch(() => alert('メールアドレスの取得に失敗しました'));
 
         // 削除ボタンの作成
         const deleteButton = document.createElement('button');
         deleteButton.textContent = '✖';
         deleteButton.className = 'btn btn-sm btn-danger ms-2';
         deleteButton.onclick = () => deleteTodo({title: title});
-
 
         // 追加ボタンの作成
         const addButton = document.createElement('button');
@@ -160,13 +171,13 @@
           add_address_to_todo({title: title, email: selectedEmail});
         };
       
-        
-        // header.appendChild(checkbox);
         header.appendChild(titleSpan);
-        header.appendChild(emailSelect);
-        header.appendChild(addButton);
-        header.appendChild(deleteButton);
-        
+
+        if (addtaskflag) {
+          header.appendChild(emailSelect);
+          header.appendChild(addButton);
+          header.appendChild(deleteButton);
+        }       
         
         // メールアドレスリストの作成
         const emailList = document.createElement('div');
@@ -294,16 +305,33 @@
       const title = input.value;
       // const emailValue = email.value;
       if (!title) return;
+      if (title.length > 100) {
+        alert('タスク名は100文字以内で入力してください');
+        return;
+      }
       fetch('/todos/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
       })
-        .then(() => loadTodos()); // 更新して再表示
+        .then(response => {
+          console.log(response);
+          if (!response.ok) {
+            return response.text().then(text => {
+              throw new Error(text);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log(data);
+          loadTodos();
+        })  
+        .catch(error => {
+          alert('エラー: ' + error.message);
+        });
       input.value = '';
-      email.value = '';
     } 
-
 
     loadTodos();
   </script>

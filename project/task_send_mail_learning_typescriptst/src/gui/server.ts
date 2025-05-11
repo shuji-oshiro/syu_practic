@@ -13,7 +13,13 @@ const PORT = 3000;
 
 //nst DATA_PATH = path.resolve('src/data/todos.json');
 const DB_PATH = path.resolve('src/data/todos.db');
-const send_email_list = fs.readFileSync(path.resolve('src/data/send_email.csv'), 'utf8').split('\n').map(line => line.split(',')[1]);
+
+//タスクを追加するときに送信するメールアドレスリスト
+const send_email_list = fs
+  .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
+  .split('\n')
+  .map(line => line.split(',')[1]?.trim())
+  .filter(Boolean);
 
 dotenv.config({path: path.resolve('.env')});
 const default_email = process.env.DEFAULT_EMAIL || '';
@@ -78,8 +84,6 @@ app.get('/todos', (req, res) => {
   // DBファイルの作成または開く
   const db = new sqlite3.Database(DB_PATH);
 
-
-
   // テーブルがなければ作成
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS todos (
@@ -106,19 +110,23 @@ app.get('/todos', (req, res) => {
     sql += ' WHERE 1=1';
   }
   
+  let addtaskflag = true;
   if (email) {
     sql += ` AND email = '${email}'`;
+    addtaskflag = false;
   }
-  //console.info(sql);
+
+  // デバッグ用コンソール
+  // console.info(sql);
   
-  // データベースから取得
+    // データベースから取得
   db.all(sql, params, (err, rows) => {
     if (err) {
       res.status(500).send('Database error');
       return;
     }
     //console.info("rows",rows);
-    res.json(rows);
+    res.json({ rows, addtaskflag });
   });
 
 });
@@ -127,27 +135,36 @@ app.get('/todos', (req, res) => {
 //タスクデータを追加
 app.post('/todos/add', (req, res) => {
   const { title } = req.body;
-
   
   const db = new sqlite3.Database(DB_PATH);
   
-  // デフォルトメールアドレスをすべて登録
-  for (const email of send_email_list) {
-    db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
-      [title, false, email], 
-      function(err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).send('Database error');
-        }
+  //すでにタスクが存在するか確認
+  db.get('SELECT * FROM todos WHERE title = ?', [title], (err, row) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error');
+    }
+    if (row) {
+      return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
+    }else{
+      // デフォルトメールアドレスをすべて登録
+      for (const email of send_email_list) {
+        db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
+          [title, false, email], 
+          function(err) {
+            if (err) {
+              console.error(err);
+              return res.status(500).send('Database error');
+            }
+          }
+        );
       }
-    );
-  }
-  
-  res.status(201).json({ 
-    title, 
-    done: false,
-    emails: send_email_list 
+      res.status(201).json({ 
+        title, 
+        done: false,
+        emails: send_email_list 
+      });
+    }
   });
 });
 
@@ -242,6 +259,11 @@ app.patch('/todos/updateTitle', (req, res) => {
   });
 });
 
+
+// デフォルトのメールアドレスを取得
+app.get('/todos/default_email', (req, res) => {
+  res.json({ email: send_email_list });
+});
 
 
 app.listen(PORT, () => {
