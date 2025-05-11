@@ -4,59 +4,118 @@
   <meta charset="UTF-8" />
   <title>ToDoリスト</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    ul { padding-left: 0; list-style: none; }
-    li { padding: 0.5em 0; }
+    body { 
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f8f9fa;
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 800px;
+    }
     .todo-list {
       list-style: none;
       padding: 0;
     }
     .todo-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px;
-      border-bottom: 1px solid #ccc;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+    .todo-item:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .todo-title {
+      font-weight: 500;
     }
     .todo-title.done {
       text-decoration: line-through;
-      color: #888;
+      color: #6c757d;
     }
-    .delete-button {
-      background: none;
+    .form-control:focus {
+      box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15);
+    }
+    .btn-primary {
+      background-color: #0d6efd;
       border: none;
-      cursor: pointer;
-      color: #888;
+      padding: 0.5rem 1.5rem;
+    }
+    .btn-primary:hover {
+      background-color: #0b5ed7;
+    }
+    .form-select {
+      border-radius: 6px;
+    }
+    .email-list {
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .email-item {
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+    }
+    .email-item:hover {
+      background-color: #e9ecef;
+    }
+    .form-check-input:checked {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
     }
   </style>
-  <link
-  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-  rel="stylesheet"
-  crossorigin="anonymous"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container mt-4">
-    <h1 class="mb-4">ToDoリスト</h1>
+  <div class="container py-5">
+    <h1 class="mb-4 text-center fw-bold">ToDoリスト</h1>
     
-    <div class="mb-4">
-      <select id="filter-select" class="form-select" onchange="loadTodos()">
-        <option value="all">すべてALL</option>
-        <option value="undone">未完了</option>
-        <option value="done">完了済</option>
-      </select>
-    </div>
-
-    <ul id="todo-list" class="list-group mb-4"></ul>
-
-    <div class="card">
+    <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <h2 class="card-title h4 mb-3">新しいToDoを追加</h2>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <input type="text" id="todo-input" class="form-control" placeholder="やることを入力" />
-          </div>
-          <div class="col-md-2">
-            <button onclick="addTodo()" id="add-button" class="btn btn-primary w-100">追加</button>
+        <div class="mb-4">
+          <select id="filter-select" class="form-select" onchange="loadTodos()">
+            <option value="all">すべてのタスク</option>
+            <option value="undone">未完了のタスク</option>
+            <option value="done">完了済みのタスク</option>
+          </select>
+        </div>
+        <!-- メールアドレスリストの取り込みボタン-->
+        <div class="mb-4">
+          <input type="file" id="email-file-input" style="display: none;" accept=".txt,.csv">
+          <button id="import-email-button" class="btn btn-primary" onclick="importEmail()">送付先メールアドレスの初期設定</button>
+          <p class="text-muted"></p>カンマ区切りメールアドレスＣＳＶファイル （例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
+        </div>
+
+        <!--タスクリストの表示-->
+        <ul id="todo-list" class="list-group mb-4"></ul>
+
+        <div class="card bg-light">
+          <div class="card-body">
+            <h2 class="card-title h5 mb-3">新しいタスクを追加</h2>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <input type="text" id="todo-input" class="form-control" placeholder="タスクを入力してください" />
+              </div>
+              <div class="col-md-4">
+                <button onclick="addTodo()" id="add-button" class="btn btn-primary w-100">追加</button>
+              </div>
+            </div>
+            <h4 class="card-title h5 mb-3 mt-4">タスク設定メールアドレス</h4>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <input type="email" id="email-input" class="form-control" placeholder="メールアドレスを入力してください" />
+              </div>
+              <div class="col-md-4">
+                <button onclick="addEmail()" class="btn btn-success w-100">追加</button>
+                <button onclick="deleteEmail()" class="btn btn-danger w-100">削除</button>
+              </div>
+            </div>
+            <select id="email-list" class="form-select mt-3" multiple size="5">
+              <!-- メールアドレスリストがここに動的に追加されます -->
+            </select>
           </div>
         </div>
       </div>
@@ -68,6 +127,8 @@
 
     //初期処理　タスク情報を取得し画面に表示する
     async function loadTodos() {
+
+      
       const filterSelect = document.getElementById('filter-select');
       const filter = filterSelect.value;
 
@@ -139,22 +200,6 @@
           }
         });
        
-        // メールアドレス選択用のコンボボックスを作成
-        const emailSelect = document.createElement('select');
-        emailSelect.className = 'form-select form-select-sm ms-2';
-        emailSelect.style.width = '200px';
-
-        // デフォルトのメールアドレスを追加
-        fetch('/todos/default_email')
-          .then(res => res.json())
-          .then(data => {
-            (data.email || []).forEach(email => {
-              const option = document.createElement('option');
-              option.value = option.textContent = email;
-              emailSelect.appendChild(option);
-            });
-          })
-          .catch(() => alert('メールアドレスの取得に失敗しました'));
 
         // 削除ボタンの作成
         const deleteButton = document.createElement('button');
@@ -162,20 +207,10 @@
         deleteButton.className = 'btn btn-sm btn-danger ms-2';
         deleteButton.onclick = () => deleteTodo({title: title});
 
-        // 追加ボタンの作成
-        const addButton = document.createElement('button');
-        addButton.textContent = '追加';
-        addButton.className = 'btn btn-sm btn-danger ms-2';
-        addButton.onclick = () => {
-          const selectedEmail = emailSelect.value;
-          add_address_to_todo({title: title, email: selectedEmail});
-        };
       
         header.appendChild(titleSpan);
 
         if (addtaskflag) {
-          header.appendChild(emailSelect);
-          header.appendChild(addButton);
           header.appendChild(deleteButton);
         }       
         
@@ -205,6 +240,70 @@
         li.appendChild(emailList);
         list.appendChild(li);
       });
+
+        
+      document.getElementById('email-list').innerHTML = '';
+
+      //todo email-listの初期化
+      fetch('/todos/default_email')
+        .then(res => {
+          if (!res.ok) throw new Error(`初期設定メールアドレスの取得に失敗しました: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          console.log(data);
+          
+          for (const email of data.send_email_list) {
+            const option = document.createElement('option');
+            option.value = email;
+            option.textContent = email;
+            document.getElementById('email-list').appendChild(option);
+          }
+        })
+        .catch(error => {
+          alert('エラー: ' + error.message);
+        });
+
+    }
+
+
+    //ファイルを読み込み、タスク単位で送付するメールアドレスを設定する  
+    function importEmail() {
+      document.getElementById('email-file-input').click();
+      document.getElementById('email-file-input').onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          alert(file.name);
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const content = e.target.result;
+            
+            fetch('/todos/default_email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: content })
+            })
+            .then(response => {
+              if (!response.ok) {
+                return response.text().then(text => {
+                  throw new Error(text);
+                });
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log(data),
+              alert(`メールアドレスの設定が完了しました\n設定メールアドレス:\n${data.email.join('\n')}`),
+              loadTodos()
+            })
+            .catch(error => { 
+              alert('エラー: ' + error.message);
+            });
+          };
+          reader.readAsText(file);
+        }
+      };
+
     }
 
     //タスクのタイトルを更新する処理　同じタイトルのタスクは更新しない
@@ -233,31 +332,7 @@
       
     }
 
-    //タスクにメールアドレスを追加する処理　すでに
-    function add_address_to_todo({title,email}) {
-      console.log("add_address_to_todo",title,email);
-      fetch('/todos/add_address_to_todo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({title, email })
-      })
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(text);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
-        loadTodos();
-      })
-      .catch(error => {
-        alert('エラー: ' + error.message);
-      });
-    }
-
+   
     //タスクを削除する処理
     function deleteTodo({title}) {
       if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
@@ -301,9 +376,10 @@
     //タスクを追加する処理　初期処理では登録されているメールアドレスすべてにタスクを追加する
     function addTodo() {
       const input = document.getElementById('todo-input');
-      // const email = document.getElementById('email');
       const title = input.value;
-      // const emailValue = email.value;
+      const emailList = document.getElementById('email-list');
+      const emails = Array.from(emailList.options).map(option => option.value);
+
       if (!title) return;
       if (title.length > 100) {
         alert('タスク名は100文字以内で入力してください');
@@ -312,7 +388,7 @@
       fetch('/todos/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
+        body: JSON.stringify({ title, email_list: emails })
       })
         .then(response => {
           console.log(response);
@@ -325,6 +401,7 @@
         })
         .then(data => {
           console.log(data);
+          alert(`新しいタスクの追加が完了しました\nタスク名:${data.title}\n送信先メールアドレス:${data.emails.join('\n')}`);
           loadTodos();
         })  
         .catch(error => {
@@ -332,6 +409,38 @@
         });
       input.value = '';
     } 
+
+    //タスクで送信する登録するメールアドレスを追加する処理
+    function addEmail() {
+      const input = document.getElementById('email-input');
+      const email = input.value;
+      if (!email) return;
+      const emailList = document.getElementById('email-list');
+      
+      if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+        alert('有効なメールアドレスを入力してください');
+        return;
+      }
+      // 同じメールアドレスが存在しないか確認
+      if (emailList.querySelector(`option[value="${email}"]`)) {
+        alert('このメールアドレスは既に存在します');
+        return;
+      }
+
+      const option = document.createElement('option');
+      option.value = email;
+      option.textContent = email;
+      emailList.appendChild(option);
+      input.value = '';
+    }
+
+    //タスクで送信する登録するメールアドレスを削除する処理
+    function deleteEmail() {
+      const emailList = document.getElementById('email-list');
+      const selectedEmail = emailList.value;
+      if (!selectedEmail) return;
+      emailList.removeChild(emailList.querySelector(`option[value="${selectedEmail}"]`));
+    }
 
     loadTodos();
   </script>

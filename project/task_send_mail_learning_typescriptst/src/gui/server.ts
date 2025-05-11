@@ -15,13 +15,11 @@ const PORT = 3000;
 const DB_PATH = path.resolve('src/data/todos.db');
 
 //タスクを追加するときに送信するメールアドレスリスト
-const send_email_list = fs
-  .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
-  .split('\n')
-  .map(line => line.split(',')[1]?.trim())
-  .filter(Boolean);
+let send_email_list: string[] = []
 
 dotenv.config({path: path.resolve('.env')});
+
+
 const default_email = process.env.DEFAULT_EMAIL || '';
 
 // 中間処理
@@ -32,7 +30,7 @@ app.use(express.json());
 // 'public'ディレクトリ内のファイルが直接アクセス可能になります
 app.use(express.static(path.join(__dirname, 'public')));
 
-
+//タスク未完了のメール送信
 function sendEmail(to: string, subject: string, text: string) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -56,6 +54,7 @@ function sendEmail(to: string, subject: string, text: string) {
   // });
 }
 
+//特定時間ごとにタスク未完了のメール送信
 nodeCron.schedule('* * * * *', () => {
   console.log('⏰ 1分たったのでメール送信チェック開始');
 
@@ -76,10 +75,8 @@ nodeCron.schedule('* * * * *', () => {
 });
 
 
-
 // データベースから取得
 app.get('/todos', (req, res) => {
-
 
   // DBファイルの作成または開く
   const db = new sqlite3.Database(DB_PATH);
@@ -134,7 +131,7 @@ app.get('/todos', (req, res) => {
 
 //タスクデータを追加
 app.post('/todos/add', (req, res) => {
-  const { title } = req.body;
+  const { title, email_list } = req.body;
   
   const db = new sqlite3.Database(DB_PATH);
   
@@ -148,7 +145,7 @@ app.post('/todos/add', (req, res) => {
       return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
     }else{
       // デフォルトメールアドレスをすべて登録
-      for (const email of send_email_list) {
+      for (const email of email_list) {
         db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
           [title, false, email], 
           function(err) {
@@ -162,7 +159,7 @@ app.post('/todos/add', (req, res) => {
       res.status(201).json({ 
         title, 
         done: false,
-        emails: send_email_list 
+        emails: email_list 
       });
     }
   });
@@ -203,38 +200,6 @@ app.delete('/todos/delete', (req, res) => {
 });
 
 
-// メールアドレスを追加 
-app.post('/todos/add_address_to_todo', (req, res) => {
-  // console.info("call!! add_address_to_todo",req.body);
-
-  const db = new sqlite3.Database(DB_PATH);
-  
-  if (req.body.email) {
-    db.get('SELECT * FROM todos WHERE title = ? AND email = ?', [req.body.title, req.body.email], (err, row) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send('Database error');
-      }
-      if (row) {
-        return res.status(400).send('このメールアドレスは既に登録されています');
-      }
-      
-      const { title, email } = req.body;
-      
-      db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
-        [title, false, email], 
-        function(err) {
-          if (err) {
-            console.error(err);
-            return res.status(500).send('Database error');
-          }
-          res.json({ title, email });
-        }
-      );
-    });
-  }
-});
-
 
 // タスクのタイトルを更新
 app.patch('/todos/updateTitle', (req, res) => {
@@ -260,12 +225,35 @@ app.patch('/todos/updateTitle', (req, res) => {
 });
 
 
-// デフォルトのメールアドレスを取得
+//タスク未完了のメール送信先を更新
+app.post('/todos/default_email', ((req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ error: 'メールアドレスが指定されていません' });
+    return;
+  }
+  
+  try {
+    fs.writeFileSync(path.resolve('src/data/send_email.csv'), email);
+    res.json({ email: send_email_list });
+  } catch (error) {
+    console.error('メールアドレスの保存中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'メールアドレスの保存に失敗しました' });
+  }
+}));
+
 app.get('/todos/default_email', (req, res) => {
-  res.json({ email: send_email_list });
+  res.json({ send_email_list });
 });
 
 
 app.listen(PORT, () => {
+
+  send_email_list = fs
+    .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
+    .split('\n')
+    .map(line => line?.trim())
+    .filter(Boolean);
+
   console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
 });
