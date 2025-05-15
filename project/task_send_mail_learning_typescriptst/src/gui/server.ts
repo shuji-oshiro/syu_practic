@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import sqlite3 from 'sqlite3';
 import { getCompileCacheDir } from 'module';
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 
 //nst DATA_PATH = path.resolve('src/data/todos.json');
@@ -66,12 +66,13 @@ type SendEmail = (to: string, subject: string, text: string) => void; // 文字�
 
 //タスク未完了のメール送信
 const sendEmail: SendEmail = (to: string, subject: string, text: string): void => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'your.email@gmail.com',
-      pass: 'your-app-password',
-    },
+  
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
   });
 
   const mailOptions = {
@@ -80,8 +81,18 @@ const sendEmail: SendEmail = (to: string, subject: string, text: string): void =
     subject,
     text,
   };
-  console.info("mailOptions", mailOptions);
+  console.info("Sending email with options:", mailOptions);
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Email sent:', info.response);
+    }
+  });
+
 }
+
 
 
 
@@ -120,7 +131,7 @@ app.get('/todos', (req: express.Request, res: express.Response) => {
   });
 
   const filter = req.query.filter as string | undefined;
-  const email = default_email;
+  const user = req.query.user as string | undefined;
 
   let sql = 'SELECT * FROM todos';
   let params: any[] = [];
@@ -134,8 +145,8 @@ app.get('/todos', (req: express.Request, res: express.Response) => {
   }
   
   let addtaskflag = true;
-  if (email) {
-    sql += ` AND email = '${email}'`;
+  if (user) {
+    sql += ` AND email = '${user}'`;
     addtaskflag = false;
   }
 

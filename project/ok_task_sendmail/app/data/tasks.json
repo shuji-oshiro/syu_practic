@@ -1,16 +1,5 @@
 [
   {
-    "id": 1,
-    "title": "\u30bf\u30b9\u30afA",
-    "due_date": "2025-04-01",
-    "users": [
-      {
-        "username": "alice",
-        "email": "alice@example.com"
-      }
-    ]
-  },
-  {
     "id": 2,
     "title": "\u30bf\u30b9\u30afB",
     "due_date": "2025-04-29",

@@ -82,12 +82,6 @@
             <option value="done">完了済みのタスク</option>
           </select>
         </div>
-        <!-- メールアドレスリストの取り込みボタン-->
-        <div class="mb-4">
-          <input type="file" id="email-file-input" style="display: none;" accept=".txt,.csv">
-          <button id="import-email-button" class="btn btn-primary" onclick="importEmail()">送付先メールアドレスの初期設定</button>
-          <p class="text-muted"></p>カンマ区切りメールアドレスＣＳＶファイル （例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
-        </div>
 
         <!--タスクリストの表示-->
         <ul id="todo-list" class="list-group mb-4"></ul>
@@ -109,13 +103,29 @@
                 <input type="email" id="email-input" class="form-control" placeholder="メールアドレスを入力してください" />
               </div>
               <div class="col-md-4">
-                <button onclick="addEmail()" class="btn btn-success w-100">追加</button>
-                <button onclick="deleteEmail()" class="btn btn-danger w-100">削除</button>
+                <button onclick="addEmail()" id="add-email-button" class="btn btn-success w-100">追加</button>
               </div>
             </div>
-            <select id="email-list" class="form-select mt-3" multiple size="5">
-              <!-- メールアドレスリストがここに動的に追加されます -->
-            </select>
+            
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex gap-2">
+                <select id="email-list" class="form-select mt-3" multiple size="5">
+                  <!-- メールアドレスリストがここに動的に追加されます -->
+                </select>
+                <button onclick="deleteSelectedEmail()" id="delete-email-button" class="btn btn-danger mt-3" style="white-space: pre-line;">選択<br>削除</button>
+              </div>
+              <div id="email-buttons" class="d-flex flex-wrap gap-2">
+                <!-- 個別のメールアドレスと削除ボタンがここに動的に追加されます -->
+              </div>
+            </div>
+            <!-- メールアドレスリストの取り込みボタン-->
+            <div class="mb-4" id="import-email-button-container">
+              <input type="file" id="email-file-input" style="display: none;" accept=".txt,.csv">
+              <div class="d-flex align-items-center gap-2">
+                <button id="import-email-button" class="btn btn-primary" onclick="importEmail()">送付先メールアドレスの初期設定</button>
+                <p class="text-muted mb-0">カンマ区切りメールアドレス　*.csv（例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -128,6 +138,10 @@
     //初期処理　タスク情報を取得し画面に表示する
     async function loadTodos() {
 
+      const params = new URLSearchParams(window.location.search);
+      const user = params.get('user') || '';
+      console.info("user:", user);
+
       
       const filterSelect = document.getElementById('filter-select');
       const filter = filterSelect.value;
@@ -135,7 +149,7 @@
       let groupedTodos = {};
       let addtaskflag = false;
       // ToDoの取得
-      await fetch(`/todos?filter=${filter}`)
+      await fetch(`/todos?filter=${filter}&user=${user}`)
         .then(res => {
           if (!res.ok) throw new Error(`ToDoの取得に失敗しました: ${res.status}`);
           return res.json();
@@ -156,6 +170,23 @@
             document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';
             document.getElementById('todo-input').disabled = true;
             document.getElementById('add-button').disabled = true;
+            document.getElementById('email-input').disabled = true;
+            document.getElementById('email-input').placeholder = 'あなたの権限ではメールアドレスを追加できません';
+            document.getElementById('add-email-button').disabled = true;
+            document.getElementById('delete-email-button').disabled = true;
+            document.getElementById('email-list').disabled = true;
+            document.getElementById('import-email-button-container').style.display = 'none';
+            
+          }else{
+            document.getElementById('todo-input').placeholder = 'タスクを入力してください';
+            document.getElementById('todo-input').disabled = false;
+            document.getElementById('add-button').disabled = false;
+            document.getElementById('email-input').disabled = false;
+            document.getElementById('email-input').placeholder = 'メールアドレスを入力してください';
+            document.getElementById('add-email-button').disabled = false;
+            document.getElementById('delete-email-button').disabled = false;
+            document.getElementById('email-list').disabled = false;
+            document.getElementById('import-email-button-container').style.display = 'block';
           }
         })
         .catch(error => {
