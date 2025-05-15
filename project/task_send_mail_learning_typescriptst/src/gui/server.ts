@@ -30,8 +30,42 @@ app.use(express.json());
 // 'public'ディレクトリ内のファイルが直接アクセス可能になります
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 型定義
+interface Todo {
+  title: string;
+  email: string;
+  done: boolean;
+}
+
+interface EmailRequestBody {
+  email: string;
+}
+
+interface TodoAddRequestBody {
+  title: string;
+  email_list: string[];
+}
+
+interface TodoToggleRequestBody {
+  title: string;
+  done: boolean;
+  email: string;
+}
+
+interface TodoDeleteRequestBody {
+  title: string;
+}
+
+interface TodoUpdateTitleRequestBody {
+  oldTitle: string;
+  newTitle: string;
+}
+
+type SendEmail = (to: string, subject: string, text: string) => void; // 文字列型のa、数値型のbを引数に持ち、真偽値型を返却する関数の型定義
+
+
 //タスク未完了のメール送信
-function sendEmail(to: string, subject: string, text: string) {
+const sendEmail: SendEmail = (to: string, subject: string, text: string): void => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -46,13 +80,10 @@ function sendEmail(to: string, subject: string, text: string) {
     subject,
     text,
   };
-  console.info("mailOptions",mailOptions);
-  
-  // transporter.sendMail(mailOptions, (err: any, info: any) => {
-  //   if (err) console.error(err);
-  //   else console.log('Email sent: ' + info.response);
-  // });
+  console.info("mailOptions", mailOptions);
 }
+
+
 
 //特定時間ごとにタスク未完了のメール送信
 nodeCron.schedule('* * * * *', () => {
@@ -76,29 +107,24 @@ nodeCron.schedule('* * * * *', () => {
 
 
 // データベースから取得
-app.get('/todos', (req, res) => {
-
-  // DBファイルの作成または開く
+app.get('/todos', (req: express.Request, res: express.Response) => {
   const db = new sqlite3.Database(DB_PATH);
 
-  // テーブルがなければ作成
   db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS todos (
       title TEXT,
-      
       email TEXT,
       done BOOLEAN NOT NULL DEFAULT 0,
       PRIMARY KEY (title, email)
     )`);
   });
 
-  const filter = req.query.filter; // 'all', 'done', 'undone' 
-  const email = default_email; // .envからメールアドレスを取得
+  const filter = req.query.filter as string | undefined;
+  const email = default_email;
 
   let sql = 'SELECT * FROM todos';
   let params: any[] = [];
 
-  // メールアドレスでフィルタリング
   if (filter === 'done') {
     sql += ' WHERE done = 1';
   } else if (filter === 'undone') {
@@ -113,42 +139,34 @@ app.get('/todos', (req, res) => {
     addtaskflag = false;
   }
 
-  // デバッグ用コンソール
-  // console.info(sql);
-  
-    // データベースから取得
-  db.all(sql, params, (err, rows) => {
+  db.all(sql, params, (err: Error | null, rows: Todo[]) => {
     if (err) {
       res.status(500).send('Database error');
       return;
     }
-    //console.info("rows",rows);
     res.json({ rows, addtaskflag });
   });
-
 });
 
 
 //タスクデータを追加
-app.post('/todos/add', (req, res) => {
+app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: express.Response) => {
   const { title, email_list } = req.body;
   
   const db = new sqlite3.Database(DB_PATH);
   
-  //すでにタスクが存在するか確認
-  db.get('SELECT * FROM todos WHERE title = ?', [title], (err, row) => {
+  db.get('SELECT * FROM todos WHERE title = ?', [title], (err: Error | null, row: Todo | undefined) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Database error');
     }
     if (row) {
       return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
-    }else{
-      // デフォルトメールアドレスをすべて登録
+    } else {
       for (const email of email_list) {
         db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
           [title, false, email], 
-          function(err) {
+          function(err: Error | null) {
             if (err) {
               console.error(err);
               return res.status(500).send('Database error');
@@ -166,31 +184,31 @@ app.post('/todos/add', (req, res) => {
 });
 
 //データ更新
-app.patch('/todos/toggle', (req, res) => {
- 
+app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>, res: express.Response) => {
   const { title, done, email } = req.body;
-  //console.info("id",id, "done",done);
   const todoTitle = title;
   const todoDone = Number(done);
   const todoEmail = email;
 
-
   const db = new sqlite3.Database(DB_PATH);
 
-  db.run('UPDATE todos SET done = ? WHERE title = ? AND email = ?', [todoDone, todoTitle, todoEmail], function (err) {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Database error');
+  db.run('UPDATE todos SET done = ? WHERE title = ? AND email = ?', 
+    [todoDone, todoTitle, todoEmail], 
+    function(err: Error | null) {
+      if (err) {
+        console.error(err);
+        return res.status(500).send('Database error');
+      }
+      res.json({ title, done, email });
     }
-    res.json({ title, done, email });
-  });
+  );
 });
 
 //データ削除
-app.delete('/todos/delete', (req, res) => {
+app.delete('/todos/delete', (req: express.Request<{}, {}, TodoDeleteRequestBody>, res: express.Response) => {
   const { title } = req.body;
   const db = new sqlite3.Database(DB_PATH);
-  db.run('DELETE FROM todos WHERE title = ?', [title], function (err) {
+  db.run('DELETE FROM todos WHERE title = ?', [title], function(err: Error | null) {
     if (err) {
       console.error(err);
       return res.status(500).send('Database error');
@@ -202,11 +220,11 @@ app.delete('/todos/delete', (req, res) => {
 
 
 // タスクのタイトルを更新
-app.patch('/todos/updateTitle', (req, res) => {
+app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleRequestBody>, res: express.Response) => {
   const { oldTitle, newTitle } = req.body;
   const db = new sqlite3.Database(DB_PATH);
 
-  db.get('SELECT * FROM todos WHERE title = ?', [newTitle], (err, row) => {
+  db.get('SELECT * FROM todos WHERE title = ?', [newTitle], (err: Error | null, row: Todo | undefined) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Database error');
@@ -214,7 +232,7 @@ app.patch('/todos/updateTitle', (req, res) => {
     if (row) {
       return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
     }
-    db.run('UPDATE todos SET title = ? WHERE title = ?', [newTitle, oldTitle], function (err) {
+    db.run('UPDATE todos SET title = ? WHERE title = ?', [newTitle, oldTitle], function(err: Error | null) {
       if (err) {
         console.error(err);
         return res.status(500).send('Database error');
@@ -226,7 +244,7 @@ app.patch('/todos/updateTitle', (req, res) => {
 
 
 //タスク未完了のメール送信先を更新
-app.post('/todos/default_email', ((req, res) => {
+app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>, res: express.Response) => {
   const { email } = req.body;
   if (!email) {
     res.status(400).json({ error: 'メールアドレスが指定されていません' });
@@ -240,9 +258,9 @@ app.post('/todos/default_email', ((req, res) => {
     console.error('メールアドレスの保存中にエラーが発生しました:', error);
     res.status(500).json({ error: 'メールアドレスの保存に失敗しました' });
   }
-}));
+});
 
-app.get('/todos/default_email', (req, res) => {
+app.get('/todos/default_email', (req: express.Request, res: express.Response) => {
   res.json({ send_email_list });
 });
 
@@ -257,3 +275,7 @@ app.listen(PORT, () => {
 
   console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
 });
+
+
+
+
