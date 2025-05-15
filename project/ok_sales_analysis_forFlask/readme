@@ -1,4 +1,12 @@
-requirements.txtの記入方法
+＃＃＃実行方法＃＃＃
+
+docker build -t sales_ana . 　##ビルド
+
+docker run -p 5000:5000 sales_ana ##実行
+
+
+
+＃＃＃requirements.txtの記入方法＃＃＃
 
 fastapi==0.110.0
 uvicorn==0.29.0
