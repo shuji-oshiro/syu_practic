@@ -1,68 +1,81 @@
-＃＃＃＃実行環境構築＃＃＃＃
- Dockerでのビルド・実行
- # イメージをビルド
-docker build -t todo-app .
 
-# コンテナを起動
-docker run -p 3000:3000 todo-app
+このプロジェクト（task_send_mail_learning_typescriptst）は、TypeScriptで書かれたアプリケーションで、
+主にタスク管理やメール送信などの機能を学習・実装するためのものです。  
 
+---
 
+## 1. 実行環境
 
+- **Docker対応**  
+  Dockerイメージをビルドし、コンテナとしてアプリを起動できます。  
+  ```
+  docker build -t todo-app .
+  docker run -p 3000:3000 todo-app
+  ```
 
-＃＃＃＃＃直接ファイルを実行する＃＃＃＃＃
- npx ts-node src/gui/server.ts
+- **直接実行**  
+  TypeScriptのまま `npx ts-node src/gui/server.ts` でサーバーを起動できます。
 
+---
 
+## 2. 開発環境セットアップ
 
-＃＃＃＃＃基本操作＃＃＃＃＃
+- **Node.jsとnpmのインストール**  
+  Node.js公式サイトからインストールし、バージョン確認。
 
+- **npm初期化**  
+  `npm init -y` で `package.json` を作成。
 
-＃＃＃＃＃Node.jsとnpmのインストール＃＃＃＃＃
-https://nodejs.org/ja
-node -v   # Node.jsのバージョンが表示されればOK
-npm -v    # npmのバージョンが表示されればOK
+- **TypeScript導入**  
+  ```
+  npm install typescript --save-dev
+  npx tsc --init
+  ```
 
+- **型定義ファイル**  
+  Node.jsの型定義を追加（`@types/node`）。
 
-＃＃＃＃＃初期化（npmの設定ファイルを作る）：＃＃＃＃＃
-＃＃package.jsonというファイルが生成され、依存関係やプロジェクト情報を管理できます。
+---
 
+## 3. TypeScriptのビルド・実行
 
-npm init -y *プロジェクト直下
+- **TypeScriptのコンパイル**  
+  `npx tsc` で `src` ディレクトリ配下のTypeScriptファイルをコンパイルし、`dist` ディレクトリに出力（`tsconfig.json`で設定）。
 
+- **JavaScriptの実行**  
+  `node dist/xxx.js` でコンパイル後のファイルを実行。
 
-＃＃＃＃＃TypeScriptをインストール：＃＃＃＃＃
-npm install typescript --save-dev
+---
 
+## 4. tsconfig.jsonの主な設定
 
-＃＃＃＃＃TypeScriptの設定ファイルを生成＃＃＃＃＃
-npx tsc --init
+- `outDir`: コンパイル後の出力先（例: `./dist`）
+- `rootDir`: ソースファイルの場所（例: `./src`）
+- `module`: モジュールシステム（CommonJS）
+- `target`: 出力するJavaScriptのバージョン（ES2020）
+- `esModuleInterop`, `moduleResolution`, `strict` など
 
+---
 
-＃＃＃＃＃TypeScriptのコードをコンパイル＃＃＃＃＃
-npx tsc
+## 5. 処理の流れ
 
+1. **サーバー起動**  
+   `src/gui/server.ts` からサーバーが起動し、WebアプリやAPIとして動作。
 
-＃＃＃＃＃コンパイルエラー発生時＃＃＃＃＃
-TypeScriptは、Node.jsのグローバル変数（process, fs, など）を安全に使うために、Node.jsの型定義ファイルが必要です。
-npm install --save-dev @types/node
+2. **タスク管理やメール送信**  
+   プロジェクト名やディレクトリ名から、タスク管理やメール送信の機能。
 
+3. **フロントエンド/GUI**  
+   `src/gui/` 配下にフロントエンドやWebサーバーの実装がある可能性。
 
-＃＃＃＃＃コンパイルされたJavaScriptファイルを実行＃＃＃＃＃
-node app.js *ファイル名
+---
 
+## 6. まとめ
 
-＃＃＃＃＃npx tsc で コンパイル後の .js ファイルの出力先（例: dist/ ディレクトリ）を指定するには、
-＃＃＃＃＃tsconfig.json に outDir オプションを設定します。
-{
-  "compilerOptions": {
-    "outDir": "./dist",         // ← ここで出力先を指定！
-    "rootDir": "./src",         // ソースの場所
-    "module": "CommonJS",
-    "target": "ES2020",
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "strict": true
-  },
-  "include": ["src"]           // src配下だけをコンパイル対象にする
-}
+- TypeScriptで書かれたサーバーサイドアプリケーション
+- Dockerまたは直接Node.jsで実行可能
+- タスク管理やメール送信の学習用プロジェクト
+- 標準的なTypeScript/Node.jsプロジェクト構成
+
+---
 
