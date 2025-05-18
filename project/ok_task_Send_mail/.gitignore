@@ -1,0 +1,13 @@
+# node_modulesはGit管理しない
+node_modules/
+
+# TypeScriptのビルド成果物も管理しない
+dist/
+
+# OSやエディタごとの一時ファイル
+.DS_Store
+Thumbs.db
+*.log
+
+# 環境ごとの設定ファイル
+.env
