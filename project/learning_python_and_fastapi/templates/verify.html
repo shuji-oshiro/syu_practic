@@ -1,0 +1,19 @@
+<!-- templates/verify.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>認証コード入力</title>
+</head>
+<body>
+    <h2>認証コードを入力してください</h2>
+    <form method="post" action="/verify">
+        <input type="hidden" name="username" value="{{ username }}">
+        <label for="code">認証コード:</label>
+        <input type="text" id="code" name="code" required><br>
+        <button type="submit">認証</button>
+    </form>
+    {% if error %}
+    <p style="color:red;">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
