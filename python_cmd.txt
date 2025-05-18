@@ -1,4 +1,4 @@
-#プロジェクト単位で仮想環境構築
+#PIP プロジェクト単位で仮想環境構築
 
 python -m venv .venv #1. 作成
 
@@ -10,7 +10,6 @@ deactivate #4. 無効化
 
 
 Remove-Item -Recurse -Force .venv #仮想環境を完全に削除する
- 
 
 #効率的なコマンド
 python -m venv venv #作成
@@ -30,3 +29,24 @@ pip freeze > requirements.txt
 
 PyPI パッケージをアップデートするには pip install に --upgrade オプションを付けて実行します。
 $ python pip install --upgrade pip # upgrade -> -U オプションを使うこともできます。
+
+
+
+#uv を使った実装
+uvは 高速な動作、クロスプラットフォーム対応のロックファイル、ツール管理の専用インターフェースを提供することで、快適な開発環境を実現しています。
+
+#uvアップグレード
+uv self update *アンインストールは、インストールディレクトリからuvのバイナリを削除
+
+#初期化処理
+uv init ***projectname***
+
+#仮想環境の作成とアクティブ化
+uv venv
+.venv\Scripts\activate
+
+#外部ライブラリインポート（dependencies）
+uv add ****
+
+#スクリプトの実行
+uv run ****.py

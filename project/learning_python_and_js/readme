@@ -1,3 +1,54 @@
+Ran tool
+このプロジェクトは「商品売上集計処理システム」です。  
+主な処理・構成は以下の通りです。
+
+---
+
+### 概要
+- **フロントエンド**（`frontend/`）  
+  商品コード・商品名・売上目標を登録し、CSVファイルをアップロードして売上集計を行うWeb画面を提供します。
+
+- **バックエンド**（`app/`、FastAPI）  
+  - 商品情報の登録・保存（JSONファイルで管理）
+  - アップロードされた売上CSVファイルを集計し、商品ごと・取引先ごとの売上や目標達成率を計算
+  - エラー（空ファイル、不正なカラム、不正な数値など）も判定
+
+- **nginx**  
+  - 静的ファイル（フロントエンド）配信
+  - API（FastAPI）へのリバースプロキシ
+
+- **Docker構成**  
+  - nginxとFastAPIアプリを別コンテナで動かし、nginxがリバースプロキシとして機能
+
+---
+
+### 主な処理の流れ
+1. **商品情報の登録**  
+   Web画面から商品コード・商品名・売上目標を登録（`data/products.json`に保存）
+
+2. **売上CSVファイルのアップロード・集計**  
+   - CSVファイルをアップロード
+   - 必要なカラム（取引先コード・商品コード・売上金額など）を検証
+   - 商品ごと・取引先ごとに売上金額・数量・店舗数を集計
+   - 目標値に対する達成率も計算
+
+3. **集計結果の表示**  
+   Web画面で集計結果を確認
+
+---
+
+### 技術スタック
+- フロントエンド: HTML/CSS/JavaScript
+- バックエンド: FastAPI（Python）
+- データ保存: JSONファイル
+- インフラ: Docker, nginx
+
+---
+
+
+###　その他技術メモ
+
+
 requirements.txtの記入方法
 
 fastapi==0.110.0
@@ -26,13 +77,11 @@ pip install -r requirements.txt
 docker-compose up --build
 
 
-
-●docker-composeを活用
+### docker-composeを活用 本番環境想定
 docker-compose down
 docker-compose up --build
 
 
-
-●docker-compose 開発環境build
+### docker-compose 開発環境build
 docker-compose -f docker-compose.dev.yml build
 docker-compose -f docker-compose.dev.yml up
