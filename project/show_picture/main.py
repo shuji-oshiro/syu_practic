@@ -11,6 +11,7 @@ import numpy as np
 import functools
 from functools import partial
 from dummyMenu import DummyMenu
+import datetime
 
 
 load_dotenv()
@@ -89,7 +90,14 @@ class ThumbnailApp(tk.Tk):
 
         # 初回はすべてタグなし処理を実行
         for fname in files:
-            self.image_tag_map[fname] = ["タグなし"]
+            file_path = os.path.join(self.folder, fname)
+            mtime = os.path.getmtime(file_path)  # UNIXタイムスタンプ
+            # 日付文字列に変換（例: 2024-05-30 12:34:56）
+            mtime_str = datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+            # print(fname, mtime_str)
+            self.image_tag_map[fname] = {"createday":mtime_str,"tags":["タグなし"]}
+            
+        self.all_tags.update(["タグなし"])
 
         # タグマップファイルが存在する場合は読み込む
         if os.path.exists(PICTURE_TAGS_JSON):
@@ -98,9 +106,9 @@ class ThumbnailApp(tk.Tk):
                     update_map = json.load(f)
 
                 # 該当するファイルのタグを取得
-                for fname in self.image_tag_map:
-                    self.image_tag_map[fname] = update_map[fname]
-                    self.all_tags.update(update_map[fname])
+                for fname in self.image_tag_map.keys():
+                    self.image_tag_map[fname]["tags"] = update_map[fname]["tags"]
+                    self.all_tags.update(update_map[fname]["tags"])
 
             except Exception as e:
                 print(f"{PICTURE_TAGS_JSON} の読み込みに失敗: {e}")
@@ -139,6 +147,7 @@ class ThumbnailApp(tk.Tk):
         self.selected_tags = {tag for tag, var in self.check_vars.items() if var.get()}
         self.show_thumbnails()
 
+
     def get_video_thumbnail(self, filepath):
         # 動画ファイルの1フレーム目をサムネイル画像（PIL.Image）として返す
         try:
@@ -175,8 +184,8 @@ class ThumbnailApp(tk.Tk):
         self.thumbnail_labels.clear()  # ラベルもクリア
         filtered = []
         if self.selected_tags:
-            for file, tags in self.image_tag_map.items():
-                if self.selected_tags.issubset(tags):
+            for file in self.image_tag_map.keys():
+                if self.selected_tags.issubset(self.image_tag_map[file]["tags"]):
                     filtered.append(file)
         else:
             filtered = list(self.image_tag_map.keys())
@@ -263,7 +272,7 @@ class ThumbnailApp(tk.Tk):
             if messagebox.askyesno(tk.messagebox.YESNO, f"{selected_tags}のタグで\n{len(self.selected_items)}件の選択した写真を更新しますか？"):
 
                 for fname in self.selected_items:
-                    self.image_tag_map[fname] = selected_tags
+                    self.image_tag_map[fname]["tags"] = selected_tags
                 
                 for tag in selected_tags:
                     self.all_tags.add(tag)
