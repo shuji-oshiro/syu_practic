@@ -20,6 +20,8 @@ def scan_tags(self):
         mtime_str = datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
         self.image_tag_map[fname] = {"createday":mtime_str,"tags":["タグなし"]}
     
+    self.all_tags.clear()
+    self.selected_tags.clear()
     self.all_tags.update(["タグなし"])
 
     # タグマップファイルが存在する場合は読み込み、存在しない場合は新規作成
@@ -64,15 +66,16 @@ def create_tag_buttons(self):
     col = 0
     for tag in sorted(self.all_tags):
         var = tk.BooleanVar()
-        btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var, command=self.on_tag_toggle)
+        btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var,command=lambda tag=tag: self.on_tag_toggle(tag))
         btn.grid(row=0, column=col, padx=5, pady=2, sticky="w")
+        btn._tag = tag  # 独自属性としてtagを持たせる
         self.check_vars[tag] = var
         col += 1
 
     # タグフレームのレイアウトを更新し、ウィジェットの配置を確定させる
     self.tag_frame.update_idletasks()
 
-def show_thumbnails(self, selected_tags=None):
+def show_thumbnails(self):
     # 選択中のタグ・日付範囲でサムネイルをフィルタし、一覧表示する
     for widget in self.image_frame.winfo_children():
         widget.destroy()
@@ -81,9 +84,9 @@ def show_thumbnails(self, selected_tags=None):
     filtered = []
 
     # 選択中のタグがある場合は、そのタグを含むファイルをフィルタリング
-    if selected_tags:
+    if self.selected_tags:
         for file in self.image_tag_map.keys():
-            if selected_tags.issubset(self.image_tag_map[file]["tags"]):
+            if self.selected_tags.issubset(self.image_tag_map[file]["tags"]):
                 filtered.append(file)
     # 選択中のタグがない場合は、全てのファイルを表示
     else:

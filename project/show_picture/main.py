@@ -41,7 +41,8 @@ class ThumbnailApp(tk.Tk):
         self.min_thumb_width = self.THUMBNAIL_SIZE[0] + 20  # サムネイル1件分の最小幅（パディング込み）
         self.current_columns = 1  # 現在のカラム数
         self._last_size = (self.winfo_width(), self.winfo_height())
-        self.selected_items = set()  # 選択中のファイルパス
+        self.selected_items = set()  # 選択中のファイル
+        self.selected_tags = set()  # 選択中のタグ
         self._thumbnail_cache = {}  # サムネイルキャッシュ
         self.thumbnail_labels = {}  # サムネイルラベル保持
 
@@ -119,10 +120,27 @@ class ThumbnailApp(tk.Tk):
     def on_date_change(self, event=None):
         self.show_thumbnails()
 
-    def on_tag_toggle(self):
-        # トグルボタンのON/OFF状態から選択中のタグ集合を更新し、サムネイルを再表示する
-        selected_tags = {tag for tag, var in self.check_vars.items() if var.get()}
-        self.show_thumbnails(selected_tags)
+    def on_tag_toggle(self, tag):
+        # タグなしとそれ以外のタグは排他
+        # タグなしの場合は、選択中のタグをクリア、それ以外はタグなしをクリア
+
+        if tag == "タグなし":
+            
+            flg = self.check_vars[tag].get()
+
+            for _tag in self.check_vars.keys():
+                self.check_vars[_tag].set(False)
+
+            if flg:                               
+                self.check_vars[tag].set(True)
+                            
+        else:
+            self.check_vars["タグなし"].set(False)
+
+        self.selected_tags = {tag for tag, var in self.check_vars.items() if var.get()}
+        self.selected_items.clear()
+        self.show_thumbnails()
+ 
 
     def on_window_resize(self, event):
         if event.widget == self:
@@ -154,6 +172,7 @@ class ThumbnailApp(tk.Tk):
             else:
                 self.thumb_canvas.yview_scroll(1, "units")
 
+    # サムネイルクリック時の処理
     def on_thumbnail_click(self, event, path):
         if path in self.selected_items:
             self.selected_items.remove(path)
@@ -164,35 +183,43 @@ class ThumbnailApp(tk.Tk):
         if path in self.thumbnail_labels:
             self.thumbnail_labels[path].configure(style=style_name)
 
-    def on_dummy_menu_close(self, selected_tags=None):
-        if selected_tags:
-            if messagebox.askyesno(tk.messagebox.YESNO, f"{selected_tags}のタグで\n{len(self.selected_items)}件の選択した写真を更新しますか？"):
+    # サブメニューが閉じたときの処理
+    def on_dummy_menu_close(self, update_tags=None):
+
+        # 選択中のタグがある場合
+        if update_tags:
+            # タグを更新するか確認、更新する場合は選択したデータのタグを更新する
+            if messagebox.askyesno(tk.messagebox.YESNO, f"{update_tags}のタグで\n{len(self.selected_items)}件の選択した写真を更新しますか？"):
 
                 for fname in self.selected_items:
-                    self.image_tag_map[fname]["tags"] = selected_tags
+                    self.image_tag_map[fname]["tags"] = update_tags
                 
-                for tag in selected_tags:
-                    self.all_tags.add(tag)
-
-                self.selected_items.clear()
-
-                self.create_tag_buttons()
-
-                self.show_thumbnails()
-
-                self.thumb_canvas.yview_moveto(0)
-
                 try:
                     with open(self.PICTURE_TAGS_JSON, "w", encoding="utf-8") as f:
                         json.dump(self.image_tag_map, f, ensure_ascii=False, indent=4)
                 except Exception as e:
                     print(f"タグマップの保存に失敗しました: {e}")
+                    return
+                
+                self.selected_items.clear()
+
+                # タグを更新したので、タグ一覧を更新する
+                self.scan_tags()
+                self.create_tag_buttons()
+
+                for tag in update_tags:
+                    self.check_vars[tag].set(True)
+                    self.selected_tags.add(tag)
+
+                self.show_thumbnails()
+                self.thumb_canvas.yview_moveto(0)
 
             else:
                 messagebox.showinfo(tk.messagebox.INFO, "更新はキャンセルされました")
         self.dummy_menu.destroy()
-            
 
+
+    # 画像・動画をWindows標準アプリで開く
     def open_with_default_app(self, event, path, file):
         # 画像・動画をWindows標準アプリで開く
         try:
