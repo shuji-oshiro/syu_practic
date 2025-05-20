@@ -39,7 +39,6 @@ class ThumbnailApp(tk.Tk):
         self.check_vars = {}  # タグ: tk.BooleanVar
         self.thumbnails = []  # 参照保持用
         self.min_thumb_width = self.THUMBNAIL_SIZE[0] + 20  # サムネイル1件分の最小幅（パディング込み）
-        # self.max_tag_btn_width = 0  # タグボタンの最大幅
         self.current_columns = 1  # 現在のカラム数
         self._last_size = (self.winfo_width(), self.winfo_height())
         self.selected_items = set()  # 選択中のファイルパス

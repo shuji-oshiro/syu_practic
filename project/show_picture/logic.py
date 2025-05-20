@@ -61,7 +61,7 @@ def create_tag_buttons(self):
         widget.destroy()
     self.check_vars = {}
     col = 0
-    max_tag_btn_width = 0
+    #max_tag_btn_width = 0
     for tag in sorted(self.all_tags):
         var = tk.BooleanVar()
         btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var, command=self.on_tag_toggle)
@@ -69,8 +69,6 @@ def create_tag_buttons(self):
         self.check_vars[tag] = var
         col += 1
         self.tag_frame.update_idletasks()
-        max_tag_btn_width = max(max_tag_btn_width, btn.winfo_reqwidth())
-    self.min_thumb_width = max(max_tag_btn_width + 20, self.THUMBNAIL_SIZE[0] + 20)
 
 def show_thumbnails(self, selected_tags=None):
     # 選択中のタグ・日付範囲でサムネイルをフィルタし、一覧表示する
@@ -91,9 +89,6 @@ def show_thumbnails(self, selected_tags=None):
 
     # サムネイル表示の列数を計算    
     frame_width = self.winfo_width()
-    if frame_width < self.min_thumb_width:
-        frame_width = self.winfo_width() if self.winfo_width() > 1 else 900
-
 
     columns = max(1, frame_width // self.min_thumb_width)
     self.current_columns = columns
