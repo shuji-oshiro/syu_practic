@@ -59,16 +59,18 @@ def create_tag_buttons(self):
     # タグ一覧からトグルボタン（Checkbutton）を作成し、画面上部に並べる
     for widget in self.tag_frame.winfo_children():
         widget.destroy()
+
     self.check_vars = {}
     col = 0
-    #max_tag_btn_width = 0
     for tag in sorted(self.all_tags):
         var = tk.BooleanVar()
         btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var, command=self.on_tag_toggle)
         btn.grid(row=0, column=col, padx=5, pady=2, sticky="w")
         self.check_vars[tag] = var
         col += 1
-        self.tag_frame.update_idletasks()
+
+    # タグフレームのレイアウトを更新し、ウィジェットの配置を確定させる
+    self.tag_frame.update_idletasks()
 
 def show_thumbnails(self, selected_tags=None):
     # 選択中のタグ・日付範囲でサムネイルをフィルタし、一覧表示する

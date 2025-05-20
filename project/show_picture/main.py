@@ -45,18 +45,18 @@ class ThumbnailApp(tk.Tk):
         self._thumbnail_cache = {}  # サムネイルキャッシュ
         self.thumbnail_labels = {}  # サムネイルラベル保持
 
-        # タグバー（上部固定、横スクロール）
-        self.tag_frame_outer = ttk.Frame(self)
-        self.tag_frame_outer.pack(side="top", fill="x", padx=10, pady=5)
-        self.tag_canvas = tk.Canvas(self.tag_frame_outer, height=40)
-        self.tag_scrollbar = ttk.Scrollbar(self.tag_frame_outer, orient="horizontal", command=self.tag_canvas.xview)
-        self.tag_frame = ttk.Frame(self.tag_canvas)
-        self.tag_frame_id = self.tag_canvas.create_window((0, 0), window=self.tag_frame, anchor="nw")
-        self.tag_canvas.configure(xscrollcommand=self.tag_scrollbar.set)
-        self.tag_canvas.pack(side="top", fill="x", expand=True)
-        self.tag_scrollbar.pack(side="bottom", fill="x")
-        self.tag_frame.bind("<Configure>", self.on_tag_frame_configure)
-        self.tag_canvas.bind("<Configure>", self.on_tag_canvas_configure)
+        # --- 横スクロール可能な tag_frame を作成 ---
+        canvas = tk.Canvas(self, height=30)
+        canvas.pack(side="top", fill="x", padx=10, pady=5)
+        h_scroll = ttk.Scrollbar(self, orient="horizontal", command=canvas.xview)
+        h_scroll.pack(side="top", fill="x", padx=10)
+        canvas.configure(xscrollcommand=h_scroll.set)
+        # スクロール対象のフレームを Canvas に埋め込む
+        self.tag_frame = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=self.tag_frame, anchor="nw")
+        self.tag_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+
 
         # 日付入力コントロール
         self.date_frame = ttk.Frame(self)
@@ -97,7 +97,7 @@ class ThumbnailApp(tk.Tk):
         self.dummy_menu = None
 
         self.scan_tags()
-        self.create_tag_buttons()
+        self.create_tag_buttons()        
         self.after_idle(self.show_thumbnails)  # 初期表示時は遅延実行
 
         # サムネイルのcreatedayから最小・最大日付を取得
