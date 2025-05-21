@@ -93,12 +93,12 @@ const sendEmail: SendEmail = (to: string, subject: string, text: string): void =
 
 }
 
-
-
+// メール送信時刻設定
+const x = 9
 
 //特定時間ごとにタスク未完了のメール送信
-nodeCron.schedule('* * * * *', () => {
-  console.log('⏰ 1分たったのでメール送信チェック開始');
+nodeCron.schedule(`0 ${x} * * *`, () => {
+  console.log(`⏰ ${x}時メール送信チェック開始`);
 
   const db = new sqlite3.Database(DB_PATH);
   db.all('SELECT * FROM todos WHERE done = 0', (err, rows) => {
@@ -254,17 +254,23 @@ app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleReq
 });
 
 
-//タスク未完了のメール送信先を更新
+//タスク未完了のメール送信先のデフォルト値を更新
 app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>, res: express.Response) => {
   const { email } = req.body;
+  console.log("call default_email");
   if (!email) {
     res.status(400).json({ error: 'メールアドレスが指定されていません' });
     return;
   }
   
   try {
-    fs.writeFileSync(path.resolve('src/data/send_email.csv'), email);
+
+    send_email_list = email.split(',').map(line => line?.trim().replace(/\s+/g, ''))
+    
+    fs.writeFileSync(path.resolve('src/data/send_email.csv'), send_email_list.join(','));
+
     res.json({ email: send_email_list });
+
   } catch (error) {
     console.error('メールアドレスの保存中にエラーが発生しました:', error);
     res.status(500).json({ error: 'メールアドレスの保存に失敗しました' });
@@ -272,16 +278,25 @@ app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>
 });
 
 app.get('/todos/default_email', (req: express.Request, res: express.Response) => {
+
+  if (send_email_list.length === 0) {
+    res.status(404).json({ error: '' });
+    return;
+  }
   res.json({ send_email_list });
 });
 
 
 app.listen(PORT, () => {
 
+  const file_path = path.resolve('src/data/send_email.csv')
+  if (!fs.existsSync(file_path)) {
+    fs.writeFileSync(file_path, '');
+  }  
+
   send_email_list = fs
     .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
-    .split('\n')
-    .map(line => line?.trim())
+    .split(',')
     .filter(Boolean);
 
   console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);

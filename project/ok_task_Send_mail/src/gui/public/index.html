@@ -123,7 +123,7 @@
               <input type="file" id="email-file-input" style="display: none;" accept=".txt,.csv">
               <div class="d-flex align-items-center gap-2">
                 <button id="import-email-button" class="btn btn-primary" onclick="importEmail()">送付先メールアドレスの初期設定</button>
-                <p class="text-muted mb-0">カンマ区切りメールアドレス　*.csv（例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
+                <p class="text-muted mb-0">****.csv <br>（例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
               </div>
             </div>
           </div>
@@ -278,6 +278,7 @@
       //todo email-listの初期化
       fetch('/todos/default_email')
         .then(res => {
+          if (res.status === 404) throw new Error(`メールアドレスが未設定です`);
           if (!res.ok) throw new Error(`初期設定メールアドレスの取得に失敗しました: ${res.status}`);
           return res.json();
         })
@@ -300,11 +301,17 @@
 
     //ファイルを読み込み、タスク単位で送付するメールアドレスを設定する  
     function importEmail() {
-      document.getElementById('email-file-input').click();
+      // document.getElementById('email-file-input').click();
       document.getElementById('email-file-input').onchange = function(e) {
         const file = e.target.files[0];
+        e.target.value = '';
         if (file) {
-          alert(file.name);
+
+          //確認メッセージ
+          if (!confirm('送付先メールアドレスの初期設定を更新しますか？')) {
+            alert('更新をキャンセルしました');
+            return;
+          };
           const reader = new FileReader();
           reader.onload = function(e) {
             const content = e.target.result;
@@ -324,7 +331,7 @@
             })
             .then(data => {
               console.log(data),
-              alert(`メールアドレスの設定が完了しました\n設定メールアドレス:\n${data.email.join('\n')}`),
+              alert(`送付先メールアドレスの初期設定を更新しました\n${data.email.join('\n')}`),
               loadTodos()
             })
             .catch(error => { 
@@ -334,7 +341,7 @@
           reader.readAsText(file);
         }
       };
-
+      document.getElementById('email-file-input').click();
     }
 
     //タスクのタイトルを更新する処理　同じタイトルのタスクは更新しない
@@ -432,7 +439,7 @@
         })
         .then(data => {
           console.log(data);
-          alert(`新しいタスクの追加が完了しました\nタスク名:${data.title}\n送信先メールアドレス:${data.emails.join('\n')}`);
+          alert(`新しいタスクの追加が完了しました\n\nタスク名:${data.title}\n\n送信先メールアドレス:\n${data.emails.join('\n')}`);
           loadTodos();
         })  
         .catch(error => {
@@ -466,7 +473,7 @@
     }
 
     //タスクで送信する登録するメールアドレスを削除する処理
-    function deleteEmail() {
+    function deleteSelectedEmail() {
       const emailList = document.getElementById('email-list');
       const selectedEmail = emailList.value;
       if (!selectedEmail) return;
