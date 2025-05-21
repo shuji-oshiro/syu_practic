@@ -94,7 +94,7 @@ const sendEmail: SendEmail = (to: string, subject: string, text: string): void =
 }
 
 // メール送信時刻設定
-const x = 9
+const x = process.env.MAIL_SEND_TIME || '9';
 
 //特定時間ごとにタスク未完了のメール送信
 nodeCron.schedule(`0 ${x} * * *`, () => {

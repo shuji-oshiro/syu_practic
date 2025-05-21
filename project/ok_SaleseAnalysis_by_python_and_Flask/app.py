@@ -1,5 +1,6 @@
 # app.py
 
+import os
 import json
 import pandas as pd
 from io import StringIO
@@ -106,11 +107,17 @@ def index():
     global df_courses
 
     try:
+        if not os.path.exists(DATA_PATH):
+            with open(DATA_PATH, "w", encoding="utf-8") as f:
+                json.dump([], f, ensure_ascii=False, indent=4)
+
+        # コース情報を読み込む
         df_temp = pd.DataFrame(json.load(open(DATA_PATH, encoding="utf-8")))
 
-        # course_stors_code列を展開
-        df_courses = df_temp.explode(['store_code'])
-        df_courses = df_courses.astype(USE_COURSE_CODE_TYPES)
+        if not df_temp.empty:
+            # course_stors_code列を展開
+            df_courses = df_temp.explode(['store_code'])
+            df_courses = df_courses.astype(USE_COURSE_CODE_TYPES)
 
         return render_template("index.html")
    
