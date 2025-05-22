@@ -4,15 +4,18 @@ FROM node:18
 # 作業ディレクトリを作成
 WORKDIR /app
 
-# パッケージ関連コピーしてインストール
+# package.jsonとpackage-lock.jsonを先にコピーして依存関係をインストール
 COPY package*.json ./
 RUN npm install
 
 # ソースコードをコピー
 COPY . .
 
-# 必要なポートを公開
+# TypeScriptをビルド
+RUN npx tsc
+
+# ポート公開
 EXPOSE 3000
 
-# サーバー起動（ts-node使用）
-CMD ["npx", "ts-node", "src/gui/server.ts"]
+# 本番用コマンド
+CMD ["node", "dist/gui/server.js"]

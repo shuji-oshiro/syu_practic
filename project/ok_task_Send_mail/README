@@ -41,16 +41,26 @@ http://{稼働しているＰＣのＩＰアドレス}:3000/?user={メールア�
 ## 1. 実行環境
 
 - **Docker対応**  
-  Dockerイメージをビルドし、コンテナとしてアプリを起動できます。  
-  ```
-  docker build -t todo-app .
-  docker run -p 3000:3000 todo-app
-  ```
 
-- **直接実行**  
-  TypeScriptのまま `npx ts-node src/gui/server.ts` でサーバーを起動できます。
+docker-compose を使用して、アプリをビルドし、コンテナとして起動できます。
 
----
+開発時:
+docker compose up --build --no-cache
+→ コード変更が即時反映されます（ts-node利用）
+
+本番ビルド:
+docker build -t todo-app .
+docker run -p 3000:3000 todo-app
+→ TypeScriptがビルドされ、dist 配下のJSで起動
+
+
+  起動（バックグラウンド）:
+  docker-compose up -d
+
+  停止と削除（ボリュームも含む）:
+  docker-compose down --volumes
+
+
 
 ## 2. 開発環境セットアップ
 
