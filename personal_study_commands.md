@@ -242,6 +242,9 @@ docker start [コンテナID]        # コンテナ再起動
 docker rm [コンテナID]           # コンテナ削除
 -f             #（force）を付けると、起動中のコンテナも強制停止して削除できます
 docker ps      # 稼働中コンテナ一覧
+
+docker system df               #Dockerが使っているストレージ容量を確認
+docker builder prune           #Build cahcheのクリア
 docker system prune　         #未使用のイメージ・コンテナを削除（オプション）
 docker container prune           #未使用コンテナ削除（yで実行）
 -a                              #すべて対象にするオプション

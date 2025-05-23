@@ -1,15 +1,13 @@
-console.log("server.ts start"); 
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+import sqlite3 from 'sqlite3';
 import express from 'express';
 import nodeCron from 'node-cron';
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-import sqlite3 from 'sqlite3';
-import { getCompileCacheDir } from 'module';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 
 //nst DATA_PATH = path.resolve('src/data/todos.json');
 const DB_PATH = path.resolve('src/data/todos.db');
@@ -20,8 +18,6 @@ let send_email_list: string[] = []
 dotenv.config({path: path.resolve('.env')});
 
 
-const default_email = process.env.DEFAULT_EMAIL || '';
-
 // 中間処理
 // JSON形式のリクエストボディを解析するためのミドルウェアを設定
 app.use(express.json());
@@ -29,6 +25,7 @@ app.use(express.json());
 // 静的ファイル（HTML、CSS、JavaScriptなど）を提供するためのミドルウェアを設定
 // 'public'ディレクトリ内のファイルが直接アクセス可能になります
 app.use(express.static(path.join(__dirname, 'public')));
+console.log("publicディレクトリ",path.join(__dirname, 'public'));
 
 // 型定義
 interface Todo {
@@ -100,12 +97,14 @@ const sendEmail: SendEmail = (to, subject, text): void => {
 }
 
 // メール送信時刻設定
-const x = process.env.SEND_TIME_HOUR;
-const y = process.env.SEND_TIME_MINITS;
+const x = process.env.SEND_TIME_HOUR || '9';
+const y = process.env.SEND_TIME_MINITS || '0';
+const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
+const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
 
 
 console.log(`毎日${x}時${y}分メール送信チェック`);
-
+console.log("送信文書",mail_title,mail_text_template);
 //特定時間ごとにタスク未完了者へメール送信
 nodeCron.schedule(`${y} ${x} * * *`, () => {
   console.log(`${x}時${y}分メール送信チェック開始`);
@@ -115,10 +114,8 @@ nodeCron.schedule(`${y} ${x} * * *`, () => {
 
   rows.forEach((todo: any) => {
     try {
-      
-      const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
-      const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${title}」があります。';
-      const mail_text = mail_text_template.replace('${title}', todo.title);
+
+      const mail_text = mail_text_template.replace('{task_text}', todo.title);
       if (todo.email) {
         sendEmail(
           todo.email,
@@ -185,6 +182,9 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
 app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: express.Response) => {
   const { title, email_list } = req.body;
   
+  console.log("call add");
+  console.log("追加コンテンツ!!!：",title,email_list);  
+
   const db = new sqlite3.Database(DB_PATH);
   
   db.get('SELECT * FROM todos WHERE title = ?', [title], (err: Error | null, row: Todo | undefined) => {
@@ -318,10 +318,18 @@ app.get('/todos/default_email', (req: express.Request, res: express.Response) =>
 
 app.listen(PORT, () => {
 
-  const file_path = path.resolve('src/data/send_email.csv')
-  if (!fs.existsSync(file_path)) {
-    fs.writeFileSync(file_path, '');
-  }  
+  const filePath = path.resolve('src/data/send_email.csv')
+  const dirPath = path.dirname(filePath);
+
+  // ディレクトリが存在しなければ作成
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+
+  // ファイルが存在しない場合、空ファイルを作成
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, '');
+  }
 
   send_email_list = fs
     .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')

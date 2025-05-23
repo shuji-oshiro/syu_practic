@@ -2,14 +2,12 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     env_file:
       - .env
     ports:
       - "3000:3000"
-    volumes:
-      - ./src:/app/src
-      - ./data:/app/src/data
-    environment:
-      - NODE_ENV=development
-    command: npx ts-node src/gui/server.ts
+    container_name: todo-app
+    restart: always

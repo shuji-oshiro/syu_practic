@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./src:/app/src
+    command: npx nodemon --watch src --ext ts --exec ts-node src/gui/server.ts
+    environment:
+      - NODE_ENV=development

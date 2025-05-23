@@ -1,21 +1,16 @@
-# ベースイメージ
-FROM node:18
-
-# 作業ディレクトリを作成
+# 開発ステージ：TypeScriptをビルドするため
+FROM node:18 AS builder
 WORKDIR /app
-
-# package.jsonとpackage-lock.jsonを先にコピーして依存関係をインストール
 COPY package*.json ./
 RUN npm install
-
-# ソースコードをコピー
 COPY . .
+RUN npm run build
 
-# TypeScriptをビルド
-RUN npx tsc
-
-# ポート公開
+# 本番ステージ：不要なファイルを含まない小さいイメージ
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm install --only=production
 EXPOSE 3000
-
-# 本番用コマンド
 CMD ["node", "dist/gui/server.js"]

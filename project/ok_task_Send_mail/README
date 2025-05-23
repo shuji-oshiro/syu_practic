@@ -45,12 +45,11 @@ http://{稼働しているＰＣのＩＰアドレス}:3000/?user={メールア�
 docker-compose を使用して、アプリをビルドし、コンテナとして起動できます。
 
 開発時:
-docker compose up --build --no-cache
+docker-compose up --build
 → コード変更が即時反映されます（ts-node利用）
 
 本番ビルド:
-docker build -t todo-app .
-docker run -p 3000:3000 todo-app
+docker-compose -f docker-compose.yml up --build -d
 → TypeScriptがビルドされ、dist 配下のJSで起動
 
 
