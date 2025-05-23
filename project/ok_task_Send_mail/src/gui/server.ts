@@ -107,33 +107,36 @@ console.log(`毎日${x}時${y}分メール送信チェック`);
 console.log("送信文書",mail_title,mail_text_template);
 //特定時間ごとにタスク未完了者へメール送信
 nodeCron.schedule(`${y} ${x} * * *`, () => {
+
+  
   console.log(`${x}時${y}分メール送信チェック開始`);
   const db = new sqlite3.Database(DB_PATH);
   db.all('SELECT * FROM todos WHERE done = 0', (err, rows) => {
     if (err) return console.error(err);
 
-  rows.forEach((todo: any) => {
-    try {
+    rows.forEach((todo: any) => {
+      try {
 
-      const mail_text = mail_text_template.replace('{task_text}', todo.title);
-      if (todo.email) {
-        sendEmail(
-          todo.email,
-          mail_title,
-          mail_text
-        );
+        const mail_text = mail_text_template.replace('{task_text}', todo.title);
+        if (todo.email) {
+          sendEmail(
+            todo.email,
+            mail_title,
+            mail_text
+          );
+        }
+      } catch (error) {
+        console.error('メール送信時にエラーが発生しました:', error);
       }
-    } catch (error) {
-      console.error('メール送信時にエラーが発生しました:', error);
-    }
-  });
+    });
+
   });
 }, {
   timezone: 'Asia/Tokyo'
 });
 
 
-// データベースから取得
+// データベースからタスク情報を取得
 app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Response) => {
   const db = new sqlite3.Database(DB_PATH);
   const { filter, user } = req.query  
@@ -170,7 +173,7 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
 
   db.all(sql, params, (err: Error | null, rows: Todo[]) => {
     if (err) {
-      res.status(500).send('Database error');
+      res.status(500).json({ error: 'タスクデータの取得中にエラーが発生しました' });
       return;
     }
     res.json({ rows, addtaskflag });
@@ -183,17 +186,22 @@ app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: e
   const { title, email_list } = req.body;
   
   console.log("call add");
-  console.log("追加コンテンツ!!!：",title,email_list);  
+  
+  if (email_list.length === 0) {
+    res.status(400).json({ warning: 'メールアドレスが指定されていません' });
+    return;
+  }
+
 
   const db = new sqlite3.Database(DB_PATH);
   
   db.get('SELECT * FROM todos WHERE title = ?', [title], (err: Error | null, row: Todo | undefined) => {
     if (err) {
       console.error(err);
-      return res.status(500).send('Database error');
+      return res.status(500).json({ error: 'タスクデータの読み込み中にエラーが発生しました' });
     }
     if (row) {
-      return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
+      return res.status(400).json({ warning: 'このタスクは既に存在します。別の名前で登録してください' });
     } else {
       for (const email of email_list) {
         db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
@@ -201,7 +209,7 @@ app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: e
           function(err: Error | null) {
             if (err) {
               console.error(err);
-              return res.status(500).send('Database error');
+              return res.status(500).json({ error: 'タスクデータの新規追加中にエラーが発生しました' });
             }
           }
         );
@@ -223,7 +231,6 @@ app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>,
   const todoTitle = title;
   const todoDone = Number(done);
   const todoEmail = email;
-
   const db = new sqlite3.Database(DB_PATH);
 
   db.run('UPDATE todos SET done = ? WHERE title = ? AND email = ?', 
@@ -231,7 +238,7 @@ app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>,
     function(err: Error | null) {
       if (err) {
         console.error(err);
-        return res.status(500).send('Database error');
+        return res.status(500).json({ error: 'タスク完了データの更新中にエラーが発生しました' });
       }
       res.json({ title, done, email });
     }
@@ -247,7 +254,7 @@ app.delete('/todos/delete', (req: express.Request<{}, {}, TodoDeleteRequestBody>
   db.run('DELETE FROM todos WHERE title = ?', [title], function(err: Error | null) {
     if (err) {
       console.error(err);
-      return res.status(500).send('Database error');
+      return res.status(500).json({ error: 'タスクデータの削除中にエラーが発生しました' });
     }
     res.json({ title });
   });
@@ -284,59 +291,63 @@ app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleReq
 //タスクに設定するデフォルトのメールアドレスを更新
 app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>, res: express.Response) => {
   console.log("call default_email");
-
-  const { email } = req.body;
-  if (!email) {
-    res.status(400).json({ error: 'メールアドレスが指定されていません' });
-    return;
-  }
   
   try {
+    const { email } = req.body;
+    let temp_send_email_list = email.split(',').map(line => line?.trim().replace(/\s+/g, ''))
+    console.log("更新するメールアドレス：",temp_send_email_list);
 
-    send_email_list = email.split(',').map(line => line?.trim().replace(/\s+/g, ''))
-    
-    fs.writeFileSync(path.resolve('src/data/send_email.csv'), send_email_list.join(','));
+    if (temp_send_email_list.length === 0) {
+      res.status(400).json({ warning: '更新できるメールアドレスが存在しません' });
+      return;
+    }
 
-    res.json({ email: send_email_list });
+    fs.writeFileSync(path.resolve('src/data/send_email.csv'), temp_send_email_list.join(','));
+
+    send_email_list = temp_send_email_list;
+    res.json({ email: temp_send_email_list });
 
   } catch (error) {
-    console.error('メールアドレスの保存中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'メールアドレスの保存に失敗しました' });
+    console.error('メールアドレスの更新中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'メールアドレスの更新中にエラーが発生しました' });
   }
 });
 
 //タスクに設定するデフォルトのメールアドレスを取得
 app.get('/todos/default_email', (req: express.Request, res: express.Response) => {
+
   console.log("call default_email");
-  if (send_email_list.length === 0) {
-    res.status(404).json({ error: '' });
-    return;
-  }
   res.json({ send_email_list });
 });
 
 
 app.listen(PORT, () => {
 
-  const filePath = path.resolve('src/data/send_email.csv')
-  const dirPath = path.dirname(filePath);
+  try {
+    const filePath = path.resolve('src/data/send_email.csv')
+    const dirPath = path.dirname(filePath);
 
-  // ディレクトリが存在しなければ作成
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
+    // ディレクトリが存在しなければ作成
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // ファイルが存在しない場合、空ファイルを作成
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, '');
+    }
+
+    send_email_list = fs
+      .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
+      .split(',')
+      .filter(Boolean);
+    
+    console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
+
+  } catch (error) {
+    console.error('初期設定中にエラーが発生しました:', error);
   }
 
-  // ファイルが存在しない場合、空ファイルを作成
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, '');
-  }
-
-  send_email_list = fs
-    .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
-    .split(',')
-    .filter(Boolean);
-
-  console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
 });
 
 

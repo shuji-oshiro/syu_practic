@@ -176,14 +176,22 @@
       let addtaskflag = false;
       // ToDoの取得
       await fetch(`/todos?filter=${filter}&user=${user}`)
-        .then(res => {
-          if (!res.ok) throw new Error(`ToDoの取得に失敗しました: ${res.status}`);
-          return res.json();
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error);
+            });
+          }
+          return response.json();
         })
         .then(todos => {
           // 以降の処理
           // タイトルごとにグループ化
           addtaskflag = todos.addtaskflag;
+
+          if (todos.rows.length === 0) {
+            alert("現在タスクは登録されていません")             
+          }          
           groupedTodos = todos.rows.reduce((acc, todo) => {
             if (!acc[todo.title]) {
               acc[todo.title] = [];
@@ -216,8 +224,9 @@
           }
         })
         .catch(error => {
-          console.error('エラーが発生しました:', error);
-          alert('ToDoの取得に失敗しました');
+          console.error('エラー: ' + error.message);
+          alert('エラー: ' + error.message);
+          return;
         });
 
       const list = document.getElementById('todo-list');
@@ -296,7 +305,8 @@
         li.appendChild(header);
         li.appendChild(emailList);
         list.appendChild(li);
-      });
+
+      })
 
         
       document.getElementById('email-list').innerHTML = '';
@@ -304,12 +314,13 @@
       //todo email-listの初期化
       fetch('/todos/default_email')
         .then(res => {
-          if (res.status === 404) throw new Error(`メールアドレスが未設定です`);
-          if (!res.ok) throw new Error(`初期設定メールアドレスの取得に失敗しました: ${res.status}`);
           return res.json();
         })
         .then(data => {
           console.log(data);
+          if (data.send_email_list.length === 0){
+            alert('初期設定のメールアドレスが設定されていません');
+          }
           
           for (const email of data.send_email_list) {
             const option = document.createElement('option');
@@ -321,7 +332,6 @@
         .catch(error => {
           alert('エラー: ' + error.message);
         });
-
     }
 
 
@@ -348,17 +358,25 @@
               body: JSON.stringify({ email: content })
             })
             .then(response => {
+              if (response.status === 400) {
+                return response.json().then(data => {
+                  throw new Warning(data.error);
+                });
+              }
               if (!response.ok) {
-                return response.text().then(text => {
-                  throw new Error(text);
+                return response.json().then(data => {
+                  throw new Error(data.error);
                 });
               }
               return response.json();
             })
             .then(data => {
               console.log(data),
-              alert(`送付先メールアドレスの初期設定を更新しました\n${data.email.join('\n')}`),
+              alert(`送付先メールアドレスを更新しました\n${data.email.join('\n')}`),
               loadTodos()
+            })
+            .catch(warning => {
+              alert('警告: ' + warning.message);
             })
             .catch(error => { 
               alert('エラー: ' + error.message);
@@ -380,8 +398,8 @@
       })
         .then(response => {
           if (!response.ok) {
-            return response.text().then(text => {
-              throw new Error(text);
+            return response.json().then(data => {
+              throw new Error(data.error);
             });
           }
           return response.json();
@@ -393,7 +411,6 @@
         .catch(error => {
           alert('エラー: ' + error.message);
         });
-      
     }
 
    
@@ -409,8 +426,8 @@
       })
       .then(response => {
         if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(text);
+          return response.json().then(data => {
+            throw new Error(data.error);
           });
         }
         return response.json();
@@ -432,8 +449,14 @@
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, done, email })
-      })
-        .then(() => loadTodos()); // 更新して再表示
+      }).then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.error);
+          });
+        }
+        return response.json();
+      }).then(() => loadTodos()); // 更新して再表示
     }
 
 
@@ -449,6 +472,7 @@
         alert('タスク名は100文字以内で入力してください');
         return;
       }
+      //
       fetch('/todos/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -456,18 +480,26 @@
       })
         .then(response => {
           console.log(response);
+          if (response.status === 400) {
+            return response.json().then(data => {
+              throw new Warning(data.error);
+            });
+          }
           if (!response.ok) {
-            return response.text().then(text => {
-              throw new Error(text);
+            return response.json().then(data => {
+              throw new Error(data.error);
             });
           }
           return response.json();
         })
         .then(data => {
           console.log(data);
-          alert(`新しいタスクの追加が完了しました\n\nタスク名:${data.title}\n\n送信先メールアドレス:\n${data.emails.join('\n')}`);
+          alert(`新しいタスクを追加しました\n\nタスク名:${data.title}\n\n送信先メールアドレス:\n${data.emails.join('\n')}`);
           loadTodos();
         })  
+        .catch(warning => {
+          alert('警告: ' + warning.message);
+        })
         .catch(error => {
           alert('エラー: ' + error.message);
         });
