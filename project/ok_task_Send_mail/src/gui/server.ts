@@ -267,22 +267,27 @@ app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleReq
   console.log("call updateTitle");
 
   const { oldTitle, newTitle } = req.body;
+
+  // SQLインジェクション対策のための文字列エスケープ
+  const sanitizedOldTitle = oldTitle.replace(/[;'"\\]/g, '');
+  const sanitizedNewTitle = newTitle.replace(/[;'"\\]/g, '');
+
   const db = new sqlite3.Database(DB_PATH);
 
-  db.get('SELECT * FROM todos WHERE title = ?', [newTitle], (err: Error | null, row: Todo | undefined) => {
+  db.get('SELECT * FROM todos WHERE title = ?', [sanitizedNewTitle], (err: Error | null, row: Todo | undefined) => {
     if (err) {
       console.error(err);
-      return res.status(500).send('Database error');
+      return res.status(500).json({ error: 'データベースエラーが発生しました' });
     }
     if (row) {
-      return res.status(400).send('このタスクは既に存在します。別の名前で登録してください');
+      return res.status(400).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
     }
-    db.run('UPDATE todos SET title = ? WHERE title = ?', [newTitle, oldTitle], function(err: Error | null) {
+    db.run('UPDATE todos SET title = ? WHERE title = ?', [sanitizedNewTitle, sanitizedOldTitle], function(err: Error | null) {
       if (err) {
         console.error(err);
-        return res.status(500).send('Database error');
+        return res.status(500).json({ error: 'データベースエラーが発生しました' });
       }
-      res.json({ oldTitle, newTitle });
+      res.json({ oldTitle: sanitizedOldTitle, newTitle: sanitizedNewTitle });
     });
   });
 });

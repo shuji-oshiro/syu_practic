@@ -402,6 +402,10 @@
               throw new Error(data.error);
             });
           }
+          if (response.status === 204) {
+            alert(data.warning);
+            return;
+          }
           return response.json();
         })
         .then(data => {
