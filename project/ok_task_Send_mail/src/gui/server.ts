@@ -9,7 +9,6 @@ import nodemailer from 'nodemailer';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-//nst DATA_PATH = path.resolve('src/data/todos.json');
 const DB_PATH = path.resolve('src/data/todos.db');
 
 //タスクを追加するときに送信するメールアドレスリスト
@@ -41,12 +40,12 @@ interface TodoGetRequestBody {
 
 
 interface EmailRequestBody {
-  email: string;
+  emailList: string;
 }
 
 interface TodoAddRequestBody {
   title: string;
-  email_list: string[];
+  emailList: string[];
 }
 
 interface TodoToggleRequestBody {
@@ -183,11 +182,12 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
 
 //タスクデータを追加
 app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: express.Response) => {
-  const { title, email_list } = req.body;
+  
+  const { title, emailList} = req.body;
   
   console.log("call add");
   
-  if (email_list.length === 0) {
+  if (emailList.length === 0) {
     res.status(400).json({ warning: 'メールアドレスが指定されていません' });
     return;
   }
@@ -201,29 +201,29 @@ app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: e
       return res.status(500).json({ error: 'タスクデータの読み込み中にエラーが発生しました' });
     }
     if (row) {
-      return res.status(400).json({ warning: 'このタスクは既に存在します。別の名前で登録してください' });
-    } else {
-      for (const email of email_list) {
-        db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
-          [title, false, email], 
-          function(err: Error | null) {
-            if (err) {
-              console.error(err);
-              return res.status(500).json({ error: 'タスクデータの新規追加中にエラーが発生しました' });
-            }
+      return res.status(500).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
+    } 
+
+    for (const email of emailList) {
+      db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
+        [title, false, email], 
+        function(err: Error | null) {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'タスクデータの新規追加中にエラーが発生しました' });
           }
-        );
-      }
-      res.status(201).json({ 
-        title, 
-        done: false,
-        emails: email_list 
-      });
+        }
+      );
     }
+  });
+  res.status(201).json({ 
+    title, 
+    done: false,
+    emails: emailList 
   });
 });
 
-//タスク完了データ更新
+//タスクデータ実施更新
 app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>, res: express.Response) => {
   console.log("call toggle");
 
@@ -245,7 +245,7 @@ app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>,
   );
 });
 
-//データ削除
+//タスクデータ削除
 app.delete('/todos/delete', (req: express.Request<{}, {}, TodoDeleteRequestBody>, res: express.Response) => {
   console.log("call delete");
 
@@ -280,14 +280,14 @@ app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleReq
       return res.status(500).json({ error: 'データベースエラーが発生しました' });
     }
     if (row) {
-      return res.status(400).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
+      return res.status(400).json({ warning: 'このタスクは既に存在します。別の名前で登録してください' });
     }
     db.run('UPDATE todos SET title = ? WHERE title = ?', [sanitizedNewTitle, sanitizedOldTitle], function(err: Error | null) {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: 'データベースエラーが発生しました' });
       }
-      res.json({ oldTitle: sanitizedOldTitle, newTitle: sanitizedNewTitle });
+      res.json({newTitle: sanitizedNewTitle });
     });
   });
 });
@@ -298,8 +298,8 @@ app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>
   console.log("call default_email");
   
   try {
-    const { email } = req.body;
-    let temp_send_email_list = email.split(',').map(line => line?.trim().replace(/\s+/g, ''))
+    const { emailList } = req.body;
+    let temp_send_email_list = emailList.split(',').map(line => line?.trim().replace(/\s+/g, ''))
     console.log("更新するメールアドレス：",temp_send_email_list);
 
     if (temp_send_email_list.length === 0) {

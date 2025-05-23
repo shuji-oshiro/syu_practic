@@ -1,7 +1,6 @@
 {
-    "watch": ["src"],
-    "ext": "ts",
-    "exec": "ts-node src/gui/server.ts",
-    "legacyWatch": true
-  }
-  
+  "watch": ["src/gui", "src/gui/public"],
+  "ext": "ts,html",
+  "exec": "ts-node src/gui/server.ts",
+  "legacyWatch": true
+}

@@ -159,8 +159,8 @@
   </div>
 
 
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-
     //初期処理　タスク情報を取得し画面に表示する
     async function loadTodos() {
 
@@ -175,24 +175,17 @@
       let groupedTodos = {};
       let addtaskflag = false;
       // ToDoの取得
-      await fetch(`/todos?filter=${filter}&user=${user}`)
+      await axios.get(`/todos?filter=${filter}&user=${user}`)
         .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error);
-            });
-          }
-          return response.json();
-        })
-        .then(todos => {
           // 以降の処理
           // タイトルごとにグループ化
-          addtaskflag = todos.addtaskflag;
+          addtaskflag = response.data.addtaskflag;
 
-          if (todos.rows.length === 0) {
+
+          if (response.data.rows.length === 0) {
             alert("現在タスクは登録されていません")             
           }          
-          groupedTodos = todos.rows.reduce((acc, todo) => {
+          groupedTodos = response.data.rows.reduce((acc, todo) => {
             if (!acc[todo.title]) {
               acc[todo.title] = [];
             }
@@ -224,8 +217,8 @@
           }
         })
         .catch(error => {
-          console.error('エラー: ' + error.message);
-          alert('エラー: ' + error.message);
+          console.error('エラー: ' + error.response.data.error);
+          alert('エラー: ' + error.response.data.error);
           return;
         });
 
@@ -259,8 +252,14 @@
         // フォーカスを外した時の処理
         titleSpan.addEventListener('blur', () => {
           const newTitle = titleSpan.textContent.trim(); // 前後の空白を削除
-          if (newTitle && newTitle !== title && updateTodoTitle({oldTitle: title, newTitle: newTitle})) {
-            titleSpan.textContent = newTitle;
+          if (newTitle && newTitle !== title) {
+            updateTodoTitle({oldTitle: title, newTitle: newTitle}).then(response => {
+              if (response.success) {
+                titleSpan.textContent = newTitle;
+              }else{
+                titleSpan.textContent = title;
+              }
+            });
           }else{
             titleSpan.textContent = title;
           }
@@ -312,17 +311,13 @@
       document.getElementById('email-list').innerHTML = '';
 
       //todo email-listの初期化
-      fetch('/todos/default_email')
-        .then(res => {
-          return res.json();
-        })
-        .then(data => {
-          console.log(data);
-          if (data.send_email_list.length === 0){
+      axios.get('/todos/default_email')
+        .then(response => {
+          console.log(response.data);
+          if (response.data.send_email_list.length === 0){
             alert('初期設定のメールアドレスが設定されていません');
-          }
-          
-          for (const email of data.send_email_list) {
+          }          
+          for (const email of response.data.send_email_list) {
             const option = document.createElement('option');
             option.value = email;
             option.textContent = email;
@@ -330,12 +325,12 @@
           }
         })
         .catch(error => {
-          alert('エラー: ' + error.message);
+          alert('エラー: ' + error.response.data.error);
         });
     }
 
 
-    //ファイルを読み込み、タスク単位で送付するメールアドレスを設定する  
+    //ファイルを読み込み、タスク単位で送付するメールアドレスの初期設定値を設定する  
     function importEmail() {
       // document.getElementById('email-file-input').click();
       document.getElementById('email-file-input').onchange = function(e) {
@@ -350,36 +345,21 @@
           };
           const reader = new FileReader();
           reader.onload = function(e) {
-            const content = e.target.result;
+            const emailList = e.target.result;
             
-            fetch('/todos/default_email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: content })
+            axios.post('/todos/default_email', {
+              emailList              
             })
             .then(response => {
-              if (response.status === 400) {
-                return response.json().then(data => {
-                  throw new Warning(data.error);
-                });
-              }
-              if (!response.ok) {
-                return response.json().then(data => {
-                  throw new Error(data.error);
-                });
-              }
-              return response.json();
-            })
-            .then(data => {
-              console.log(data),
-              alert(`送付先メールアドレスを更新しました\n${data.email.join('\n')}`),
+              console.log(response.data);
+              alert(`送付先メールアドレスを更新しました\n${response.data.email.join('\n')}`),
               loadTodos()
             })
             .catch(warning => {
-              alert('警告: ' + warning.message);
+              alert('警告: ' + warning.response.data.warning);
             })
             .catch(error => { 
-              alert('エラー: ' + error.message);
+              alert('エラー: ' + error.response.data.error);
             });
           };
           reader.readAsText(file);
@@ -389,87 +369,70 @@
     }
 
     //タスクのタイトルを更新する処理　同じタイトルのタスクは更新しない
-    function updateTodoTitle({id, oldTitle, newTitle}) {
-      
-      const response = fetch(`/todos/updateTitle`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, oldTitle, newTitle })
+    function updateTodoTitle({oldTitle, newTitle}) {
+      console.log("call updateTodoTitle");
+
+      return axios.patch(`/todos/updateTitle`, {
+        oldTitle, newTitle
       })
         .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error);
-            });
-          }
-          if (response.status === 204) {
-            alert(data.warning);
-            return;
-          }
-          return response.json();
+          console.log(response.data);
+          return {success: true};
         })
-        .then(data => {
-          console.log(data);
-          loadTodos();
+        .catch(warning => {
+          alert('警告: ' + warning.response.data.warning);
+          return {success: false};
         })
         .catch(error => {
-          alert('エラー: ' + error.message);
+          alert('エラー: ' + error.response.data.error);
+          return {success: false};
         });
     }
 
    
     //タスクを削除する処理
     function deleteTodo({title}) {
+      console.log("call deleteTodo");
       if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
         return;
       }
-      fetch(`/todos/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
+      axios.delete(`/todos/delete`, {
+        data: {
+          title
+        }
       })
       .then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.error);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data);
+        console.log(response.data);
         loadTodos();
       })
       .catch(error => {
-        alert('エラー: ' + error.message);
+        alert('エラー: ' + error.response.data.error);
       });
     }
 
 
     //メールアドレス単位でタスクを完了にする処理
     function toggleTodo({title,done,email}) { 
-      
-      fetch(`/todos/toggle`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, done, email })
+      console.log("call toggleTodo");
+      axios.patch(`/todos/toggle`, {
+        title, done, email
       }).then(response => {
-        if (!response.ok) {
-          return response.json().then(data => {
-            throw new Error(data.error);
-          });
-        }
-        return response.json();
-      }).then(() => loadTodos()); // 更新して再表示
+        console.log(response.data);
+        // loadTodos();
+      })
+      .catch(error => {
+        alert('エラー: ' + error.response.data.error);
+      });
     }
 
 
     //タスクを追加する処理　初期処理では登録されているメールアドレスすべてにタスクを追加する
     function addTodo() {
+      console.log("call addTodo");
       const input = document.getElementById('todo-input');
       const title = input.value;
-      const emailList = document.getElementById('email-list');
-      const emails = Array.from(emailList.options).map(option => option.value);
+      const email = document.getElementById('email-list');
+      const emailList = Array.from(email.options).map(option => option.value);
 
       if (!title) return;
       if (title.length > 100) {
@@ -477,35 +440,16 @@
         return;
       }
       //
-      fetch('/todos/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, email_list: emails })
-      })
-        .then(response => {
-          console.log(response);
-          if (response.status === 400) {
-            return response.json().then(data => {
-              throw new Warning(data.error);
-            });
-          }
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error);
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log(data);
-          alert(`新しいタスクを追加しました\n\nタスク名:${data.title}\n\n送信先メールアドレス:\n${data.emails.join('\n')}`);
+      axios.post('/todos/add', {
+          title,
+          emailList          
+        }).then(response => {
+          console.log(response.data);
+          alert(`新しいタスクを追加しました\n\nタスク名:${response.data.title}\n\n送信先メールアドレス:\n${response.data.emails.join('\n')}`);
           loadTodos();
         })  
-        .catch(warning => {
-          alert('警告: ' + warning.message);
-        })
         .catch(error => {
-          alert('エラー: ' + error.message);
+          alert('エラー: ' + error.response.data.error);
         });
       input.value = '';
     } 
