@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "build": "tsc && cp -r src/gui/public dist/gui/public"
   },
   "keywords": [],
@@ -12,14 +12,19 @@
   "description": "",
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.15.17",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.17",
+    "@types/supertest": "^6.0.3",
     "@types/yargs": "^17.0.33",
     "autoprefixer": "^10.4.21",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.10",
     "postcss": "^8.5.3",
+    "supertest": "^7.1.1",
     "tailwindcss": "^4.1.5",
+    "ts-jest": "^29.3.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"

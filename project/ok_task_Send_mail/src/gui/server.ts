@@ -67,7 +67,7 @@ type SendEmail = (to: string, subject: string, text: string) => void;
 
 
 //タスク未完了のメール送信
-const sendEmail: SendEmail = (to, subject, text): void => {
+export const sendEmail: SendEmail = (to, subject, text): void => {
   
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -356,5 +356,6 @@ app.listen(PORT, () => {
 });
 
 
+export { app };
 
 
