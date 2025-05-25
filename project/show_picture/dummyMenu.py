@@ -29,7 +29,7 @@ class DummyMenu(tk.Toplevel):
         new_tag = self.tag_entry.get().strip()
         if new_tag and new_tag not in self.all_tags:
             self.listbox.insert(0, new_tag)
-            self.all_tags.add(new_tag)
+            self.all_tags.append(new_tag)
             self.tag_entry.delete(0, tk.END)
             self.listbox.selection_set(0)
 

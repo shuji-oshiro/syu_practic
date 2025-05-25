@@ -34,7 +34,7 @@ class ThumbnailApp(tk.Tk):
         self.title("画像・動画サムネイルビューア")
         self.geometry("900x700")
         self.folder = folder
-        self.all_tags = set()
+        self.all_tags = []
         self.image_tag_map = {} # 画像ファイルパス: Json対応
         self.check_vars = {}  # タグ: tk.BooleanVar
         self.thumbnails = []  # 参照保持用
@@ -65,13 +65,17 @@ class ThumbnailApp(tk.Tk):
         ttk.Label(self.date_frame, text="FROM").pack(side="left")
         self.from_date_entry = DateEntry(self.date_frame, width=12, date_pattern='yyyy-mm-dd')
         self.from_date_entry.pack(side="left", padx=(0, 10))
+        
         self.from_date_entry.bind("<<DateEntrySelected>>", self.on_date_change)
+        self.from_date_entry.bind("<FocusOut>", self.on_date_change)
         ttk.Label(self.date_frame, text="TO").pack(side="left")
         self.to_date_entry = DateEntry(self.date_frame, width=12, date_pattern='yyyy-mm-dd')
         self.to_date_entry.pack(side="left")
         self.to_date_entry.bind("<<DateEntrySelected>>", self.on_date_change)
+        self.to_date_entry.bind("<FocusOut>", self.on_date_change)
 
         # サムネイル一覧（下部、縦スクロール）
+
         self.thumb_frame_outer = ttk.Frame(self)
         self.thumb_frame_outer.pack(side="top", fill="both", expand=True)
         self.thumb_canvas = tk.Canvas(self.thumb_frame_outer, bg="white")
@@ -118,22 +122,33 @@ class ThumbnailApp(tk.Tk):
         self.to_date_entry.set_date(max_date)
 
     def on_date_change(self, event=None):
+        """
+        日付が変更された時の処理
+        選択された日付範囲に基づいてサムネイルを再表示
+        """
+
+        if self.from_date_entry.get_date() > self.to_date_entry.get_date():
+            self.to_date_entry.set_date(self.from_date_entry.get_date())
+            messagebox.showinfo(tk.messagebox.INFO, "FROMの日付がTOの日付より新しい日付を選択してください")
+            return
+
         self.show_thumbnails()
 
     def on_tag_toggle(self, tag):
-        # タグなしとそれ以外のタグは排他
-        # タグなしの場合は、選択中のタグをクリア、それ以外はタグなしをクリア
+        """
+        タグの選択状態が変更された時の処理
+        - タグなしと他のタグは排他的に動作
+        - タグなしが選択された場合、他のタグを全て解除
+        - 他のタグが選択された場合、タグなしを解除
+        - 選択状態に基づいてサムネイルを再表示
+        """
 
         if tag == "タグなし":
-            
             flg = self.check_vars[tag].get()
-
             for _tag in self.check_vars.keys():
                 self.check_vars[_tag].set(False)
-
             if flg:                               
                 self.check_vars[tag].set(True)
-                            
         else:
             self.check_vars["タグなし"].set(False)
 
@@ -143,6 +158,11 @@ class ThumbnailApp(tk.Tk):
  
 
     def on_window_resize(self, event):
+        """
+        ウィンドウサイズが変更された時の処理
+        - 新しいサイズを記録
+        - サイズが変更された場合、サムネイルを再配置
+        """
         if event.widget == self:
             new_size = (self.winfo_width(), self.winfo_height())
             if new_size != self._last_size:
@@ -174,6 +194,12 @@ class ThumbnailApp(tk.Tk):
 
     # サムネイルクリック時の処理
     def on_thumbnail_click(self, event, path):
+        """
+        サムネイルがクリックされた時の処理
+        - 選択状態を切り替え（選択/非選択）
+        - 選択状態に応じてスタイルを変更
+        - 選択状態は self.selected_items で管理
+        """
         if path in self.selected_items:
             self.selected_items.remove(path)
             style_name = "TLabel"
@@ -185,12 +211,17 @@ class ThumbnailApp(tk.Tk):
 
     # サブメニューが閉じたときの処理
     def on_dummy_menu_close(self, update_tags=None):
-
-        # 選択中のタグがある場合
+        """
+        タグ編集メニューが閉じられた時の処理
+        - タグの更新が選択された場合：
+          - 選択されたファイルのタグを更新
+          - タグ一覧を再読み込み
+          - サムネイルを再表示
+        - 更新がキャンセルされた場合：
+          - メニューを閉じる
+        """
         if update_tags:
-            # タグを更新するか確認、更新する場合は選択したデータのタグを更新する
             if messagebox.askyesno(tk.messagebox.YESNO, f"{update_tags}のタグで\n{len(self.selected_items)}件の選択した写真を更新しますか？"):
-
                 for fname in self.selected_items:
                     self.image_tag_map[fname]["tags"] = update_tags
                 
@@ -202,8 +233,6 @@ class ThumbnailApp(tk.Tk):
                     return
                 
                 self.selected_items.clear()
-
-                # タグを更新したので、タグ一覧を更新する
                 self.scan_tags()
                 self.create_tag_buttons()
 
@@ -213,7 +242,6 @@ class ThumbnailApp(tk.Tk):
 
                 self.show_thumbnails()
                 self.thumb_canvas.yview_moveto(0)
-
             else:
                 messagebox.showinfo(tk.messagebox.INFO, "更新はキャンセルされました")
         self.dummy_menu.destroy()
@@ -221,31 +249,39 @@ class ThumbnailApp(tk.Tk):
 
     # 画像・動画をWindows標準アプリで開く
     def open_with_default_app(self, event, path, file):
-        # 画像・動画をWindows標準アプリで開く
+        """
+        ファイルをデフォルトアプリケーションで開く処理
+        - 指定されたパスのファイルを開く
+        - ダブルクリック時はサムネイルの選択を解除
+        - エラー発生時はエラーメッセージを表示
+        """
         try:
             os.startfile(path)
-
-            # ダブルクリック時はサムネイルを選択解除
             self.selected_items.remove(file)
             style_name = "TLabel"
             if file in self.thumbnail_labels:
                 self.thumbnail_labels[file].configure(style=style_name)
-            
         except Exception as e:
             print(f"{path} のオープンに失敗: {e}")
 
 
     def on_main_frame_right_click(self, event):
+        """
+        メインフレームで右クリックされた時の処理
+        - 選択されたファイルがある場合：
+          - タグ編集メニューを表示
+          - メニューをモーダルとして表示
+        - 選択されたファイルがない場合：
+          - ファイルを選択するよう促すメッセージを表示
+        """
         if not self.selected_items:
             messagebox.showinfo(tk.messagebox.INFO, "選択されているファイルがありません")
             return
 
         self.dummy_menu = DummyMenu(self, event.x_root, event.y_root, self.all_tags, self.on_dummy_menu_close)
-        self.dummy_menu.transient(self)  # selfはメインウィンドウ
-        self.dummy_menu.grab_set()  # サブメニュー表示中はメイン画面操作不可
-        self.dummy_menu.focus_set()  # サブメニューにフォーカスを設定
-        
-        # サブメニューが閉じたときのイベントを設定
+        self.dummy_menu.transient(self)
+        self.dummy_menu.grab_set()
+        self.dummy_menu.focus_set()
         self.dummy_menu.protocol("WM_DELETE_WINDOW", self.on_dummy_menu_close)
         
 

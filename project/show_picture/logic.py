@@ -22,16 +22,22 @@ def scan_tags(self):
     
     self.all_tags.clear()
     self.selected_tags.clear()
-    self.all_tags.update(["タグなし"])
-
     # タグマップファイルが存在する場合は読み込み、存在しない場合は新規作成
     if os.path.exists(self.PICTURE_TAGS_JSON):
         try:
             with open(self.PICTURE_TAGS_JSON, "r", encoding="utf-8") as f:
                 update_map = json.load(f)
+                
+
+            temp_tags = set(["タグなし"])
             for fname in self.image_tag_map.keys():
                 self.image_tag_map[fname]["tags"] = update_map[fname]["tags"]
-                self.all_tags.update(update_map[fname]["tags"])
+                temp_tags.update(update_map[fname]["tags"])
+        
+        
+            self.all_tags.extend(temp_tags)
+
+
         except Exception as e:
             print(f"{self.PICTURE_TAGS_JSON} の読み込みに失敗: {e}")
     else:
@@ -64,7 +70,7 @@ def create_tag_buttons(self):
 
     self.check_vars = {}
     col = 0
-    for tag in sorted(self.all_tags):
+    for tag in self.all_tags:
         var = tk.BooleanVar()
         btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var,command=lambda tag=tag: self.on_tag_toggle(tag))
         btn.grid(row=0, column=col, padx=5, pady=2, sticky="w")
@@ -81,17 +87,23 @@ def show_thumbnails(self):
         widget.destroy()
     self.thumbnails.clear()
     self.thumbnail_labels.clear()
-    filtered = []
 
-    # 選択中のタグがある場合は、そのタグを含むファイルをフィルタリング
+    import pandas as pd
+
+    df = pd.DataFrame(self.image_tag_map).T
+    df["createday"] = pd.to_datetime(df["createday"])
+
+    # 選択中の日付範囲がある場合は、その日付範囲を含むファイルをフィルタリング
+    from_date = self.from_date_entry.get_date()
+    to_date = self.to_date_entry.get_date()
+    
+    df = df[(df["createday"].dt.date >= from_date) & (df["createday"].dt.date <= to_date)] 
+
+    # df = df.reset_index(drop=False)
     if self.selected_tags:
-        for file in self.image_tag_map.keys():
-            if self.selected_tags.issubset(self.image_tag_map[file]["tags"]):
-                filtered.append(file)
-    # 選択中のタグがない場合は、全てのファイルを表示
-    else:
-        filtered = list(self.image_tag_map.keys())
+        df = df[df['tags'].apply(lambda tags: all(tag in tags for tag in self.selected_tags))]
 
+   
     # サムネイル表示の列数を計算    
     frame_width = self.winfo_width()
 
@@ -103,7 +115,8 @@ def show_thumbnails(self):
     style.configure("Selected.TLabel", background="#0066cc") # 選択中のサムネイルの背景色
     style.configure("TLabel", background="#ffffff") # 選択中でないサムネイルの背景色
     
-    for idx, file in enumerate(filtered):
+    idx = 0
+    for file, row in df.iterrows():
         try:
             # サムネイルキャッシュキーを生成
             cache_key = f"{file}_{self.THUMBNAIL_SIZE[0]}_{self.THUMBNAIL_SIZE[1]}"
@@ -129,11 +142,19 @@ def show_thumbnails(self):
             tk_img = ImageTk.PhotoImage(img)
             thumb_frame = ttk.Frame(self.image_frame)
             thumb_frame.grid(row=idx // columns, column=idx % columns, padx=10, pady=10)
+            idx += 1
 
             # サムネイルが選択されている状態と選択されていない状態で表示方法を変える
             style_name = "Selected.TLabel" if file in self.selected_items else "TLabel"
-            lbl = ttk.Label(thumb_frame, image=tk_img, text=os.path.basename(file), compound="top", style=style_name)
+            # lbl = ttk.Label(thumb_frame, image=tk_img, text=os.path.basename(file), compound="top", style=style_name)
+            
+            date_str = row.createday.strftime("%Y-%m-%d")
+            lbl_text = f"{os.path.basename(file)}\n{date_str}"
+
+            # ファイル名と日付を表示
+            lbl = ttk.Label(thumb_frame, image=tk_img, text=lbl_text, compound="top", style=style_name)
             lbl.pack()
+            
             self.thumbnail_labels[file] = lbl
 
             # イベントハンドラを設定
