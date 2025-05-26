@@ -43,6 +43,7 @@ class ThumbnailApp(tk.Tk):
         self.selected_tags = []  # 選択中のタグ
         self._thumbnail_cache = {}  # サムネイルキャッシュ
         self.thumbnail_labels = {}  # サムネイルラベル保持
+        self.scrollbar_visible = False
 
 
         # --- 横スクロール可能な tag_frame を作成 ---
@@ -113,12 +114,15 @@ class ThumbnailApp(tk.Tk):
 
             # スクロールが必要か判定
             if frame_height > canvas_height:
+                # スクロール範囲を更新
+                self.canvas_thumb.configure(scrollregion=self.canvas_thumb.bbox("all"))
                 h_scroll_thumb.pack(side="right", fill="y", padx=10)  # スクロールバーを表示
+                self.scrollbar_visible = True
             else:
                 h_scroll_thumb.pack_forget()  # スクロールバーを非表示
+                self.scrollbar_visible = False
 
-            # スクロール範囲を更新
-            self.canvas_thumb.configure(scrollregion=self.canvas_thumb.bbox("all"))
+
 
         self.image_frame.bind("<Configure>",on_image_frame_configure)
 
@@ -213,15 +217,17 @@ class ThumbnailApp(tk.Tk):
 
 
     def on_mousewheel(self, event):
-        if event.num == 4:
-            self.canvas_thumb.yview_scroll(-1, "units")
-        elif event.num == 5:
-            self.canvas_thumb.yview_scroll(1, "units")
-        elif hasattr(event, 'delta'):
-            if event.delta > 0:
+        # マウスホイールの上下方向のスクロール
+        if self.scrollbar_visible:
+            if event.num == 4:
                 self.canvas_thumb.yview_scroll(-1, "units")
-            else:
+            elif event.num == 5:
                 self.canvas_thumb.yview_scroll(1, "units")
+            elif hasattr(event, 'delta'):
+                if event.delta > 0:
+                    self.canvas_thumb.yview_scroll(-1, "units")
+                else:
+                    self.canvas_thumb.yview_scroll(1, "units")
 
     # サムネイルクリック時の処理
     def on_thumbnail_click(self, event, path):
