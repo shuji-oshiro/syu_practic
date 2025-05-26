@@ -273,9 +273,16 @@ class ThumbnailApp(tk.Tk):
                 self.scan_tags()
                 self.create_tag_buttons()
 
-                for tag in update_tags:
-                    self.check_vars[tag].set(True)
-                    self.selected_tags.append(tag)
+                for tag in self.selected_tags:
+
+                    # タグが存在する場合は前の選択状態を維持する
+                    if tag in self.check_vars:
+                        self.check_vars[tag].set(True)
+
+                    # 写真タグの更新により、未使用のタグが存在する場合は選択を解除する
+                    else:
+                        self.selected_tags.remove(tag)
+ 
 
                 print("on_dummy_menu_close","show_thumbnails")
                 self.show_thumbnails()

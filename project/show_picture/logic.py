@@ -23,7 +23,7 @@ def scan_tags(self):
         self.image_tag_map[fname] = {"createday":mtime_str,"tags":[]}
     
     self.all_tags.clear()
-    self.selected_tags.clear()
+    # self.selected_tags.clear()
     # タグマップファイルが存在する場合は読み込み、存在しない場合は新規作成
     if os.path.exists(self.PICTURE_TAGS_JSON):
         try:

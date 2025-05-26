@@ -1,6 +1,7 @@
 import tkinter as tk
 
 class DummyMenu(tk.Toplevel):
+
     def __init__(self, master, x, y, all_tags, on_close=None):
         super().__init__(master)
         self.title("タグ更新メニュー")
