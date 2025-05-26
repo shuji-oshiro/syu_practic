@@ -8,6 +8,7 @@ import datetime
 import functools
 import pandas as pd
 import tkinter as tk
+import collections
 from tkinter import ttk
 from PIL import Image, ImageTk
 
@@ -29,10 +30,16 @@ def scan_tags(self):
             with open(self.PICTURE_TAGS_JSON, "r", encoding="utf-8") as f:
                 update_map = json.load(f)
                 
-            
+            temp =[]
+            self.none_tag_cnt = 0 #タグなしカウント
             for fname in self.image_tag_map.keys():
                 self.image_tag_map[fname]["tags"] = update_map[fname]["tags"]
-                self.all_tags.update(update_map[fname]["tags"])
+                temp.extend(self.image_tag_map[fname]["tags"])
+
+                if not self.image_tag_map[fname]["tags"]:
+                    self.none_tag_cnt += 1
+
+            self.all_tags = collections.Counter(temp)
 
         except Exception as e:
             print(f"{self.PICTURE_TAGS_JSON} の読み込みに失敗: {e}")
@@ -69,14 +76,14 @@ def create_tag_buttons(self):
     # タグなしボタン
     none_tag = "タグなし"
     var = tk.BooleanVar()
-    btn = ttk.Checkbutton(self.tag_frame, text=none_tag, variable=var, command=lambda tag=none_tag: self.on_tag_toggle(tag))
+    btn = ttk.Checkbutton(self.tag_frame, text=f"{none_tag} ({self.none_tag_cnt})", variable=var, command=lambda tag=none_tag: self.on_tag_toggle(none_tag))
     self.check_vars[none_tag] = var
     btn.grid(row=0, column=0, padx=5, pady=2, sticky="w")
         
     col = 1
-    for tag in self.all_tags:
+    for tag,cnt in self.all_tags.items():
         var = tk.BooleanVar()
-        btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var,command=lambda tag=tag: self.on_tag_toggle(tag))
+        btn = ttk.Checkbutton(self.tag_frame, text=f"{tag} ({cnt})", variable=var,command=lambda tag=tag: self.on_tag_toggle(tag))
         btn.grid(row=0, column=col, padx=5, pady=2, sticky="w")
         btn._tag = tag  # 独自属性としてtagを持たせる
         self.check_vars[tag] = var

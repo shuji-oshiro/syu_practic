@@ -32,7 +32,7 @@ class ThumbnailApp(tk.Tk):
         
         self.folder = os.getenv('IMAGE_FOLDER')
         # self.df_image_tag_map = pd.DataFrame()
-        self.all_tags = set()
+        self.all_tags = {}
         self.image_tag_map = {} # 画像ファイルパス: Json対応
         self.check_vars = {}  # タグ: tk.BooleanVar
         self.thumbnails = []  # 参照保持用
@@ -44,7 +44,7 @@ class ThumbnailApp(tk.Tk):
         self._thumbnail_cache = {}  # サムネイルキャッシュ
         self.thumbnail_labels = {}  # サムネイルラベル保持
         self.scrollbar_visible = False
-
+        self.none_tag_cnt = 0
 
         # --- 横スクロール可能な tag_frame を作成 ---
         canvas_tags = tk.Canvas(self, height=30)
@@ -316,7 +316,7 @@ class ThumbnailApp(tk.Tk):
             messagebox.showinfo(tk.messagebox.INFO, "選択されているファイルがありません")
             return
 
-        self.dummy_menu = DummyMenu(self, event.x_root, event.y_root, self.all_tags, self.on_dummy_menu_close)
+        self.dummy_menu = DummyMenu(self, event.x_root, event.y_root, list(self.all_tags.keys()), self.on_dummy_menu_close)
         self.dummy_menu.transient(self)
         self.dummy_menu.grab_set()
         self.dummy_menu.focus_set()
