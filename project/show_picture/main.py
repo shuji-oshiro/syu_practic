@@ -18,31 +18,29 @@ import logic
 
 
 load_dotenv()
-IMAGE_FOLDER = os.getenv('IMAGE_FOLDER')
-        
-
 
 class ThumbnailApp(tk.Tk):
 
-    def __init__(self, folder):
+    def __init__(self):
         super().__init__()        
         self.PICTURE_TAGS_JSON = os.getenv('PICTURE_TAGS_JSON')
         self.THUMBNAIL_SIZE = (128, 128)
         self.VIDEO_EXTS = ('.mp4', '.mov', '.avi', '.mkv', '.wmv', '.flv')
         self.VIDEO_AND_IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.mp4', '.mov', '.avi', '.mkv', '.wmv', '.flv')
-
         self.title("画像・動画サムネイルビューア")
         self.geometry("900x700")
-        self.folder = folder
-        self.all_tags = []
+        
+        self.folder = os.getenv('IMAGE_FOLDER')
+        # self.df_image_tag_map = pd.DataFrame()
+        self.all_tags = set()
         self.image_tag_map = {} # 画像ファイルパス: Json対応
         self.check_vars = {}  # タグ: tk.BooleanVar
         self.thumbnails = []  # 参照保持用
         self.min_thumb_width = self.THUMBNAIL_SIZE[0] + 20  # サムネイル1件分の最小幅（パディング込み）
-        self.current_columns = 1  # 現在のカラム数
+        self.current_columns = 1  # 画面に表示されるカラム数　特に使用はしていない　
         self._last_size = (self.winfo_width(), self.winfo_height())
         self.selected_items = set()  # 選択中のファイル
-        self.selected_tags = set()  # 選択中のタグ
+        self.selected_tags = []  # 選択中のタグ
         self._thumbnail_cache = {}  # サムネイルキャッシュ
         self.thumbnail_labels = {}  # サムネイルラベル保持
 
@@ -109,12 +107,12 @@ class ThumbnailApp(tk.Tk):
 
         def on_image_frame_configure(event):
             # tag_frameのサイズ
-            frame_width = self.image_frame.winfo_reqwidth()
+            frame_height = self.image_frame.winfo_reqheight()
             # canvasの表示幅
-            canvas_width = self.canvas_thumb.winfo_width()
+            canvas_height = self.canvas_thumb.winfo_height()
 
             # スクロールが必要か判定
-            if frame_width > canvas_width:
+            if frame_height > canvas_height:
                 h_scroll_thumb.pack(side="right", fill="y", padx=10)  # スクロールバーを表示
             else:
                 h_scroll_thumb.pack_forget()  # スクロールバーを非表示
@@ -193,7 +191,7 @@ class ThumbnailApp(tk.Tk):
         else:
             self.check_vars["タグなし"].set(False)
 
-        self.selected_tags = {tag for tag, var in self.check_vars.items() if var.get()}
+        self.selected_tags = [tag for tag, var in self.check_vars.items() if var.get()]
         self.selected_items.clear()
         print("on_tag_toggle","show_thumbnails")
         self.show_thumbnails()
@@ -271,7 +269,7 @@ class ThumbnailApp(tk.Tk):
 
                 for tag in update_tags:
                     self.check_vars[tag].set(True)
-                    self.selected_tags.add(tag)
+                    self.selected_tags.append(tag)
 
                 print("on_dummy_menu_close","show_thumbnails")
                 self.show_thumbnails()
@@ -320,7 +318,7 @@ class ThumbnailApp(tk.Tk):
         
 
 def main():
-    app = ThumbnailApp(IMAGE_FOLDER)
+    app = ThumbnailApp()
     app.mainloop()
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ def scan_tags(self):
         file_path = os.path.join(self.folder, fname)
         mtime = os.path.getmtime(file_path)
         mtime_str = datetime.datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
-        self.image_tag_map[fname] = {"createday":mtime_str,"tags":["タグなし"]}
+        self.image_tag_map[fname] = {"createday":mtime_str,"tags":[]}
     
     self.all_tags.clear()
     self.selected_tags.clear()
@@ -29,15 +29,10 @@ def scan_tags(self):
             with open(self.PICTURE_TAGS_JSON, "r", encoding="utf-8") as f:
                 update_map = json.load(f)
                 
-
-            temp_tags = set(["タグなし"])
+            
             for fname in self.image_tag_map.keys():
                 self.image_tag_map[fname]["tags"] = update_map[fname]["tags"]
-                temp_tags.update(update_map[fname]["tags"])
-        
-        
-            self.all_tags.extend(temp_tags)
-
+                self.all_tags.update(update_map[fname]["tags"])
 
         except Exception as e:
             print(f"{self.PICTURE_TAGS_JSON} の読み込みに失敗: {e}")
@@ -70,7 +65,15 @@ def create_tag_buttons(self):
         widget.destroy()
 
     self.check_vars = {}
-    col = 0
+
+    # タグなしボタン
+    none_tag = "タグなし"
+    var = tk.BooleanVar()
+    btn = ttk.Checkbutton(self.tag_frame, text=none_tag, variable=var, command=lambda tag=none_tag: self.on_tag_toggle(tag))
+    self.check_vars[none_tag] = var
+    btn.grid(row=0, column=0, padx=5, pady=2, sticky="w")
+        
+    col = 1
     for tag in self.all_tags:
         var = tk.BooleanVar()
         btn = ttk.Checkbutton(self.tag_frame, text=tag, variable=var,command=lambda tag=tag: self.on_tag_toggle(tag))
@@ -100,7 +103,10 @@ def show_thumbnails(self):
 
     # df = df.reset_index(drop=False)
     # 選択中のタグがある場合は、そのタグを含むファイルをフィルタリング
-    if self.selected_tags:
+    if self.selected_tags == ["タグなし"]:
+        df = df[df['tags'].apply(lambda x: len(x) == 0)]
+
+    elif self.selected_tags:
         df = df[df['tags'].apply(lambda x: set(self.selected_tags).issubset(set(x)))]
  
    

@@ -32,31 +32,31 @@ class DummyMenu(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
         
         # マウスホイールスクロール対応
-        self.listbox.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows
-        self.listbox.bind_all("<Button-4>", self.on_mousewheel)    # Linux
-        self.listbox.bind_all("<Button-5>", self.on_mousewheel)    # Linux
+        # self.listbox.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows
+        # self.listbox.bind_all("<Button-4>", self.on_mousewheel)    # Linux
+        # self.listbox.bind_all("<Button-5>", self.on_mousewheel)    # Linux
 
         for item in self.all_tags:
             self.listbox.insert(tk.END, item)
 
         self.listbox.configure(yscrollcommand=scrollbar.set)
 
-    def on_mousewheel(self, event):
-        if event.num == 4:
-            self.listbox.yview_scroll(-1, "units")
-        elif event.num == 5:
-            self.listbox.yview_scroll(1, "units")
-        elif hasattr(event, 'delta'):
-            if event.delta > 0:
-                self.listbox.yview_scroll(-1, "units")
-            else:
-                self.listbox.yview_scroll(1, "units")
+    # def on_mousewheel(self, event):
+    #     if event.num == 4:
+    #         self.listbox.yview_scroll(-1, "units")
+    #     elif event.num == 5:
+    #         self.listbox.yview_scroll(1, "units")
+    #     elif hasattr(event, 'delta'):
+    #         if event.delta > 0:
+    #             self.listbox.yview_scroll(-1, "units")
+    #         else:
+    #             self.listbox.yview_scroll(1, "units")
 
     def add_tag(self):
         new_tag = self.tag_entry.get().strip()
         if new_tag and new_tag not in self.all_tags:
             self.listbox.insert(0, new_tag)
-            self.all_tags.append(new_tag)
+            # self.all_tags.add(new_tag)
             self.tag_entry.delete(0, tk.END)
             self.listbox.selection_set(0)
 
