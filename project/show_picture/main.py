@@ -139,8 +139,11 @@ class ThumbnailApp(tk.Tk):
         self.dummy_menu = None
 
         self.scan_tags()
-        self.create_tag_buttons()        
-        self.after_idle(self.show_thumbnails)  # 初期表示時は遅延実行
+        self.create_tag_buttons()  
+
+        # サイズ変更時に同様の処理が発生しているため、初期表示時は遅延実行しない
+        # print("__init__","show_thumbnails")
+        # self.after_idle(self.show_thumbnails)  # 初期表示時は遅延実行
 
         # サムネイルのcreatedayから最小・最大日付を取得
         createday_list = [
@@ -169,6 +172,7 @@ class ThumbnailApp(tk.Tk):
             messagebox.showinfo(tk.messagebox.INFO, "FROMの日付がTOの日付より新しい日付を選択してください")
             return
 
+        print("on_date_change","show_thumbnails")
         self.show_thumbnails()
 
     def on_tag_toggle(self, tag):
@@ -191,6 +195,7 @@ class ThumbnailApp(tk.Tk):
 
         self.selected_tags = {tag for tag, var in self.check_vars.items() if var.get()}
         self.selected_items.clear()
+        print("on_tag_toggle","show_thumbnails")
         self.show_thumbnails()
  
 
@@ -204,7 +209,10 @@ class ThumbnailApp(tk.Tk):
             new_size = (self.winfo_width(), self.winfo_height())
             if new_size != self._last_size:
                 self._last_size = new_size
+
+                print("on_window_resize","show_thumbnails")
                 self.after_idle(self.show_thumbnails)
+
 
     def on_mousewheel(self, event):
         if event.num == 4:
@@ -265,8 +273,9 @@ class ThumbnailApp(tk.Tk):
                     self.check_vars[tag].set(True)
                     self.selected_tags.add(tag)
 
+                print("on_dummy_menu_close","show_thumbnails")
                 self.show_thumbnails()
-                self.thumb_canvas.yview_moveto(0)
+                self.canvas_thumb.yview_moveto(0)
             else:
                 messagebox.showinfo(tk.messagebox.INFO, "更新はキャンセルされました")
         self.dummy_menu.destroy()

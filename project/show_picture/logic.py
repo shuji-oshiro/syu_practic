@@ -1,14 +1,15 @@
 # --- データ処理・ロジック専用 ---
 # 例：タグスキャンやサムネイルフィルタなどのロジックをここに分離しても良い（将来的な拡張用）
 
+import os
+import cv2
+import json
+import datetime
+import functools
+import pandas as pd
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
-import cv2
-import functools
-import json
-import os
-import datetime
 
 def scan_tags(self):
     # フォルダ内の画像・動画ファイルをスキャンし、タグ情報を初期化・読み込みする
@@ -88,21 +89,20 @@ def show_thumbnails(self):
     self.thumbnails.clear()
     self.thumbnail_labels.clear()
 
-    import pandas as pd
-
     df = pd.DataFrame(self.image_tag_map).T
     df["createday"] = pd.to_datetime(df["createday"])
 
-    # 選択中の日付範囲がある場合は、その日付範囲を含むファイルをフィルタリング
+    # 日付範囲でファイルをフィルタリング
     from_date = self.from_date_entry.get_date()
     to_date = self.to_date_entry.get_date()
     
     df = df[(df["createday"].dt.date >= from_date) & (df["createday"].dt.date <= to_date)] 
 
     # df = df.reset_index(drop=False)
+    # 選択中のタグがある場合は、そのタグを含むファイルをフィルタリング
     if self.selected_tags:
-        df = df[df['tags'].apply(lambda tags: all(tag in tags for tag in self.selected_tags))]
-
+        df = df[df['tags'].apply(lambda x: set(self.selected_tags).issubset(set(x)))]
+ 
    
     # サムネイル表示の列数を計算    
     frame_width = self.winfo_width()

@@ -4,7 +4,7 @@ class DummyMenu(tk.Toplevel):
     def __init__(self, master, x, y, all_tags, on_close=None):
         super().__init__(master)
         self.title("タグ更新メニュー")
-        self.geometry(f"200x150+{x}+{y}")
+        self.geometry(f"200x300+{x}+{y}")
         self.all_tags = all_tags.copy()
         self.on_close = on_close
 
@@ -20,10 +20,37 @@ class DummyMenu(tk.Toplevel):
 
         add_btn = tk.Button(input_frame, text="追加", command=self.add_tag)
         add_btn.pack(side="right", padx=(5, 0))
-        self.listbox = tk.Listbox(self, selectmode="multiple")
+
+        frame = tk.Frame(self)
+        frame.pack(fill="x", padx=10, pady=5)
+
+        self.listbox = tk.Listbox(frame, selectmode="multiple")
+        self.listbox.pack(side="left", fill="both", expand=True)
+
+        # スクロールバーの作成
+        scrollbar = tk.Scrollbar(frame, orient="vertical", command=self.listbox.yview)
+        scrollbar.pack(side="right", fill="y")
+        
+        # マウスホイールスクロール対応
+        self.listbox.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows
+        self.listbox.bind_all("<Button-4>", self.on_mousewheel)    # Linux
+        self.listbox.bind_all("<Button-5>", self.on_mousewheel)    # Linux
+
         for item in self.all_tags:
             self.listbox.insert(tk.END, item)
-        self.listbox.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.listbox.configure(yscrollcommand=scrollbar.set)
+
+    def on_mousewheel(self, event):
+        if event.num == 4:
+            self.listbox.yview_scroll(-1, "units")
+        elif event.num == 5:
+            self.listbox.yview_scroll(1, "units")
+        elif hasattr(event, 'delta'):
+            if event.delta > 0:
+                self.listbox.yview_scroll(-1, "units")
+            else:
+                self.listbox.yview_scroll(1, "units")
 
     def add_tag(self):
         new_tag = self.tag_entry.get().strip()
