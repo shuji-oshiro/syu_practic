@@ -97,21 +97,21 @@ class ThumbnailApp(tk.Tk):
         thumb_area.pack(side="top", fill="both", expand=True)
 
 
-        canvas_thumb = tk.Canvas(thumb_area)
-        canvas_thumb.pack(side="left", fill="both", expand=True)
-        h_scroll_thumb = ttk.Scrollbar(thumb_area, orient="vertical", command=canvas_thumb.yview)
+        self.canvas_thumb = tk.Canvas(thumb_area)
+        self.canvas_thumb.pack(side="left", fill="both", expand=True)
+        h_scroll_thumb = ttk.Scrollbar(thumb_area, orient="vertical", command=self.canvas_thumb.yview)
         h_scroll_thumb.pack(side="right", fill="y")
-        canvas_thumb.configure(yscrollcommand=h_scroll_thumb.set)
+        self.canvas_thumb.configure(yscrollcommand=h_scroll_thumb.set)
 
         
-        self.image_frame = tk.Frame(canvas_thumb)
-        canvas_thumb.create_window((0, 0), window=self.image_frame, anchor="nw")
+        self.image_frame = tk.Frame(self.canvas_thumb)
+        self.canvas_thumb.create_window((0, 0), window=self.image_frame, anchor="nw")
 
         def on_image_frame_configure(event):
             # tag_frameのサイズ
             frame_width = self.image_frame.winfo_reqwidth()
             # canvasの表示幅
-            canvas_width = canvas_thumb.winfo_width()
+            canvas_width = self.canvas_thumb.winfo_width()
 
             # スクロールが必要か判定
             if frame_width > canvas_width:
@@ -120,31 +120,15 @@ class ThumbnailApp(tk.Tk):
                 h_scroll_thumb.pack_forget()  # スクロールバーを非表示
 
             # スクロール範囲を更新
-            canvas_thumb.configure(scrollregion=canvas_thumb.bbox("all"))
-
+            self.canvas_thumb.configure(scrollregion=self.canvas_thumb.bbox("all"))
 
         self.image_frame.bind("<Configure>",on_image_frame_configure)
-        # self.thumb_frame_outer.bind("<Configure>", lambda e: canvas_thumb.configure(scrollregion=canvas_thumb.bbox("all")))
-        # self.thumb_frame_outer = ttk.Frame(canvas_thumb)
-        # self.thumb_frame_outer.bind("<Configure>", self.on_thumb_frame_configure)
 
-
-        # self.thumb_frame_outer = ttk.Frame(self)
-        # self.thumb_frame_outer.pack(side="top", fill="both", expand=True)
-        # self.thumb_canvas = tk.Canvas(self.thumb_frame_outer, bg="white")
-        # self.thumb_scrollbar = ttk.Scrollbar(self.thumb_frame_outer, orient="vertical", command=self.thumb_canvas.yview)
-        # self.image_frame = ttk.Frame(self.thumb_canvas)
-        # self.frame_id = self.thumb_canvas.create_window((0, 0), window=self.image_frame, anchor="nw")
-        # self.thumb_canvas.configure(yscrollcommand=self.thumb_scrollbar.set)
-        # self.thumb_canvas.pack(side="left", fill="both", expand=True)
-        # self.thumb_scrollbar.pack(side="right", fill="y")
-        # self.image_frame.bind("<Configure>", self.on_thumb_frame_configure)
-        # self.thumb_canvas.bind("<Configure>", self.on_thumb_canvas_configure)
 
         # マウスホイールスクロール対応
-        # self.thumb_canvas.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows
-        # self.thumb_canvas.bind_all("<Button-4>", self.on_mousewheel)    # Linux
-        # self.thumb_canvas.bind_all("<Button-5>", self.on_mousewheel)    # Linux
+        self.canvas_thumb.bind_all("<MouseWheel>", self.on_mousewheel)  # Windows
+        self.canvas_thumb.bind_all("<Button-4>", self.on_mousewheel)    # Linux
+        self.canvas_thumb.bind_all("<Button-5>", self.on_mousewheel)    # Linux
 
         self.bind("<Configure>", self.on_window_resize)
 
@@ -222,28 +206,16 @@ class ThumbnailApp(tk.Tk):
                 self._last_size = new_size
                 self.after_idle(self.show_thumbnails)
 
-    def on_thumb_frame_configure(self, event):
-        self.thumb_canvas.configure(scrollregion=self.thumb_canvas.bbox("all"))
-
-    def on_thumb_canvas_configure(self, event):
-        self.thumb_canvas.itemconfig(self.frame_id, width=event.width)
-
-    def on_tag_frame_configure(self, event):
-        self.tag_canvas.configure(scrollregion=self.tag_canvas.bbox("all"))
-
-    def on_tag_canvas_configure(self, event):
-        self.tag_canvas.itemconfig(self.tag_frame_id, width=event.width)
-
     def on_mousewheel(self, event):
         if event.num == 4:
-            self.thumb_canvas.yview_scroll(-1, "units")
+            self.canvas_thumb.yview_scroll(-1, "units")
         elif event.num == 5:
-            self.thumb_canvas.yview_scroll(1, "units")
+            self.canvas_thumb.yview_scroll(1, "units")
         elif hasattr(event, 'delta'):
             if event.delta > 0:
-                self.thumb_canvas.yview_scroll(-1, "units")
+                self.canvas_thumb.yview_scroll(-1, "units")
             else:
-                self.thumb_canvas.yview_scroll(1, "units")
+                self.canvas_thumb.yview_scroll(1, "units")
 
     # サムネイルクリック時の処理
     def on_thumbnail_click(self, event, path):
