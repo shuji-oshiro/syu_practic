@@ -9,7 +9,7 @@ FROM python:3.11-slim AS app-stage
 # 作業ディレクトリ
 WORKDIR /app
 
-#TODO: 存関係インストール 
+#TODO: 依存関係インストール
 COPY ../requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 #RUN pip install fastapi uvicorn python-multipart pytz pandas pytest pytest-asyncio
