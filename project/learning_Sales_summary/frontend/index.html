@@ -200,8 +200,8 @@
       
       let html = '<p>分析が完了しました</p>';
 
-      result1 = JSON.parse(result[0]);
-      result2 = JSON.parse(result[1]);
+      const result1 = JSON.parse(result.summary_by_product);
+      const result2 = JSON.parse(result.summary_by_client_product);
 
       if (result1 && result1.length > 0) {
         html += '<div><button class="register-btn" onclick="testButton(result1, result2)">CSVダウンロード</button></div>';
