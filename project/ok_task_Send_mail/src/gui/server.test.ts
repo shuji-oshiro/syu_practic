@@ -1,14 +1,11 @@
-import { sendEmail } from './server';
+import { sendEmail } from '../utils/email';
 import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { Express } from 'express';
 import * as serverModule from './server';
 import { resetTestDatabase } from '../utils/dbUtils';
 
-beforeEach(async () => {
-  process.env.NODE_ENV = 'test';
-  await resetTestDatabase(); // ← 非同期で安全に削除
-});
+
 // nodemailerのモック
 jest.mock('nodemailer');
 const sendMailMock = jest.fn();
@@ -38,6 +35,12 @@ describe('sendEmail', () => {
   });
 });
 
+// テスト要サーバーの初期化
+beforeEach(async () => {
+  process.env.NODE_ENV = 'test';
+  await resetTestDatabase(); // ← 非同期で安全に削除
+});
+
 
 describe('タスク追加・取得・削除の統合テスト', () => {
   const testTitle = '統合テストタスク';
@@ -45,7 +48,7 @@ describe('タスク追加・取得・削除の統合テスト', () => {
 
   it('タスクを追加し、取得し、削除し、再取得で消えていることを確認', async () => {
 
-    // 0. ＤＢ初期化処理のため
+    // 0. ＤＢ初期化処理のため処理を呼び出す
     const getRes0 = await request(app)
       .get('/todos')
       .query({ user: testEmail });

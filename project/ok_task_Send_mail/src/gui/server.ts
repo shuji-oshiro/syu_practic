@@ -1,10 +1,12 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import fs from 'fs';
 import path from 'path';
-import dotenv from 'dotenv';
-import sqlite3 from 'sqlite3';
 import express from 'express';
-import nodeCron from 'node-cron';
-import nodemailer from 'nodemailer';
+import sqlite3 from 'sqlite3';
+import cors from 'cors';
+import { scheduleDailyMail } from '../jobs/emailScheduler';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,23 +14,14 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = process.env.NODE_ENV === 'test'
   ? path.resolve('src/data/test_todos.db')
   : path.resolve('src/data/todos.db');
-
 console.log("DB_PATH:",DB_PATH);
+let send_email_list: string[] = [];
 
-//タスクを追加するときに送信するメールアドレスリスト
-let send_email_list: string[] = []
-
-dotenv.config({path: path.resolve('.env')});
-
-
-// 中間処理
-// JSON形式のリクエストボディを解析するためのミドルウェアを設定
+app.use(cors());
 app.use(express.json());
-
-// 静的ファイル（HTML、CSS、JavaScriptなど）を提供するためのミドルウェアを設定
-// 'public'ディレクトリ内のファイルが直接アクセス可能になります
 app.use(express.static(path.join(__dirname, 'public')));
-console.log("publicディレクトリ",path.join(__dirname, 'public'));
+
+// ✅ Healthcheck
 
 // 型定義
 interface Todo {
@@ -67,75 +60,8 @@ interface TodoUpdateTitleRequestBody {
   newTitle: string;
 }
 
-type SendEmail = (to: string, subject: string, text: string) => void;
-
-
-//タスク未完了のメール送信
-export const sendEmail: SendEmail = (to, subject, text): void => {
-  
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-  });
-
-  const mailOptions = {
-    from: 'your.email@gmail.com',
-    to,
-    subject,
-    text,
-  };
-  console.info("Sending email with options:", mailOptions);
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Error sending email:', error);
-    } else {
-      console.log('Email sent:', info.response);
-    }
-  });
-
-}
-
-// メール送信時刻設定
-const x = process.env.SEND_TIME_HOUR || '9';
-const y = process.env.SEND_TIME_MINITS || '0';
-const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
-const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
-
-
-console.log(`毎日${x}時${y}分メール送信チェック`);
-console.log("送信文書",mail_title,mail_text_template);
-//特定時間ごとにタスク未完了者へメール送信
-nodeCron.schedule(`${y} ${x} * * *`, () => {
-
-  
-  console.log(`${x}時${y}分メール送信チェック開始`);
-  const db = new sqlite3.Database(DB_PATH);
-  db.all('SELECT * FROM todos WHERE done = 0', (err, rows) => {
-    if (err) return console.error(err);
-
-    rows.forEach((todo: any) => {
-      try {
-
-        const mail_text = mail_text_template.replace('{task_text}', todo.title);
-        if (todo.email) {
-          sendEmail(
-            todo.email,
-            mail_title,
-            mail_text
-          );
-        }
-      } catch (error) {
-        console.error('メール送信時にエラーが発生しました:', error);
-      }
-    });
-
-  });
-}, {
-  timezone: 'Asia/Tokyo'
+app.get('/health', (_req: express.Request, res: express.Response) => {
+  res.status(200).json({ status: 'ok' });
 });
 
 
@@ -330,36 +256,32 @@ app.get('/todos/default_email', (req: express.Request, res: express.Response) =>
 });
 
 
+// 初期化関数
+function initializeEmailList(): void {
+  const filePath = path.resolve('src/data/send_email.csv');
+  const dirPath = path.dirname(filePath);
+
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '');
+
+  send_email_list = fs.readFileSync(filePath, 'utf8')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+}
+
+// スケジューラー起動
+const x = process.env.SEND_TIME_HOUR || '9';
+const y = process.env.SEND_TIME_MINITS || '0';
+const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
+const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
+scheduleDailyMail(x, y, mail_title, mail_text_template);
+
+// サーバ起動
 app.listen(PORT, () => {
-
-  try {
-    const filePath = path.resolve('src/data/send_email.csv')
-    const dirPath = path.dirname(filePath);
-
-    // ディレクトリが存在しなければ作成
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // ファイルが存在しない場合、空ファイルを作成
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, '');
-    }
-
-    send_email_list = fs
-      .readFileSync(path.resolve('src/data/send_email.csv'), 'utf8')
-      .split(',')
-      .filter(Boolean);
-    
-    console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
-
-  } catch (error) {
-    console.error('初期設定中にエラーが発生しました:', error);
-  }
-
+  initializeEmailList();
+  console.log(`ToDo GUIサーバーが http://localhost:${PORT} で起動しました`);
 });
 
-
 export { app };
-
 
