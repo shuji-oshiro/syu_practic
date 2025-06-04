@@ -4,6 +4,8 @@ node_modules/
 # TypeScriptのビルド成果物も管理しない
 dist/
 
+src/data/todos.db
+
 # OSやエディタごとの一時ファイル
 .DS_Store
 Thumbs.db
