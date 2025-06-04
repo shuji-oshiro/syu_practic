@@ -97,8 +97,12 @@
 </head>
 <body>
   <div class="container py-5">
-    <h3 class="mb-4 text-center fw-bold">タスク管理</h3>
-    
+    <h3 class="mb-4 text-center fw-bold">タスク管理
+      <span id="user-mail" class="ms-3 fs-6 text-muted">管理者権限モード</span>
+    </h3>
+    <div><label for="" >メール送信時刻：
+      <span id="text_sendmail_time" ></span>
+    </label></div>
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <div class="mb-4">
@@ -166,16 +170,24 @@
 
       const params = new URLSearchParams(window.location.search);
       const user = params.get('user') || '';
-      console.info("user:", user);
+      
 
+      if (user.length > 0){
+        console.info("user:", user);
+        const text = document.getElementById('user-mail');
+        
+        if (text) {          
+          text.textContent = "ユーザーモード：" + user;  
+        }
+      }
       
       const filterSelect = document.getElementById('filter-select');
-      const filter = filterSelect.value;
+      //const filter = filterSelect.value;
 
       let groupedTodos = {};
       let addtaskflag = false;
       // ToDoの取得
-      await axios.get(`/todos?filter=${filter}&user=${user}`)
+      await axios.get(`/todos?filter=${filterSelect.value}&user=${user}`)
         .then(response => {
           // 以降の処理
           // タイトルごとにグループ化
@@ -192,6 +204,12 @@
             acc[todo.title].push(todo);
             return acc;
           }, {});
+
+          //自動メール送信時刻の表示
+          const send_time = document.getElementById('text_sendmail_time');
+          if (send_time) {          
+            send_time.textContent = response.data.sendTime; 
+          }
 
           if (!addtaskflag) {
             document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';

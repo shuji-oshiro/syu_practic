@@ -15,7 +15,12 @@ const DB_PATH = process.env.NODE_ENV === 'test'
   ? path.resolve('src/data/test_todos.db')
   : path.resolve('src/data/todos.db');
 console.log("DB_PATH:",DB_PATH);
+
 let send_email_list: string[] = [];
+
+const SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
+const SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
+
 
 app.use(cors());
 app.use(express.json());
@@ -59,6 +64,7 @@ interface TodoUpdateTitleRequestBody {
   oldTitle: string;
   newTitle: string;
 }
+
 
 app.get('/health', (_req: express.Request, res: express.Response) => {
   res.status(200).json({ status: 'ok' });
@@ -105,7 +111,7 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
       res.status(500).json({ error: 'タスクデータの取得中にエラーが発生しました' });
       return;
     }
-    res.json({ rows, addtaskflag });
+    res.json({ rows, addtaskflag, sendTime: `${SEND_HOUR}時${SEND_MINITS}分`});
   });
 });
 
@@ -271,11 +277,9 @@ function initializeEmailList(): void {
 }
 
 // スケジューラー起動
-const x = process.env.SEND_TIME_HOUR || '9';
-const y = process.env.SEND_TIME_MINITS || '0';
 const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
 const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
-scheduleDailyMail(x, y, mail_title, mail_text_template);
+scheduleDailyMail(SEND_HOUR, SEND_MINITS, mail_title, mail_text_template);
 
 // サーバ起動
 app.listen(PORT, () => {

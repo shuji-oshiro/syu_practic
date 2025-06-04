@@ -5,6 +5,7 @@ node_modules/
 dist/
 
 src/data/todos.db
+src/data/test_todos.db
 
 # OSやエディタごとの一時ファイル
 .DS_Store
