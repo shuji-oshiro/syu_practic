@@ -3,7 +3,12 @@ import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { Express } from 'express';
 import * as serverModule from './server';
+import { resetTestDatabase } from '../utils/dbUtils';
 
+beforeEach(async () => {
+  process.env.NODE_ENV = 'test';
+  await resetTestDatabase(); // ← 非同期で安全に削除
+});
 // nodemailerのモック
 jest.mock('nodemailer');
 const sendMailMock = jest.fn();
@@ -39,6 +44,15 @@ describe('タスク追加・取得・削除の統合テスト', () => {
   const testEmail = 'integration@example.com';
 
   it('タスクを追加し、取得し、削除し、再取得で消えていることを確認', async () => {
+
+    // 0. ＤＢ初期化処理のため
+    const getRes0 = await request(app)
+      .get('/todos')
+      .query({ user: testEmail });
+    expect(getRes0.status).toBe(200);
+    expect(getRes0.body.rows.some((todo: any) => todo.title === testTitle)).toBe(false);
+
+
     // 1. タスク追加
     const addRes = await request(app)
       .post('/todos/add')

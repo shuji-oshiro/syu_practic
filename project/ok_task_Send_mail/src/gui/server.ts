@@ -9,7 +9,11 @@ import nodemailer from 'nodemailer';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DB_PATH = path.resolve('src/data/todos.db');
+const DB_PATH = process.env.NODE_ENV === 'test'
+  ? path.resolve('src/data/test_todos.db')
+  : path.resolve('src/data/todos.db');
+
+console.log("DB_PATH:",DB_PATH);
 
 //タスクを追加するときに送信するメールアドレスリスト
 let send_email_list: string[] = []
