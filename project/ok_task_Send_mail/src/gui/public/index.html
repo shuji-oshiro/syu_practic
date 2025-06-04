@@ -100,9 +100,13 @@
     <h3 class="mb-4 text-center fw-bold">タスク管理
       <span id="user-mail" class="ms-3 fs-6 text-muted">管理者権限モード</span>
     </h3>
-    <div><label for="" >メール送信時刻：
-      <span id="text_sendmail_time" ></span>
-    </label></div>
+    <div>
+      <label for="" >メール送信時刻：
+        <span id="text_sendmail_time" ></span>
+        <span><input type="time" id="send-time" name="send-time" step="900"></span>
+      </label>
+    </div>
+    
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <div class="mb-4">
@@ -206,10 +210,16 @@
           }, {});
 
           //自動メール送信時刻の表示
-          const send_time = document.getElementById('text_sendmail_time');
-          if (send_time) {          
-            send_time.textContent = response.data.sendTime; 
+          //const send_time = document.getElementById('text_sendmail_time');
+          const send_time = document.getElementById("send-time")
+          if (send_time) {        
+            console.log(response.data.sendTime)  
+            send_time.value  = response.data.sendTime;             
           }
+          send_time.addEventListener("change",function(){
+            alert(send_time.value)
+          })         
+
 
           if (!addtaskflag) {
             document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';
@@ -503,6 +513,11 @@
       if (!selectedEmail) return;
       emailList.removeChild(emailList.querySelector(`option[value="${selectedEmail}"]`));
     }
+
+    function updateTimer(){
+      alert("click_updatebtn")
+    }
+
 
     loadTodos();
   </script>

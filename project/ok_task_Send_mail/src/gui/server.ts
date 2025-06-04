@@ -111,7 +111,7 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
       res.status(500).json({ error: 'タスクデータの取得中にエラーが発生しました' });
       return;
     }
-    res.json({ rows, addtaskflag, sendTime: `${SEND_HOUR}時${SEND_MINITS}分`});
+    res.json({ rows, addtaskflag, sendTime: `${SEND_HOUR}:${SEND_MINITS}`});
   });
 });
 
