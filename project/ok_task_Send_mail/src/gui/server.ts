@@ -18,8 +18,11 @@ console.log("DB_PATH:",DB_PATH);
 
 let send_email_list: string[] = [];
 
-const SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
-const SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
+const jsonPath = path.resolve('src/data/send_time.json');
+const config = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+
+let SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
+let SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
 
 
 app.use(cors());
@@ -65,7 +68,12 @@ interface TodoUpdateTitleRequestBody {
   newTitle: string;
 }
 
+interface Send_Time_RequestBody{
+  update_sendtime:string
+}
 
+
+//テスト用
 app.get('/health', (_req: express.Request, res: express.Response) => {
   res.status(200).json({ status: 'ok' });
 });
@@ -111,7 +119,7 @@ app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Respon
       res.status(500).json({ error: 'タスクデータの取得中にエラーが発生しました' });
       return;
     }
-    res.json({ rows, addtaskflag, sendTime: `${SEND_HOUR}:${SEND_MINITS}`});
+    res.json({ rows, addtaskflag, sendTime: `${config["send_time"].SEND_TIME_HOUR}:${config["send_time"].SEND_TIME_MINITS}`});
   });
 });
 
@@ -246,7 +254,7 @@ app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>
     fs.writeFileSync(path.resolve('src/data/send_email.csv'), temp_send_email_list.join(','));
 
     send_email_list = temp_send_email_list;
-    res.json({ email: temp_send_email_list });
+    res.json({ email: send_email_list });
 
   } catch (error) {
     console.error('メールアドレスの更新中にエラーが発生しました:', error);
@@ -259,6 +267,24 @@ app.get('/todos/default_email', (req: express.Request, res: express.Response) =>
 
   console.log("call default_email");
   res.json({ send_email_list });
+});
+
+
+//メール送信時刻更新
+app.post('/send-time', (req: express.Request<{}, {}, Send_Time_RequestBody>, res: express.Response) => {
+  console.log("call send_time");
+  const { update_sendtime } = req.body;
+  const hm = update_sendtime.split(":")
+
+  console.log("log",hm)  
+
+  config["send_time"].SEND_TIME_HOUR = hm[0];
+  config["send_time"].SEND_TIME_MINITS = hm[1];
+
+  fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
+
+  //res.json({ update_sendtime: update_sendtime });
+  res.status(200).json({ status: 'ok' });
 });
 
 

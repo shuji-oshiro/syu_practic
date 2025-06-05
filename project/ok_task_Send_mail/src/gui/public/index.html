@@ -188,6 +188,7 @@
       const filterSelect = document.getElementById('filter-select');
       //const filter = filterSelect.value;
 
+
       let groupedTodos = {};
       let addtaskflag = false;
       // ToDoの取得
@@ -212,12 +213,25 @@
           //自動メール送信時刻の表示
           //const send_time = document.getElementById('text_sendmail_time');
           const send_time = document.getElementById("send-time")
-          if (send_time) {        
-            console.log(response.data.sendTime)  
+          if (send_time) {         
             send_time.value  = response.data.sendTime;             
+            console.log("メール送信時刻：",send_time.value)
           }
           send_time.addEventListener("change",function(){
-            alert(send_time.value)
+            const update_sendtime = send_time.value
+            axios.post('/send-time', {
+              update_sendtime             
+            })
+            .then(response => {
+              //console.log(`自動送信メールの時刻を変更しました`);
+              console.log(`自動送信メールの時刻を変更しました:${response.data.update_sendtime}`)
+            })
+            .catch(warning => {
+              alert('警告: ' + warning.response.data.warning);
+            })
+            .catch(error => { 
+              alert('エラー: ' + error.response.data.error);
+            });
           })         
 
 
