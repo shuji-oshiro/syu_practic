@@ -1,0 +1,10 @@
+{
+  "send_time": {
+    "SEND_TIME_HOUR": "14",
+    "SEND_TIME_MINITS": "50"
+  },
+  "send_email": [
+    "syutv117@gmail.com",
+    "syu.info@gmail.com"
+  ]
+}

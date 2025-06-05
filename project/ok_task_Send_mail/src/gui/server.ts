@@ -16,13 +16,11 @@ const DB_PATH = process.env.NODE_ENV === 'test'
   : path.resolve('src/data/todos.db');
 console.log("DB_PATH:",DB_PATH);
 
-let send_email_list: string[] = [];
-
-const jsonPath = path.resolve('src/data/send_time.json');
+const jsonPath = path.resolve('src/data/config.json');
 const config = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
-let SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
-let SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
+// let SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
+// let SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
 
 
 app.use(cors());
@@ -251,10 +249,12 @@ app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>
       return;
     }
 
-    fs.writeFileSync(path.resolve('src/data/send_email.csv'), temp_send_email_list.join(','));
+    config["send_email"] = temp_send_email_list
+    fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
+  
+    //fs.writeFileSync(path.resolve('src/data/send_email.csv'), temp_send_email_list.join(','));
 
-    send_email_list = temp_send_email_list;
-    res.json({ email: send_email_list });
+    res.json({ email: config["send_email"] });
 
   } catch (error) {
     console.error('メールアドレスの更新中にエラーが発生しました:', error);
@@ -266,7 +266,8 @@ app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>
 app.get('/todos/default_email', (req: express.Request, res: express.Response) => {
 
   console.log("call default_email");
-  res.json({ send_email_list });
+  res.json({ send_email_list: config["send_email"] });
+
 });
 
 
@@ -276,12 +277,11 @@ app.post('/send-time', (req: express.Request<{}, {}, Send_Time_RequestBody>, res
   const { update_sendtime } = req.body;
   const hm = update_sendtime.split(":")
 
-  console.log("log",hm)  
-
   config["send_time"].SEND_TIME_HOUR = hm[0];
   config["send_time"].SEND_TIME_MINITS = hm[1];
 
   fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
+  scheduleDailyMail(config["send_time"].SEND_TIME_HOUR, config["send_time"].SEND_TIME_MINITS, mail_title, mail_text_template);
 
   //res.json({ update_sendtime: update_sendtime });
   res.status(200).json({ status: 'ok' });
@@ -290,22 +290,19 @@ app.post('/send-time', (req: express.Request<{}, {}, Send_Time_RequestBody>, res
 
 // 初期化関数
 function initializeEmailList(): void {
-  const filePath = path.resolve('src/data/send_email.csv');
-  const dirPath = path.dirname(filePath);
+  //設定ファイルがあるフォルダが存在しない場合、フォルダ、ファイルを作成する
+  const filePath = path.resolve(jsonPath);
+  const dirPath = path.dirname(jsonPath);
 
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
   if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '');
 
-  send_email_list = fs.readFileSync(filePath, 'utf8')
-    .split(',')
-    .map(e => e.trim())
-    .filter(Boolean);
 }
 
 // スケジューラー起動
 const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
 const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
-scheduleDailyMail(SEND_HOUR, SEND_MINITS, mail_title, mail_text_template);
+scheduleDailyMail(config["send_time"].SEND_TIME_HOUR, config["send_time"].SEND_TIME_MINITS, mail_title, mail_text_template);
 
 // サーバ起動
 app.listen(PORT, () => {
