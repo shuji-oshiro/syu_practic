@@ -40,11 +40,11 @@ export const createTable = (): Promise<void> => {
 };
 
   //ＤＢデータ取得処理
-export const getSelectData = (sql_filter: string, params: any[]): Promise<Todo[]> => {
+export const getSelectData = (sql_filter: Array<string>, params: Array<number | string>): Promise<Todo[]> => {
   return new Promise((resolve, reject) => {
 
-    let sql = `SELECT * FROM ${TABLE_NAME}`;
-    sql += sql_filter  
+    const whereClause = sql_filter.length > 0 ? 'WHERE ' + sql_filter.join(' AND ') : '';
+    const sql = `SELECT * FROM ${TABLE_NAME} ${whereClause}`;
     console.log(sql);
 
     const db = new sqlite3.Database(DB_PATH);

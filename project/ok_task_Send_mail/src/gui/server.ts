@@ -12,7 +12,8 @@ import {
   TodoToggleRequestBody,
   TodoUpdateTitleRequestBody,
   Send_Time_RequestBody,
-  TodoAddSchema
+  TodoAddSchema,
+  TodoGetSchema
 } from '../types/interface';
 
 import { 
@@ -45,28 +46,30 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
 // データベースからタスク情報を取得
 app.get('/todos', async(req: Request<{},{},{},TodoGetRequestBody>, res: Response) => {
   console.log("call -> get/todos")
+  try{
+    const result = TodoGetSchema.safeParse(req.query);
+    if (!result.success) {
+      res.status(400).json({ error: '抽出条件の値が不正です', detail: result.error.issues });
+      return
+    }
 
   const { filter, user } = req.query  
-  try{
+  
+  let conditions: any[] = [];
+  let params: any[] = [];
+  if (filter) {
+    conditions.push('done = ?');
+    params.push(Number(filter));
+  }
 
-    let sql_filter = ""
-    let params: any[] = [];
-    if (filter === 'done') {
-      sql_filter += ' AND done = ?';
-      params.push(1);  // ← done = 1
-    } else if (filter === 'undone') {
-      sql_filter += ' AND done = ?';
-      params.push(0);  // ← done = 0
-    }
-    
-    if (user) {
-      sql_filter += ' AND email = ?';
-      params.push(user); // ← email = ?
-    }   
+  if (user) {
+    conditions.push('email = ?');
+    params.push(user);
+  }
 
-    const rows = await getSelectData(sql_filter, params);
-    //タスクデータと初期値のメールリスト、自動メール送信時間を返す
-    res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
+  const rows = await getSelectData(conditions, params);
+  //タスクデータと初期値のメールリスト、自動メール送信時間を返す
+  res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
 
   }catch(err){
     res.status(500).json({ error: 'タスク取得中にエラーが発生しました' });
@@ -92,7 +95,7 @@ app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response
       return;
     }
     
-    const check_row = await getSelectData(' WHERE title = ?', [title]);
+    const check_row = await getSelectData(['title = ?'], [title]);
   
     if (check_row.length >0) {
       res.status(500).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
@@ -149,7 +152,7 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, TodoUpdateTitleReques
 
   try{
     const { oldTitle, newTitle } = req.body;
-    const check_row = await getSelectData(' WHERE title = ?', [newTitle]);
+    const check_row = await getSelectData(['title = ?'], [newTitle]);
     if (check_row.length >0) {
       res.status(500).json({ error: 'このタスク名は既に存在します。別の名前で登録してください' });
       return;

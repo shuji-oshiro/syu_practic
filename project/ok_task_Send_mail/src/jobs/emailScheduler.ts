@@ -30,7 +30,7 @@ export function scheduleDailyMail() {
       `${minute} ${hour} * * *`,
       async () => {
         try {
-          const rows: Todo[] = await getSelectData("SELECT * FROM todos WHERE done = ?", [0]);
+          const rows: Todo[] = await getSelectData(['done = ?'], [0]);
 
           for (const todo of rows) {
             const mail_text = mail_text_template.replace('{task_text}', todo.title);

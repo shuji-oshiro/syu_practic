@@ -53,6 +53,9 @@ describe('APIテスト', () => {
     await runQuery(db, `DROP TABLE IF EXISTS todos_dev`);
   });
 
+
+  
+
   test('初期化処理テスト', async() => {
     await initializeEmailList();    
     const tableExists = await new Promise<boolean>((resolve, reject) => {
@@ -66,18 +69,97 @@ describe('APIテスト', () => {
     });  
     expect(tableExists).toBe(true);
   });
-
-  test('タスクデータ追加処理テスト 正常 post/todos', async () => {
-    const title = 'test-task-title';
-    const emailList = ['test@example.com'];
   
-    // タスクを追加（API経由）
-    const res = await request(app)
-      .post('/todos')
-      .send({ title, emailList });
-    expect(res.status).toBe(200);
+  
+  describe('タスクデータ追加テスト', () => {
+    test('OK post/todos', async () => {
+      const title = 'test-task-title';
+      const emailList = ['test@example.com'];
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .post('/todos')
+        .send({ title, emailList });
+      expect(res.status).toBe(200);
+    });
+  
+    test('NG パラメータ型 post/todos', async () => {
+      const title = 'test-task-title';
+      const emailList = 'test@example.com';
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .post('/todos')
+        .send({ title, emailList });
+      expect(res.status).toBe(400);
+    });
+  
+    test('NG メールアドレス post/todos', async () => {
+      const title = 'test-task-title';
+      const emailList = '[testexample.com]';
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .post('/todos')
+        .send({ title, emailList });
+      expect(res.status).toBe(400);
+    });
   });
 
+  describe('タスクデータ取得テスト', () => {
+    test('OK get/todos filter->ON', async () => {
+      const filter = 0;
+      const user = 'test@example.com';
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .get(`/todos?filter=${filter}&user=${user}`);
+      expect(res.status).toBe(200);
+
+      expect(res.body.taskdata.length).toBeGreaterThan(0);
+      expect(res.body.sendTime).toBeTruthy();
+      expect(Array.isArray(res.body.send_email_list)).toBe(true);
+    });
+
+    
+    test('OK get/todos filter->ON', async () => {
+      const filter = 1;
+      const user = 'test@example.com';
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .get(`/todos?filter=${filter}&user=${user}`);
+      expect(res.status).toBe(200);
+
+      expect(res.body.taskdata.length).toBe(0);
+      expect(res.body.sendTime).toBeTruthy();
+      expect(Array.isArray(res.body.send_email_list)).toBe(true);
+    });
+
+    test('OK get/todos filter->OFF', async () => {    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .get(`/todos?filter=&user=`);
+      expect(res.status).toBe(200);
+      expect(res.body.taskdata.length).toBe(1);
+      expect(res.body.sendTime).toBeTruthy();
+      expect(Array.isArray(res.body.send_email_list)).toBe(true);
+    });
+
+    test('NG get/todos filter->OFF', async () => {
+      const filter = "aaaaa";
+      const user = "aaaa";
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .get(`/todos?filter=${filter}&user=${user}`);
+      expect(res.status).toBe(200);
+      expect(res.body.taskdata.length).toBe(0);
+      expect(res.body.sendTime).toBeTruthy();
+      expect(Array.isArray(res.body.send_email_list)).toBe(true);
+    });
+
+  });
   
   afterAll(async() => {
     console.log('テスト実施後のＤＢクローズ')

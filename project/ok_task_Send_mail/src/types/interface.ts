@@ -46,3 +46,8 @@ export const TodoAddSchema = z.object({
   title: z.string(),
   emailList: z.array(z.string())
 });
+
+export const TodoGetSchema = z.object({
+  filter: z.string().transform(val => val.trim() === '' ? undefined : val).optional(),
+  user: z.string().transform(val => val.trim() === '' ? undefined : val).optional()
+});
