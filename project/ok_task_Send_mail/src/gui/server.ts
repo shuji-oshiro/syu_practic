@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
@@ -12,7 +11,8 @@ import {
   TodoAddRequestBody,
   TodoToggleRequestBody,
   TodoUpdateTitleRequestBody,
-  Send_Time_RequestBody
+  Send_Time_RequestBody,
+  TodoAddSchema
 } from '../types/interface';
 
 import { 
@@ -69,7 +69,7 @@ app.get('/todos', async(req: Request<{},{},{},TodoGetRequestBody>, res: Response
     res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
 
   }catch(err){
-    res.status(500).json({ error: 'タスク取得中にエラーが発生しました' })
+    res.status(500).json({ error: 'タスク取得中にエラーが発生しました' });
   }
 });
 
@@ -79,6 +79,12 @@ app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response
   console.log("call -> post/todos");
 
   try{
+    const result = TodoAddSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: '登録する入力値が不正です', detail: result.error.issues });
+      return
+    }
+
     const { title, emailList} = req.body;
   
     if (emailList.length === 0) {
@@ -97,10 +103,10 @@ app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response
       const params = [title, false ,email]
       await insertTaskData(params);
     }
-    res.status(200)
+    res.sendStatus(200);
     
   }catch(err){
-    res.status(500).json({ error: 'タスク登録中にエラーが発生しました' })
+    res.status(500).json({ error: 'タスク登録中にエラーが発生しました' });
   }
 });
 
@@ -113,9 +119,9 @@ app.patch('/todos', async(req: Request<{}, {}, TodoToggleRequestBody>, res: Resp
     const { title, done, email } = req.body;
     const params = [title, Number(done) ,email];
     await updateTaskData(params);
-    res.status(200)
+    res.sendStatus(200);
   }catch(err){
-    res.status(500).json({ error: 'タスク更新中にエラーが発生しました' })
+    res.status(500).json({ error: 'タスク更新中にエラーが発生しました' });
   }
 });
 
@@ -127,9 +133,9 @@ app.delete('/todos/:title', async(req, res) => {
   try{
     const { title } = req.params
     await deleteTaskData([title]);
-    res.status(200)
+    res.sendStatus(200);
   }catch(err){
-    res.status(500).json({ error: 'タスク削除中にエラーが発生しました' })
+    res.status(500).json({ error: 'タスク削除中にエラーが発生しました' });
   }
   
   
@@ -152,9 +158,9 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, TodoUpdateTitleReques
     const params = [newTitle, oldTitle]
     await updateTaskTitle(params);
     
-    res.status(200)
+    res.sendStatus(200);
   }catch(err){
-    res.status(500).json({ error: 'タスクタイトルの更新中にエラーが発生しました' })
+    res.status(500).json({ error: 'タスクタイトルの更新中にエラーが発生しました' });
   }
 });
 
@@ -205,7 +211,7 @@ app.post('/send-time', async(req: express.Request<{}, {}, Send_Time_RequestBody>
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
     scheduleDailyMail();  
 
-    res.status(200);
+    res.sendStatus(200);
   }catch(error){
     res.status(500).json({ error: '自動メール送信の時刻更新中にエラーが発生しました' });
   }  

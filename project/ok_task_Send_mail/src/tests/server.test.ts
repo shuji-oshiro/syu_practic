@@ -67,18 +67,17 @@ describe('APIテスト', () => {
     expect(tableExists).toBe(true);
   });
 
-  // test('タスクデータ追加処理テスト post/todos', async () => {
-  //   const title = 'test-task-title';
-  //   const email = 'test@example.com';
+  test('タスクデータ追加処理テスト 正常 post/todos', async () => {
+    const title = 'test-task-title';
+    const emailList = ['test@example.com'];
   
-  //   // タスクを追加（API経由）
-  //   const res = await request(app)
-  //     .post('/todos')
-  //     .send({ title, email });
-  
-  //   expect(res.status).toBe(200);
-  // });
-  
+    // タスクを追加（API経由）
+    const res = await request(app)
+      .post('/todos')
+      .send({ title, emailList });
+    expect(res.status).toBe(200);
+  });
+
   
   afterAll(async() => {
     console.log('テスト実施後のＤＢクローズ')

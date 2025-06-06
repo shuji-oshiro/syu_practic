@@ -38,3 +38,11 @@ export interface TodoUpdateTitleRequestBody {
 export interface Send_Time_RequestBody{
   update_sendtime:string
 }
+
+
+import { z } from 'zod';
+
+export const TodoAddSchema = z.object({
+  title: z.string(),
+  emailList: z.array(z.string())
+});
