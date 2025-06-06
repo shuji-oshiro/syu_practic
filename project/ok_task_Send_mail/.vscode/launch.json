@@ -1,6 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [
+    
     {
       "type": "node",
       "request": "launch",
@@ -21,7 +22,23 @@
         "--config",
         "jest.config.js",
         "--testPathPattern",
-        "src/gui/server.test.ts"
+        "src/tests/server.test.ts"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Debug dbUtils.test",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+      "args": [
+        "--runInBand",
+        "--config",
+        "jest.config.js",
+        "--testPathPattern",
+        "src/tests/dbUtils.test.ts"
       ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",

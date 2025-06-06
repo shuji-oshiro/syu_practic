@@ -4,71 +4,36 @@ dotenv.config();
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
-import sqlite3 from 'sqlite3';
 import cors from 'cors';
+import { Request, Response } from 'express';
+import { 
+  TodoGetRequestBody, 
+  EmailRequestBody, 
+  TodoAddRequestBody,
+  TodoToggleRequestBody,
+  TodoUpdateTitleRequestBody,
+  Send_Time_RequestBody
+} from '../types/interface';
+
+import { 
+  createTable,
+  deleteTaskData,
+  getSelectData,
+  insertTaskData,
+  updateTaskData,
+  updateTaskTitle,
+ } from '../utils/dbUtils';
 import { scheduleDailyMail } from '../jobs/emailScheduler';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DB_PATH = process.env.NODE_ENV === 'test'
-  ? path.resolve('src/data/test_todos.db')
-  : path.resolve('src/data/todos.db');
-console.log("DB_PATH:",DB_PATH);
-
 const jsonPath = path.resolve('src/data/config.json');
-const config = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-
-// let SEND_HOUR = process.env.SEND_TIME_HOUR || '9';
-// let SEND_MINITS = process.env.SEND_TIME_MINITS || '0';
-
+let config: any={};
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// ✅ Healthcheck
-
-// 型定義
-interface Todo {
-  title: string;
-  email: string;
-  done: boolean;
-}
-
-interface TodoGetRequestBody {
-  filter: string | undefined;
-  user: string | undefined;
-}
-
-
-interface EmailRequestBody {
-  emailList: string;
-}
-
-interface TodoAddRequestBody {
-  title: string;
-  emailList: string[];
-}
-
-interface TodoToggleRequestBody {
-  title: string;
-  done: boolean;
-  email: string;
-}
-
-interface TodoDeleteRequestBody {
-  title: string;
-}
-
-interface TodoUpdateTitleRequestBody {
-  oldTitle: string;
-  newTitle: string;
-}
-
-interface Send_Time_RequestBody{
-  update_sendtime:string
-}
 
 
 //テスト用
@@ -78,218 +43,180 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
 
 
 // データベースからタスク情報を取得
-app.get('/todos', (req: express.Request<TodoGetRequestBody>, res: express.Response) => {
-  const db = new sqlite3.Database(DB_PATH);
+app.get('/todos', async(req: Request<{},{},{},TodoGetRequestBody>, res: Response) => {
+  console.log("call -> get/todos")
+
   const { filter, user } = req.query  
+  try{
 
-  console.log(filter,user);
-
-  db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS todos (
-      title TEXT,
-      email TEXT,
-      done BOOLEAN NOT NULL DEFAULT 0,
-      PRIMARY KEY (title, email)
-    )`);
-  });
-
-  let sql = 'SELECT * FROM todos';
-  let params: any[] = [];
-
-  if (filter === 'done') {
-    sql += ' WHERE done = 1';
-  } else if (filter === 'undone') {
-    sql += ' WHERE done = 0';
-  } else {
-    sql += ' WHERE 1=1';
-  }
-  
-  let addtaskflag = true;
-  if (user) {
-    sql += ` AND email = '${user}'`;
-    addtaskflag = false;
-  }
-
-  console.log(sql);
-
-  db.all(sql, params, (err: Error | null, rows: Todo[]) => {
-    if (err) {
-      res.status(500).json({ error: 'タスクデータの取得中にエラーが発生しました' });
-      return;
+    let sql_filter = ""
+    let params: any[] = [];
+    if (filter === 'done') {
+      sql_filter += ' AND done = ?';
+      params.push(1);  // ← done = 1
+    } else if (filter === 'undone') {
+      sql_filter += ' AND done = ?';
+      params.push(0);  // ← done = 0
     }
-    res.json({ rows, addtaskflag, sendTime: `${config["send_time"].SEND_TIME_HOUR}:${config["send_time"].SEND_TIME_MINITS}`});
-  });
+    
+    if (user) {
+      sql_filter += ' AND email = ?';
+      params.push(user); // ← email = ?
+    }   
+
+    const rows = await getSelectData(sql_filter, params);
+    //タスクデータと初期値のメールリスト、自動メール送信時間を返す
+    res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
+
+  }catch(err){
+    res.status(500).json({ error: 'タスク取得中にエラーが発生しました' })
+  }
 });
 
 
 //タスクデータを追加
-app.post('/todos/add', (req: express.Request<{}, {}, TodoAddRequestBody>, res: express.Response) => {
-  
-  const { title, emailList} = req.body;
-  
-  console.log("call add");
-  
-  if (emailList.length === 0) {
-    res.status(400).json({ warning: 'メールアドレスが指定されていません' });
-    return;
-  }
+app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response) => {
+  console.log("call -> post/todos");
 
-
-  const db = new sqlite3.Database(DB_PATH);
+  try{
+    const { title, emailList} = req.body;
   
-  db.get('SELECT * FROM todos WHERE title = ?', [title], (err: Error | null, row: Todo | undefined) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'タスクデータの読み込み中にエラーが発生しました' });
+    if (emailList.length === 0) {
+      res.status(400).json({ warning: 'メールアドレスが指定されていません' });
+      return;
     }
-    if (row) {
-      return res.status(500).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
+    
+    const check_row = await getSelectData(' WHERE title = ?', [title]);
+  
+    if (check_row.length >0) {
+      res.status(500).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
+      return;
     } 
-
+  
     for (const email of emailList) {
-      db.run('INSERT INTO todos (title, done, email) VALUES (?, ?, ?)', 
-        [title, false, email], 
-        function(err: Error | null) {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'タスクデータの新規追加中にエラーが発生しました' });
-          }
-        }
-      );
+      const params = [title, false ,email]
+      await insertTaskData(params);
     }
-  });
-  res.status(201).json({ 
-    title, 
-    done: false,
-    emails: emailList 
-  });
+    res.status(200)
+    
+  }catch(err){
+    res.status(500).json({ error: 'タスク登録中にエラーが発生しました' })
+  }
 });
+
 
 //タスクデータ実施更新
-app.patch('/todos/toggle', (req: express.Request<{}, {}, TodoToggleRequestBody>, res: express.Response) => {
-  console.log("call toggle");
+app.patch('/todos', async(req: Request<{}, {}, TodoToggleRequestBody>, res: Response) => {
+  console.log("call -> patch/todos");
 
-  const { title, done, email } = req.body;
-  const todoTitle = title;
-  const todoDone = Number(done);
-  const todoEmail = email;
-  const db = new sqlite3.Database(DB_PATH);
-
-  db.run('UPDATE todos SET done = ? WHERE title = ? AND email = ?', 
-    [todoDone, todoTitle, todoEmail], 
-    function(err: Error | null) {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'タスク完了データの更新中にエラーが発生しました' });
-      }
-      res.json({ title, done, email });
-    }
-  );
+  try{
+    const { title, done, email } = req.body;
+    const params = [title, Number(done) ,email];
+    await updateTaskData(params);
+    res.status(200)
+  }catch(err){
+    res.status(500).json({ error: 'タスク更新中にエラーが発生しました' })
+  }
 });
 
-//タスクデータ削除
-app.delete('/todos/delete', (req: express.Request<{}, {}, TodoDeleteRequestBody>, res: express.Response) => {
-  console.log("call delete");
 
-  const { title } = req.body;
-  const db = new sqlite3.Database(DB_PATH);
-  db.run('DELETE FROM todos WHERE title = ?', [title], function(err: Error | null) {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'タスクデータの削除中にエラーが発生しました' });
-    }
-    res.json({ title });
-  });
+//タスクデータ削除
+app.delete('/todos/:title', async(req, res) => {
+  console.log("call -> delete/todos");
+  
+  try{
+    const { title } = req.params
+    await deleteTaskData([title]);
+    res.status(200)
+  }catch(err){
+    res.status(500).json({ error: 'タスク削除中にエラーが発生しました' })
+  }
+  
+  
 });
 
 
 
 // タスクのタイトルを更新
-app.patch('/todos/updateTitle', (req: express.Request<{}, {}, TodoUpdateTitleRequestBody>, res: express.Response) => {
-  console.log("call updateTitle");
+app.patch('/todos/updateTitle', async(req: Request<{}, {}, TodoUpdateTitleRequestBody>, res: Response) => {
+  console.log("call -> patc/todos/updateTitle");
 
-  const { oldTitle, newTitle } = req.body;
-
-  // SQLインジェクション対策のための文字列エスケープ
-  const sanitizedOldTitle = oldTitle.replace(/[;'"\\]/g, '');
-  const sanitizedNewTitle = newTitle.replace(/[;'"\\]/g, '');
-
-  const db = new sqlite3.Database(DB_PATH);
-
-  db.get('SELECT * FROM todos WHERE title = ?', [sanitizedNewTitle], (err: Error | null, row: Todo | undefined) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'データベースエラーが発生しました' });
-    }
-    if (row) {
-      return res.status(400).json({ warning: 'このタスクは既に存在します。別の名前で登録してください' });
-    }
-    db.run('UPDATE todos SET title = ? WHERE title = ?', [sanitizedNewTitle, sanitizedOldTitle], function(err: Error | null) {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'データベースエラーが発生しました' });
-      }
-      res.json({newTitle: sanitizedNewTitle });
-    });
-  });
+  try{
+    const { oldTitle, newTitle } = req.body;
+    const check_row = await getSelectData(' WHERE title = ?', [newTitle]);
+    if (check_row.length >0) {
+      res.status(500).json({ error: 'このタスク名は既に存在します。別の名前で登録してください' });
+      return;
+    } 
+      
+    const params = [newTitle, oldTitle]
+    await updateTaskTitle(params);
+    
+    res.status(200)
+  }catch(err){
+    res.status(500).json({ error: 'タスクタイトルの更新中にエラーが発生しました' })
+  }
 });
 
 
 //タスクに設定するデフォルトのメールアドレスを更新
-app.post('/todos/default_email', (req: express.Request<{}, {}, EmailRequestBody>, res: express.Response) => {
-  console.log("call default_email");
+app.post('/default_email', async(req: Request<{}, {}, EmailRequestBody>, res: Response) => {
+  console.log("call -> post/default_email");
   
   try {
     const { emailList } = req.body;
-    let temp_send_email_list = emailList.split(',').map(line => line?.trim().replace(/\s+/g, ''))
-    console.log("更新するメールアドレス：",temp_send_email_list);
+    let temp_emails = emailList.split(',').map(line => line?.trim().replace(/\s+/g, ''))
+    console.log("更新するメールアドレス：",temp_emails);
 
-    if (temp_send_email_list.length === 0) {
+    if (temp_emails.length === 0) {
       res.status(400).json({ warning: '更新できるメールアドレスが存在しません' });
       return;
     }
 
-    config["send_email"] = temp_send_email_list
+    config["send_email"] = temp_emails
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
   
-    //fs.writeFileSync(path.resolve('src/data/send_email.csv'), temp_send_email_list.join(','));
-
-    res.json({ email: config["send_email"] });
+    res.json({ emails: config["send_email"] });
 
   } catch (error) {
-    console.error('メールアドレスの更新中にエラーが発生しました:', error);
     res.status(500).json({ error: 'メールアドレスの更新中にエラーが発生しました' });
   }
 });
 
 //タスクに設定するデフォルトのメールアドレスを取得
-app.get('/todos/default_email', (req: express.Request, res: express.Response) => {
-
-  console.log("call default_email");
-  res.json({ send_email_list: config["send_email"] });
-
+app.get('/default_email', (req, res) => {
+  try{
+    console.log("call -> get/default_email");
+    res.status(200).json({ emails: config["send_email"] });
+  }catch(error){
+    res.status(500).json({ error: 'メールアドレスの取得中にエラーが発生しました' });
+  }
 });
 
 
 //メール送信時刻更新
-app.post('/send-time', (req: express.Request<{}, {}, Send_Time_RequestBody>, res: express.Response) => {
-  console.log("call send_time");
-  const { update_sendtime } = req.body;
-  const hm = update_sendtime.split(":")
+app.post('/send-time', async(req: express.Request<{}, {}, Send_Time_RequestBody>, res: express.Response) => {
+  console.log("call -> post/send_time");
 
-  config["send_time"].SEND_TIME_HOUR = hm[0];
-  config["send_time"].SEND_TIME_MINITS = hm[1];
+  try{    
+    const { update_sendtime } = req.body;  
+    config["send_time"] = update_sendtime
+  
+    fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
+    scheduleDailyMail();  
 
-  fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
-  scheduleDailyMail(config["send_time"].SEND_TIME_HOUR, config["send_time"].SEND_TIME_MINITS, mail_title, mail_text_template);
-
-  //res.json({ update_sendtime: update_sendtime });
-  res.status(200).json({ status: 'ok' });
+    res.status(200);
+  }catch(error){
+    res.status(500).json({ error: '自動メール送信の時刻更新中にエラーが発生しました' });
+  }  
 });
 
 
 // 初期化関数
-function initializeEmailList(): void {
+export async function initializeEmailList(): Promise<void> {
+
+  console.log("call -> initializeEmailList");
+
   //設定ファイルがあるフォルダが存在しない場合、フォルダ、ファイルを作成する
   const filePath = path.resolve(jsonPath);
   const dirPath = path.dirname(jsonPath);
@@ -297,12 +224,21 @@ function initializeEmailList(): void {
   if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
   if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '');
 
+  config = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+
+  try {
+    await createTable();
+  } catch (err) {
+    console.error('DB初期化失敗:', err);
+  }
+
+  if (process.env.NODE_ENV != 'test'){
+    scheduleDailyMail();
+  } else{
+    console.log("-----Testモード実行中-----")
+  }
 }
 
-// スケジューラー起動
-const mail_title = process.env.MAIL_TITLE || 'タスク未完了のお知らせ';
-const mail_text_template = process.env.MAIL_TEXT || 'まだ完了していないタスク「${task_text}」があります。';
-scheduleDailyMail(config["send_time"].SEND_TIME_HOUR, config["send_time"].SEND_TIME_MINITS, mail_title, mail_text_template);
 
 // サーバ起動
 app.listen(PORT, () => {
