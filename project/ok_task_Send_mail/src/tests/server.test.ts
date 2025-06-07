@@ -53,9 +53,6 @@ describe('APIテスト', () => {
     await runQuery(db, `DROP TABLE IF EXISTS todos_dev`);
   });
 
-
-  
-
   test('初期化処理テスト', async() => {
     await initializeEmailList();    
     const tableExists = await new Promise<boolean>((resolve, reject) => {
@@ -107,7 +104,7 @@ describe('APIテスト', () => {
   });
 
   describe('タスクデータ取得テスト', () => {
-    test('OK get/todos filter->ON', async () => {
+    test('OK get/todos filter->ON Yes-Data', async () => {
       const filter = 0;
       const user = 'test@example.com';
     
@@ -122,7 +119,7 @@ describe('APIテスト', () => {
     });
 
     
-    test('OK get/todos filter->ON', async () => {
+    test('OK get/todos filter->ON No-Data', async () => {
       const filter = 1;
       const user = 'test@example.com';
     
@@ -136,7 +133,7 @@ describe('APIテスト', () => {
       expect(Array.isArray(res.body.send_email_list)).toBe(true);
     });
 
-    test('OK get/todos filter->OFF', async () => {    
+    test('OK get/todos filter->OFF Yes-Data', async () => {    
       // タスクを追加（API経由）
       const res = await request(app)
         .get(`/todos?filter=&user=`);
@@ -146,7 +143,7 @@ describe('APIテスト', () => {
       expect(Array.isArray(res.body.send_email_list)).toBe(true);
     });
 
-    test('NG get/todos filter->OFF', async () => {
+    test('NG get/todos filter->OFF No-data', async () => {
       const filter = "aaaaa";
       const user = "aaaa";
     
@@ -161,6 +158,69 @@ describe('APIテスト', () => {
 
   });
   
+
+  describe("タスクデータ更新テスト",() => {
+    test('OK patch/todos 0->1', async () => {
+      const title = "test-task-title"
+      const done = "1";
+      const email = 'test@example.com';
+    
+      // タスクを追加（API経由）
+      const res = await request(app)
+        .patch(`/todos`)
+        .send({ title, done, email });
+      expect(res.status).toBe(200);
+    });
+
+    test('OK patch/todos 1->0', async () => {
+      const title = "test-task-title"
+      const done = "0";
+      const email = 'test@example.com';
+    
+      const res = await request(app)
+        .patch(`/todos`)
+        .send({ title, done, email });
+      expect(res.status).toBe(200);
+    });
+
+    
+    test('OK patch/todos/updateTitle OK', async () => {
+      const oldTitle = "test-task-title"
+      const newTitle = "new_test-task-title";
+      
+      const res = await request(app)
+        .patch(`/todos/updateTitle`)
+        .send({ oldTitle, newTitle });
+      expect(res.status).toBe(200);
+    });
+
+    test('OK patch/todos/updateTitle NG', async () => {
+      const oldTitle = "test-task-title"
+      const newTitle = "new_test-task-title";
+      
+      const res = await request(app)
+        .patch(`/todos/updateTitle`)
+        .send({ oldTitle, newTitle });
+      expect(res.status).toBe(400);
+    });
+
+
+  });
+
+  describe("タスクデータ削除テスト",()=>{
+
+    test('OK delete/todos/:title ok', async () => {
+      const title = "new_test-task-title"
+    
+      const res = await request(app)
+        .delete(`/todos`)
+        .send({title});
+      expect(res.status).toBe(200);
+    });
+
+  });
+
+
   afterAll(async() => {
     console.log('テスト実施後のＤＢクローズ')
     db.close();

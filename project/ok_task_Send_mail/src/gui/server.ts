@@ -6,14 +6,12 @@ import express from 'express';
 import cors from 'cors';
 import { Request, Response } from 'express';
 import { 
-  TodoGetRequestBody, 
-  EmailRequestBody, 
-  TodoAddRequestBody,
-  TodoToggleRequestBody,
-  TodoUpdateTitleRequestBody,
-  Send_Time_RequestBody,
   TodoAddSchema,
-  TodoGetSchema
+  TodoGetSchema,
+  TodoUpdateSchema,
+  TodoTitleUpdateSchema,
+  TodoDeleteSchema,
+  TodoSendTimeSchema
 } from '../types/interface';
 
 import { 
@@ -44,41 +42,41 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
 
 
 // データベースからタスク情報を取得
-app.get('/todos', async(req: Request<{},{},{},TodoGetRequestBody>, res: Response) => {
+app.get('/todos', async(req: Request<{},{},{},{filter:string, user:string}>, res: Response) => {
   console.log("call -> get/todos")
   try{
-    const result = TodoGetSchema.safeParse(req.query);
-    if (!result.success) {
-      res.status(400).json({ error: '抽出条件の値が不正です', detail: result.error.issues });
-      return
+      const result = TodoGetSchema.safeParse(req.query);
+      if (!result.success) {
+        res.status(400).json({ error: '抽出条件の入力値が不正です', detail: result.error.issues });
+        return
+      }
+
+      const { filter, user } = req.query  
+      
+      let conditions: any[] = [];
+      let params: any[] = [];
+      if (filter) {
+        conditions.push('done = ?');
+        params.push(Number(filter));
+      }
+
+      if (user) {
+        conditions.push('email = ?');
+        params.push(user);
+      }
+
+      const rows = await getSelectData(conditions, params);
+      //タスクデータと初期値のメールリスト、自動メール送信時間を返す
+      res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
+
+    }catch(err){
+      res.status(500).json({ error: 'タスク取得中にエラーが発生しました' });
     }
-
-  const { filter, user } = req.query  
-  
-  let conditions: any[] = [];
-  let params: any[] = [];
-  if (filter) {
-    conditions.push('done = ?');
-    params.push(Number(filter));
-  }
-
-  if (user) {
-    conditions.push('email = ?');
-    params.push(user);
-  }
-
-  const rows = await getSelectData(conditions, params);
-  //タスクデータと初期値のメールリスト、自動メール送信時間を返す
-  res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
-
-  }catch(err){
-    res.status(500).json({ error: 'タスク取得中にエラーが発生しました' });
-  }
 });
 
 
 //タスクデータを追加
-app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response) => {
+app.post('/todos', async(req: Request<{}, {}, {title:string, emailList:string[]}>, res: Response) => {
   console.log("call -> post/todos");
 
   try{
@@ -115,12 +113,17 @@ app.post('/todos', async(req: Request<{}, {}, TodoAddRequestBody>, res: Response
 
 
 //タスクデータ実施更新
-app.patch('/todos', async(req: Request<{}, {}, TodoToggleRequestBody>, res: Response) => {
+app.patch('/todos', async(req: Request<{}, {}, {title:string, done:string, email:string}>, res: Response) => {
   console.log("call -> patch/todos");
 
   try{
+    const result = TodoUpdateSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      return
+    }
     const { title, done, email } = req.body;
-    const params = [title, Number(done) ,email];
+    const params = [Number(done), title, email];
     await updateTaskData(params);
     res.sendStatus(200);
   }catch(err){
@@ -130,13 +133,19 @@ app.patch('/todos', async(req: Request<{}, {}, TodoToggleRequestBody>, res: Resp
 
 
 //タスクデータ削除
-app.delete('/todos/:title', async(req, res) => {
+app.delete('/todos', async(req: Request<{}, {}, {title:string}>, res:Response) => {
   console.log("call -> delete/todos");
   
   try{
-    const { title } = req.params
-    await deleteTaskData([title]);
-    res.sendStatus(200);
+    const result = TodoDeleteSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: '削除するタイトルが不正です', detail: result.error.issues });
+      return
+    }
+    const { title } = req.body
+    const cnt_update = await deleteTaskData([title]);
+    if (cnt_update > 0) res.sendStatus(200); else res.sendStatus(300)
+
   }catch(err){
     res.status(500).json({ error: 'タスク削除中にエラーが発生しました' });
   }
@@ -147,14 +156,19 @@ app.delete('/todos/:title', async(req, res) => {
 
 
 // タスクのタイトルを更新
-app.patch('/todos/updateTitle', async(req: Request<{}, {}, TodoUpdateTitleRequestBody>, res: Response) => {
+app.patch('/todos/updateTitle', async(req: Request<{}, {}, {oldTitle:string, newTitle:string}>, res: Response) => {
   console.log("call -> patc/todos/updateTitle");
 
   try{
+    const result = TodoTitleUpdateSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      return
+    }
     const { oldTitle, newTitle } = req.body;
     const check_row = await getSelectData(['title = ?'], [newTitle]);
     if (check_row.length >0) {
-      res.status(500).json({ error: 'このタスク名は既に存在します。別の名前で登録してください' });
+      res.status(400).json({ error: 'このタスク名は既に存在します。別の名前で登録してください' });
       return;
     } 
       
@@ -169,7 +183,7 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, TodoUpdateTitleReques
 
 
 //タスクに設定するデフォルトのメールアドレスを更新
-app.post('/default_email', async(req: Request<{}, {}, EmailRequestBody>, res: Response) => {
+app.post('/default_email', async(req: Request<{}, {}, {emailList:string}>, res: Response) => {
   console.log("call -> post/default_email");
   
   try {
@@ -204,10 +218,16 @@ app.get('/default_email', (req, res) => {
 
 
 //メール送信時刻更新
-app.post('/send-time', async(req: express.Request<{}, {}, Send_Time_RequestBody>, res: express.Response) => {
+app.post('/send-time', async(req: express.Request<{}, {}, {update_sendtime:string}>, res: express.Response) => {
   console.log("call -> post/send_time");
 
   try{    
+    const result = TodoSendTimeSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      return
+    }
+
     const { update_sendtime } = req.body;  
     config["send_time"] = update_sendtime
   

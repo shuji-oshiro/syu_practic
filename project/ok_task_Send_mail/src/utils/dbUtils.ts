@@ -82,7 +82,7 @@ export const insertTaskData = (params: any[]): Promise<number> => {
 export const updateTaskData = (params: any[]): Promise<number> => {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(DB_PATH);
-    db.run(`UPDATE ${TABLE_NAME} SET todos = ? WHERE title = ? AND email = ?`, 
+    db.run(`UPDATE ${TABLE_NAME} SET done = ? WHERE title = ? AND email = ?`, 
       params, 
       function (this: sqlite3.RunResult, err: Error | null) {
         db.close();
