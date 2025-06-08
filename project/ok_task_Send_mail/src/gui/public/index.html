@@ -111,9 +111,9 @@
       <div class="card-body">
         <div class="mb-4">
           <select id="filter-select" class="form-select" onchange="loadTodos()">
-            <option value="all">すべてのタスク</option>
-            <option value="undone">未完了のタスク</option>
-            <option value="done">完了済みのタスク</option>
+            <option value=>すべてのタスク</option>
+            <option value="0">未完了のタスク</option>
+            <option value="1">完了済みのタスク</option>
           </select>
         </div>
 
@@ -175,6 +175,7 @@
       const params = new URLSearchParams(window.location.search);
       const user = params.get('user') || '';
       
+      let addtaskflag = true;
 
       if (user.length > 0){
         console.info("user:", user);
@@ -182,27 +183,23 @@
         
         if (text) {          
           text.textContent = "ユーザーモード：" + user;  
+          addtaskflag = false
         }
       }
       
       const filterSelect = document.getElementById('filter-select');
       //const filter = filterSelect.value;
 
-
       let groupedTodos = {};
-      let addtaskflag = false;
+
       // ToDoの取得
       await axios.get(`/todos?filter=${filterSelect.value}&user=${user}`)
         .then(response => {
-          // 以降の処理
-          // タイトルごとにグループ化
-          addtaskflag = response.data.addtaskflag;
 
-
-          if (response.data.rows.length === 0) {
+          if (response.data.taskdata.length === 0) {
             alert("現在タスクは登録されていません")             
           }          
-          groupedTodos = response.data.rows.reduce((acc, todo) => {
+          groupedTodos = response.data.taskdata.reduce((acc, todo) => {
             if (!acc[todo.title]) {
               acc[todo.title] = [];
             }
@@ -353,13 +350,13 @@
       document.getElementById('email-list').innerHTML = '';
 
       //todo email-listの初期化
-      axios.get('/todos/default_email')
+      axios.get('/default_email')
         .then(response => {
           console.log(response.data);
-          if (response.data.send_email_list.length === 0){
+          if (response.data.emails.length === 0){
             alert('初期設定のメールアドレスが設定されていません');
           }          
-          for (const email of response.data.send_email_list) {
+          for (const email of response.data.emails) {
             const option = document.createElement('option');
             option.value = email;
             option.textContent = email;
@@ -438,7 +435,7 @@
       if (!confirm(`「${title}」を削除してもよろしいですか？`)) {
         return;
       }
-      axios.delete(`/todos/delete`, {
+      axios.delete(`/todos`, {
         data: {
           title
         }
@@ -456,7 +453,7 @@
     //メールアドレス単位でタスクを完了にする処理
     function toggleTodo({title,done,email}) { 
       console.log("call toggleTodo");
-      axios.patch(`/todos/toggle`, {
+      axios.patch(`/todos`, {
         title, done, email
       }).then(response => {
         console.log(response.data);
@@ -482,12 +479,12 @@
         return;
       }
       //
-      axios.post('/todos/add', {
+      axios.post('/todos', {
           title,
           emailList          
         }).then(response => {
           console.log(response.data);
-          alert(`新しいタスクを追加しました\n\nタスク名:${response.data.title}\n\n送信先メールアドレス:\n${response.data.emails.join('\n')}`);
+          alert(`新しいタスクを追加しました\n\nタスク名:${title}\n\n送信先メールアドレス:\n${emailList.join('\n')}`);
           loadTodos();
         })  
         .catch(error => {

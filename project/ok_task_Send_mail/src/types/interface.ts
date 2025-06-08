@@ -19,7 +19,7 @@ export const TodoGetSchema = z.object({
 
 export const TodoUpdateSchema = z.object({
   title: z.string(),
-  done: z.string(),
+  done: z.boolean(),
   email:z.string()
 
 });

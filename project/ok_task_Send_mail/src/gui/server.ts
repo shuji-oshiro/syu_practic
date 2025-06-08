@@ -104,7 +104,7 @@ app.post('/todos', async(req: Request<{}, {}, {title:string, emailList:string[]}
       const params = [title, false ,email]
       await insertTaskData(params);
     }
-    res.sendStatus(200);
+    res.sendStatus(200)
     
   }catch(err){
     res.status(500).json({ error: 'タスク登録中にエラーが発生しました' });
@@ -162,13 +162,13 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, {oldTitle:string, new
   try{
     const result = TodoTitleUpdateSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      res.status(400).json({ warning: '更新する入力値が不正です', detail: result.error.issues });
       return
     }
     const { oldTitle, newTitle } = req.body;
     const check_row = await getSelectData(['title = ?'], [newTitle]);
     if (check_row.length >0) {
-      res.status(400).json({ error: 'このタスク名は既に存在します。別の名前で登録してください' });
+      res.status(400).json({ warning: 'このタスク名は既に存在します。別の名前で登録してください' });
       return;
     } 
       

@@ -1,8 +1,7 @@
 {
-  "send_time":"14:50",
-  "title_text":"テストタイトル",
-  "msg_text":"{task_text}のタスクが完了していません",
-
+  "send_time": "15:50",
+  "title_text": "テストタイトル",
+  "msg_text": "{task_text}のタスクが完了していません",
   "send_email": [
     "syutv117@gmail.com",
     "syu.info@gmail.com"
