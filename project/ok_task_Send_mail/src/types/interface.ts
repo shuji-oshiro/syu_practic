@@ -30,7 +30,7 @@ export const TodoTitleUpdateSchema = z.object({
 });
 
 export const TodoDeleteSchema = z.object({
-  title: z.string().min(1)
+  title: z.string()
 });
 
 export const TodoSendTimeSchema = z.object({

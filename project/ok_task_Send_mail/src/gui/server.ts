@@ -46,7 +46,7 @@ app.get('/init', (req, res) => {
     console.log("call -> get/init");
     res.status(200).json({ "emails":config["send_email"], "sendTime":config["send_time"] });
   }catch(error){
-    res.status(500).json({ error: '初期データ取得中にエラーが発生しました' });
+    res.status(500).json({ msg: '初期データ取得中にエラーが発生しました' });
   }
 });
 
@@ -56,7 +56,7 @@ app.get('/todos', async(req: Request<{},{},{},{filter:string, user:string}>, res
   try{
       const result = TodoGetSchema.safeParse(req.query);
       if (!result.success) {
-        res.status(400).json({ error: '抽出条件の入力値が不正です', detail: result.error.issues });
+        res.status(400).json({ msg: '抽出条件の入力値が不正です', detail: result.error.issues });
         return
       }
 
@@ -79,7 +79,7 @@ app.get('/todos', async(req: Request<{},{},{},{filter:string, user:string}>, res
       res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
 
     }catch(err){
-      res.status(500).json({ error: 'タスク取得中にエラーが発生しました' });
+      res.status(500).json({ msg: 'タスク取得中にエラーが発生しました' });
     }
 });
 
@@ -91,21 +91,21 @@ app.post('/todos', async(req: Request<{}, {}, {title:string, emailList:string[]}
   try{
     const result = TodoAddSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: '登録する入力値が不正です', detail: result.error.issues });
+      res.status(400).json({ msg: '登録する入力値が不正です', detail: result.error.issues });
       return
     }
 
     const { title, emailList} = req.body;
   
     if (emailList.length === 0) {
-      res.status(400).json({ warning: 'メールアドレスが指定されていません' });
+      res.status(400).json({ msg: 'メールアドレスが指定されていません' });
       return;
     }
     
     const check_row = await getSelectData(['title = ?'], [title]);
   
     if (check_row.length >0) {
-      res.status(500).json({ error: 'このタスクは既に存在します。別の名前で登録してください' });
+      res.status(500).json({ msg: 'このタスクは既に存在します。別の名前で登録してください' });
       return;
     } 
   
@@ -116,7 +116,7 @@ app.post('/todos', async(req: Request<{}, {}, {title:string, emailList:string[]}
     res.sendStatus(200)
     
   }catch(err){
-    res.status(500).json({ error: 'タスク登録中にエラーが発生しました' });
+    res.status(500).json({ msg: 'タスク登録中にエラーが発生しました' });
   }
 });
 
@@ -128,7 +128,7 @@ app.patch('/todos', async(req: Request<{}, {}, {title:string, done:string, email
   try{
     const result = TodoUpdateSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      res.status(400).json({ msg: '更新する入力値が不正です', detail: result.error.issues });
       return
     }
     const { title, done, email } = req.body;
@@ -136,7 +136,7 @@ app.patch('/todos', async(req: Request<{}, {}, {title:string, done:string, email
     await updateTaskData(params);
     res.sendStatus(200);
   }catch(err){
-    res.status(500).json({ error: 'タスク更新中にエラーが発生しました' });
+    res.status(500).json({ msg: 'タスク更新中にエラーが発生しました' });
   }
 });
 
@@ -148,7 +148,7 @@ app.delete('/todos', async(req: Request<{}, {}, {title:string}>, res:Response) =
   try{
     const result = TodoDeleteSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: '削除するタイトルが不正です', detail: result.error.issues });
+      res.status(400).json({ msg: '削除するタイトルが不正です', detail: result.error.issues });
       return
     }
     const { title } = req.body
@@ -156,12 +156,9 @@ app.delete('/todos', async(req: Request<{}, {}, {title:string}>, res:Response) =
     if (cnt_update > 0) res.sendStatus(200); else res.sendStatus(300)
 
   }catch(err){
-    res.status(500).json({ error: 'タスク削除中にエラーが発生しました' });
-  }
-  
-  
+    res.status(500).json({ msg: 'タスク削除中にエラーが発生しました' });
+  }    
 });
-
 
 
 // タスクのタイトルを更新
@@ -171,13 +168,13 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, {oldTitle:string, new
   try{
     const result = TodoTitleUpdateSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ warning: '更新する入力値が不正です', detail: result.error.issues });
+      res.status(400).json({ msg: '更新する入力値が不正です', detail: result.error.issues });
       return
     }
     const { oldTitle, newTitle } = req.body;
     const check_row = await getSelectData(['title = ?'], [newTitle]);
     if (check_row.length >0) {
-      res.status(400).json({ warning: 'このタスク名は既に存在します。別の名前で登録してください' });
+      res.status(400).json({ msg: 'このタスク名は既に存在します。別の名前で登録してください' });
       return;
     } 
       
@@ -186,7 +183,7 @@ app.patch('/todos/updateTitle', async(req: Request<{}, {}, {oldTitle:string, new
     
     res.sendStatus(200);
   }catch(err){
-    res.status(500).json({ error: 'タスクタイトルの更新中にエラーが発生しました' });
+    res.status(500).json({ msg: 'タスクタイトルの更新中にエラーが発生しました' });
   }
 });
 
@@ -204,7 +201,7 @@ app.post('/default_email', async(req: Request<{}, {}, {emailList:string}>, res: 
       .filter(line => line.length > 0 && /^[\w.+-]+@[\w.-]+\.\w+$/.test(line)); // 簡易バリデーション
 
     if (temp_emails.length === 0) {
-      res.status(400).json({ warning: '有効なメールアドレスが存在しません' });
+      res.status(400).json({ msg: '有効なメールアドレスが存在しません' });
       return;
     }
 
@@ -212,10 +209,10 @@ app.post('/default_email', async(req: Request<{}, {}, {emailList:string}>, res: 
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
     console.log("更新するメールアドレス：",temp_emails);
 
-    res.status(200).json({ message: '送付先メールアドレスを更新しました', emails: temp_emails });
+    res.status(200).json({ msg: '送付先メールアドレスを更新しました', emails: temp_emails });
 
   } catch (error) {
-    res.status(500).json({ error: 'メールアドレスの更新中にエラーが発生しました' });
+    res.status(500).json({ msg: 'メールアドレスの更新中にエラーが発生しました' });
   }
 });
 
@@ -228,7 +225,7 @@ app.post('/send-time', async(req: express.Request<{}, {}, {update_sendtime:strin
   try{    
     const result = TodoSendTimeSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ error: '更新する入力値が不正です', detail: result.error.issues });
+      res.status(400).json({ msg: '更新する入力値が不正です', detail: result.error.issues });
       return
     }
 
@@ -238,9 +235,9 @@ app.post('/send-time', async(req: express.Request<{}, {}, {update_sendtime:strin
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
     scheduleDailyMail();  
 
-    res.sendStatus(200);
+    res.status(200).json({update_sendtime:update_sendtime});
   }catch(error){
-    res.status(500).json({ error: '自動メール送信の時刻更新中にエラーが発生しました' });
+    res.status(500).json({ msg: '自動メール送信の時刻更新中にエラーが発生しました' });
   }  
 });
 
