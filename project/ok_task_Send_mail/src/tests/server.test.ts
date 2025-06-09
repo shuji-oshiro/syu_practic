@@ -162,7 +162,7 @@ describe('APIテスト', () => {
   describe("タスクデータ更新テスト",() => {
     test('OK patch/todos 0->1', async () => {
       const title = "test-task-title"
-      const done = "1";
+      const done = true;
       const email = 'test@example.com';
     
       // タスクを追加（API経由）
@@ -174,7 +174,7 @@ describe('APIテスト', () => {
 
     test('OK patch/todos 1->0', async () => {
       const title = "test-task-title"
-      const done = "0";
+      const done = false;
       const email = 'test@example.com';
     
       const res = await request(app)

@@ -40,6 +40,15 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
   res.status(200).json({ status: 'ok' });
 });
 
+//タスクに設定するデフォルトのメールアドレスを取得
+app.get('/init', (req, res) => {
+  try{
+    console.log("call -> get/init");
+    res.status(200).json({ "emails":config["send_email"], "sendTime":config["send_time"] });
+  }catch(error){
+    res.status(500).json({ error: '初期データ取得中にエラーが発生しました' });
+  }
+});
 
 // データベースからタスク情報を取得
 app.get('/todos', async(req: Request<{},{},{},{filter:string, user:string}>, res: Response) => {
@@ -188,33 +197,28 @@ app.post('/default_email', async(req: Request<{}, {}, {emailList:string}>, res: 
   
   try {
     const { emailList } = req.body;
-    let temp_emails = emailList.split(',').map(line => line?.trim().replace(/\s+/g, ''))
-    console.log("更新するメールアドレス：",temp_emails);
+
+    const temp_emails = emailList
+      .split(',')
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && /^[\w.+-]+@[\w.-]+\.\w+$/.test(line)); // 簡易バリデーション
 
     if (temp_emails.length === 0) {
-      res.status(400).json({ warning: '更新できるメールアドレスが存在しません' });
+      res.status(400).json({ warning: '有効なメールアドレスが存在しません' });
       return;
     }
 
-    config["send_email"] = temp_emails
+    config["send_email"] = temp_emails;
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
-  
-    res.json({ emails: config["send_email"] });
+    console.log("更新するメールアドレス：",temp_emails);
+
+    res.status(200).json({ message: '送付先メールアドレスを更新しました', emails: temp_emails });
 
   } catch (error) {
     res.status(500).json({ error: 'メールアドレスの更新中にエラーが発生しました' });
   }
 });
 
-//タスクに設定するデフォルトのメールアドレスを取得
-app.get('/default_email', (req, res) => {
-  try{
-    console.log("call -> get/default_email");
-    res.status(200).json({ emails: config["send_email"] });
-  }catch(error){
-    res.status(500).json({ error: 'メールアドレスの取得中にエラーが発生しました' });
-  }
-});
 
 
 //メール送信時刻更新
@@ -229,7 +233,7 @@ app.post('/send-time', async(req: express.Request<{}, {}, {update_sendtime:strin
     }
 
     const { update_sendtime } = req.body;  
-    config["send_time"] = update_sendtime
+    config["send_time"] = update_sendtime;
   
     fs.writeFileSync(jsonPath, JSON.stringify(config, null, 2), 'utf-8');
     scheduleDailyMail();  

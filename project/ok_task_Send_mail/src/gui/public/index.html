@@ -110,7 +110,7 @@
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <div class="mb-4">
-          <select id="filter-select" class="form-select" onchange="loadTodos()">
+          <select id="filter-done" class="form-select" onchange="loadTodos()">
             <option value=>すべてのタスク</option>
             <option value="0">未完了のタスク</option>
             <option value="1">完了済みのタスク</option>
@@ -156,7 +156,7 @@
             <div class="mb-4" id="import-email-button-container">
               <input type="file" id="email-file-input" style="display: none;" accept=".txt,.csv">
               <div class="d-flex align-items-center gap-2">
-                <button id="import-email-button" class="btn btn-primary" onclick="importEmail()">送付先メールアドレスの初期設定</button>
+                <button id="import-email-button" class="btn btn-primary">送付先メールアドレスの初期設定</button>
                 <p class="text-muted mb-0">****.csv <br>（例）aaa@okiko-kk.co.jp, bbb@okiko-kk.co.jp・・・</p>
               </div>
             </div>
@@ -168,30 +168,112 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const user = params.get('user') || '';
+  //タスク情報を管理できるかの権限
+  let addtaskflag = true; 
+  if (user.length > 0){
+    console.info("user:", user);
+    const text_usermail = document.getElementById('user-mail');     
+    text_usermail.textContent = "ユーザーモード：" + user;  
+    addtaskflag = false
+  }
+
+  function setEmailslist(emails){
+    document.getElementById('email-list').innerHTML = '';
+    for (const email of emails) {
+      const option = document.createElement('option');
+      option.value = email;
+      option.textContent = email;
+      document.getElementById('email-list').appendChild(option);
+    }
+  }
+  
+  async function change_sendTime(){
+
+    const send_time = document.getElementById("send-time")
+    update_sendtime = send_time.value
+
+    try{
+      const response = await axios.post('/send-time', {update_sendtime});
+      console.log(`自動送信メールの時刻を更新しました:${response.data.update_sendtime}`)
+    }catch(error){
+      alert('エラー: ' + error.response.data.error);
+    };
+
+  };
+
+  async function initialize() {
+
+    try{
+      const response = await axios.get('/init');
+      const { emails, sendTime } = response.data;
+      
+      //デフォルトメールアドレスリストを作成 
+      if (emails.length === 0){
+          alert('初期設定のメールアドレスが設定されていません');
+      }else{
+        setEmailslist(emails) 
+      }                   
+      
+      //自動メール送信時刻の表示
+      const send_time = document.getElementById("send-time")            
+      send_time.value  = sendTime;   
+      console.log("自動メール送信時刻：",send_time.value)
+      
+      send_time.addEventListener("change",change_sendTime())
+      
+      if (!addtaskflag) {
+        document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';
+        document.getElementById('todo-input').disabled = true;
+        document.getElementById('add-button').disabled = true;
+        document.getElementById('email-input').disabled = true;
+        document.getElementById('email-input').placeholder = 'あなたの権限ではメールアドレスを追加できません';
+        document.getElementById('add-email-button').disabled = true;
+        document.getElementById('delete-email-button').disabled = true;
+        document.getElementById('email-list').disabled = true;
+        document.getElementById('import-email-button-container').style.display = 'none';
+        
+      }else{
+        document.getElementById('todo-input').placeholder = 'タスクを入力してください';
+        document.getElementById('todo-input').disabled = false;
+        document.getElementById('add-button').disabled = false;
+        document.getElementById('email-input').disabled = false;
+        document.getElementById('email-input').placeholder = 'メールアドレスを入力してください';
+        document.getElementById('add-email-button').disabled = false;
+        document.getElementById('delete-email-button').disabled = false;
+        document.getElementById('email-list').disabled = false;
+        document.getElementById('import-email-button-container').style.display = 'block';
+      }
+
+      //メール更新処理のイベントリスナーを設定
+      const btn_importMail = document.getElementById("import-email-button");
+      const fileInput = document.getElementById('email-file-input');
+      btn_importMail.addEventListener("click", ()=> {
+        fileInput.click()
+      });
+  
+      fileInput.addEventListener("change",updateEmails(event))
+      //タスク情報取得
+      loadTodos()
+
+    }catch(error){
+      alert('エラー: ' + error.response.data.error);
+      return
+    };
+    
+  }
+
+
     //初期処理　タスク情報を取得し画面に表示する
     async function loadTodos() {
-
-      const params = new URLSearchParams(window.location.search);
-      const user = params.get('user') || '';
-      
-      let addtaskflag = true;
-
-      if (user.length > 0){
-        console.info("user:", user);
-        const text = document.getElementById('user-mail');
-        
-        if (text) {          
-          text.textContent = "ユーザーモード：" + user;  
-          addtaskflag = false
-        }
-      }
-      
-      const filterSelect = document.getElementById('filter-select');
+            
+      const filterSelect = document.getElementById('filter-done');
       //const filter = filterSelect.value;
 
       let groupedTodos = {};
-
       // ToDoの取得
       await axios.get(`/todos?filter=${filterSelect.value}&user=${user}`)
         .then(response => {
@@ -207,53 +289,6 @@
             return acc;
           }, {});
 
-          //自動メール送信時刻の表示
-          //const send_time = document.getElementById('text_sendmail_time');
-          const send_time = document.getElementById("send-time")
-          if (send_time) {         
-            send_time.value  = response.data.sendTime;             
-            console.log("メール送信時刻：",send_time.value)
-          }
-          send_time.addEventListener("change",function(){
-            const update_sendtime = send_time.value
-            axios.post('/send-time', {
-              update_sendtime             
-            })
-            .then(response => {
-              //console.log(`自動送信メールの時刻を変更しました`);
-              console.log(`自動送信メールの時刻を変更しました:${response.data.update_sendtime}`)
-            })
-            .catch(warning => {
-              alert('警告: ' + warning.response.data.warning);
-            })
-            .catch(error => { 
-              alert('エラー: ' + error.response.data.error);
-            });
-          })         
-
-
-          if (!addtaskflag) {
-            document.getElementById('todo-input').placeholder = 'あなたの権限ではタスクを追加できません';
-            document.getElementById('todo-input').disabled = true;
-            document.getElementById('add-button').disabled = true;
-            document.getElementById('email-input').disabled = true;
-            document.getElementById('email-input').placeholder = 'あなたの権限ではメールアドレスを追加できません';
-            document.getElementById('add-email-button').disabled = true;
-            document.getElementById('delete-email-button').disabled = true;
-            document.getElementById('email-list').disabled = true;
-            document.getElementById('import-email-button-container').style.display = 'none';
-            
-          }else{
-            document.getElementById('todo-input').placeholder = 'タスクを入力してください';
-            document.getElementById('todo-input').disabled = false;
-            document.getElementById('add-button').disabled = false;
-            document.getElementById('email-input').disabled = false;
-            document.getElementById('email-input').placeholder = 'メールアドレスを入力してください';
-            document.getElementById('add-email-button').disabled = false;
-            document.getElementById('delete-email-button').disabled = false;
-            document.getElementById('email-list').disabled = false;
-            document.getElementById('import-email-button-container').style.display = 'block';
-          }
         })
         .catch(error => {
           console.error('エラー: ' + error.response.data.error);
@@ -309,7 +344,7 @@
         const deleteButton = document.createElement('button');
         deleteButton.textContent = '✖';
         deleteButton.className = 'btn btn-sm btn-danger ms-2';
-        deleteButton.onclick = () => deleteTodo({title: title});
+        deleteButton.addEventListener("click", ()=>  deleteTodo({title: title}));
 
       
         header.appendChild(titleSpan);
@@ -345,67 +380,44 @@
         list.appendChild(li);
 
       })
-
-        
-      document.getElementById('email-list').innerHTML = '';
-
-      //todo email-listの初期化
-      axios.get('/default_email')
-        .then(response => {
-          console.log(response.data);
-          if (response.data.emails.length === 0){
-            alert('初期設定のメールアドレスが設定されていません');
-          }          
-          for (const email of response.data.emails) {
-            const option = document.createElement('option');
-            option.value = email;
-            option.textContent = email;
-            document.getElementById('email-list').appendChild(option);
-          }
-        })
-        .catch(error => {
-          alert('エラー: ' + error.response.data.error);
-        });
     }
 
 
     //ファイルを読み込み、タスク単位で送付するメールアドレスの初期設定値を設定する  
-    function importEmail() {
-      // document.getElementById('email-file-input').click();
-      document.getElementById('email-file-input').onchange = function(e) {
-        const file = e.target.files[0];
-        e.target.value = '';
-        if (file) {
+    function updateEmails(event) {
 
+      try{
+        const inputEl = event.target;
+        if (!(inputEl instanceof HTMLInputElement)) return;
+  
+        const file = inputEl.files?.[0];
+        let emailList = ""
+  
+        //ファイルが選択されていれば更新処理実行
+        if (!file) return;
+        
+        inputEl.value = '';
+        const reader = new FileReader();
+        reader.onload = () => {
+          emailList = reader.result;
+          console.log('更新メールアドレス:', emailList);
+          
           //確認メッセージ
           if (!confirm('送付先メールアドレスの初期設定を更新しますか？')) {
             alert('更新をキャンセルしました');
             return;
-          };
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const emailList = e.target.result;
-            
-            axios.post('/todos/default_email', {
-              emailList              
-            })
-            .then(response => {
-              console.log(response.data);
-              alert(`送付先メールアドレスを更新しました\n${response.data.email.join('\n')}`),
-              loadTodos()
-            })
-            .catch(warning => {
-              alert('警告: ' + warning.response.data.warning);
-            })
-            .catch(error => { 
-              alert('エラー: ' + error.response.data.error);
-            });
-          };
-          reader.readAsText(file);
-        }
-      };
-      document.getElementById('email-file-input').click();
-    }
+          }; 
+        };
+        reader.readAsText(file);
+        
+        const response = axios.post('/default_email', {emailList});
+        alert(`送付先メールアドレスを更新しました`);
+
+      }catch(error){
+        alert('エラー: ' + error.response.data.error);
+        return
+      }     
+    };
 
     //タスクのタイトルを更新する処理　同じタイトルのタスクは更新しない
     function updateTodoTitle({oldTitle, newTitle}) {
@@ -465,7 +477,7 @@
     }
 
 
-    //タスクを追加する処理　初期処理では登録されているメールアドレスすべてにタスクを追加する
+    //タスクを追加する処理　リストに表示されているメールアドレスすべてにタスクを追加する
     function addTodo() {
       console.log("call addTodo");
       const input = document.getElementById('todo-input');
@@ -493,7 +505,7 @@
       input.value = '';
     } 
 
-    //タスクで送信する登録するメールアドレスを追加する処理
+    //タスクで送信するメールアドレスを追加する処理
     function addEmail() {
       const input = document.getElementById('email-input');
       const email = input.value;
@@ -525,12 +537,8 @@
       emailList.removeChild(emailList.querySelector(`option[value="${selectedEmail}"]`));
     }
 
-    function updateTimer(){
-      alert("click_updatebtn")
-    }
 
-
-    loadTodos();
+    initialize();
   </script>
 </body>
 </html>
