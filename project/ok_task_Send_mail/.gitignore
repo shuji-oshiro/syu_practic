@@ -6,11 +6,13 @@ dist/
 
 src/data/todos.db
 src/data/test_todos.db
+src/data/config.json
 
 # OSやエディタごとの一時ファイル
 .DS_Store
 Thumbs.db
 *.log
+
 
 # 環境ごとの設定ファイル
 .env
