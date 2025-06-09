@@ -76,7 +76,7 @@ app.get('/todos', async(req: Request<{},{},{},{filter:string, user:string}>, res
 
       const rows = await getSelectData(conditions, params);
       //タスクデータと初期値のメールリスト、自動メール送信時間を返す
-      res.status(200).json({ "taskdata":rows, "send_email_list":config["send_email"], "sendTime":config["send_time"] });
+      res.status(200).json({ "taskdata":rows });
 
     }catch(err){
       res.status(500).json({ msg: 'タスク取得中にエラーが発生しました' });

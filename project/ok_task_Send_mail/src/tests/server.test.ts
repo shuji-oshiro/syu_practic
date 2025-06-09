@@ -67,7 +67,18 @@ describe('APIテスト', () => {
     expect(tableExists).toBe(true);
   });
   
+  describe("初期処理",() => {
+    test('OK get/init', async () => {
+      const res = await request(app)
+      .get('/init');
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.emails)).toBe(true);
+      expect(res.body.sendTime).toMatch(/^\d{1,2}:\d{2}$/);
+    });
+  })
   
+
+
   describe('タスクデータ追加テスト', () => {
     test('OK post/todos', async () => {
       const title = 'test-task-title';
@@ -114,8 +125,6 @@ describe('APIテスト', () => {
       expect(res.status).toBe(200);
 
       expect(res.body.taskdata.length).toBeGreaterThan(0);
-      expect(res.body.sendTime).toBeTruthy();
-      expect(Array.isArray(res.body.send_email_list)).toBe(true);
     });
 
     
@@ -129,8 +138,6 @@ describe('APIテスト', () => {
       expect(res.status).toBe(200);
 
       expect(res.body.taskdata.length).toBe(0);
-      expect(res.body.sendTime).toBeTruthy();
-      expect(Array.isArray(res.body.send_email_list)).toBe(true);
     });
 
     test('OK get/todos filter->OFF Yes-Data', async () => {    
@@ -139,8 +146,6 @@ describe('APIテスト', () => {
         .get(`/todos?filter=&user=`);
       expect(res.status).toBe(200);
       expect(res.body.taskdata.length).toBe(1);
-      expect(res.body.sendTime).toBeTruthy();
-      expect(Array.isArray(res.body.send_email_list)).toBe(true);
     });
 
     test('NG get/todos filter->OFF No-data', async () => {
@@ -152,8 +157,7 @@ describe('APIテスト', () => {
         .get(`/todos?filter=${filter}&user=${user}`);
       expect(res.status).toBe(200);
       expect(res.body.taskdata.length).toBe(0);
-      expect(res.body.sendTime).toBeTruthy();
-      expect(Array.isArray(res.body.send_email_list)).toBe(true);
+
     });
 
   });
