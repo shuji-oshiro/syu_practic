@@ -4,7 +4,7 @@ import pandas as pd
 from io import BytesIO
 from pathlib import Path
 from fastapi import UploadFile
-from src.analysis import process_csv_files
+from app.src.analysis import process_csv_files
 
 
 @pytest.mark.asyncio
