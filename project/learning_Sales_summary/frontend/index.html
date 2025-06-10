@@ -21,9 +21,9 @@
     <label for="salesTarget">売上目標:</label>
     <input type="number" id="salesTarget" required>
 
-    <button class="register-btn" >登録</button>
-    <button class="delete-btn" >選択した商品を削除</button>
-    <button class="analyze-btn"">商品売上集計</button>
+    <button class="register-btn", id="btn_add" >登録</button>
+    <button class="delete-btn", id="btn_del" >選択した商品を削除</button>
+    <button class="analyze-btn", id="btn_ana">商品売上集計</button>
     <input type="file" id="fileInput" multiple accept=".csv" class="hidden">
   </div>
 
@@ -50,18 +50,20 @@
 
     async function init(){
 
-      const btn_add = document.getElementById('register-btn')
-      btn_add.addEventListener(registerProduct)
+      const btn_add = document.getElementById('btn_add')
+      btn_add.addEventListener('click',registerProduct)
 
-      const btn_del = document.getElementById('delete-btn')
-      btn_del.addEventListener(deleteSelectedProducts)
+      const btn_del = document.getElementById('btn_del')
+      btn_del.addEventListener('click',deleteSelectedProducts)
 
-      const btn_ana = document.getElementById('analyze-btn')
-      const fileInput = document.getElementById('email-file-input');
+      const btn_ana = document.getElementById('btn_ana')
+      const fileInput = document.getElementById('fileInput');
       btn_ana.addEventListener("click", ()=> {
         fileInput.click();
       });  
       fileInput.addEventListener("change",handleFileSelect);
+
+      loadProducts();
     }
 
     // 商品一覧を取得して表示
@@ -299,7 +301,8 @@
     }
 
     // 初期表示時に商品一覧を読み込む
-    loadProducts();
+    init();
+    
   </script>
 </body>
 </html>
