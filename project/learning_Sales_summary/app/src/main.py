@@ -11,26 +11,30 @@ from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from .analysis import process_csv_files
 
+
+LOG_DIR = os.path.join(os.path.dirname(__file__), '..', 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_PATH = os.path.join(LOG_DIR, 'app.log')
+
+
 # ロギングの設定
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.info,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S %Z',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('logs/app.log')
+        logging.FileHandler(LOG_PATH)
     ]
 )
-
 # タイムゾーンを日本時間に設定
 logging.Formatter.converter = lambda *args: datetime.datetime.now(pytz.timezone('Asia/Tokyo')).timetuple()
-
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # データ保存用のディレクトリとファイルパス
-DATA_DIR = "data"
+DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 PRODUCTS_FILE = os.path.join(DATA_DIR, "products.json")
 
 # データディレクトリが存在しない場合は作成
@@ -52,6 +56,12 @@ class Product(BaseModel):
     product_code: str
     product_name: str
     sales_target: int
+
+# テスト用
+@app.get("/hello")
+def read_hello():
+    return {"message": "Hello, World"}
+
 
 @app.get("/api/products")
 async def get_products() -> List[dict]:
