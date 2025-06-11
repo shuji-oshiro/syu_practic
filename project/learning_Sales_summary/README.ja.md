@@ -32,6 +32,8 @@
    docker-compose -f docker-compose.dev.yml build
    docker-compose -f docker-compose.dev.yml up
    ```
+   デバッグ不要の際は削除 ->　Dockerfile-dev「"python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m"」
+   
 3. テストの実行
    ```bash
    cd project/learning_Sales_summary
