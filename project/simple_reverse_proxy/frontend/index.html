@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>AAA Fetcher</title>
+    <script>
+        async function fetchAAA() {
+            const res = await fetch('/api/aaa');
+            const text = await res.text();
+            document.getElementById('result').innerText = text;
+        }
+    </script>
+</head>
+<body>
+    <button id="fetchButton" onclick="fetchAAA()">取得</button>
+    <div id="result"></div>
+</body>
+</html>
