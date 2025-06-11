@@ -1,7 +1,7 @@
 version: '3'
 services:
   backend:
-    build: ./backend
+    build: .
     container_name: simple_backend
     ports:
       - "8000:8000"
