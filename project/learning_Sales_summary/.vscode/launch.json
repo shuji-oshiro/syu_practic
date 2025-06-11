@@ -3,15 +3,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python デバッガー: プロジェクト",
+            "name": "Python: Attach to Backend",
             "type": "debugpy",
-            "request": "launch",
-            "module": "src.main",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/app",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/app"
-            }
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/app",
+                    "remoteRoot": "/app"
+                }
+            ]
         }
     ]
 }
