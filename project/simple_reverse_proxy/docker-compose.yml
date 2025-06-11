@@ -3,8 +3,11 @@ services:
   backend:
     build: ./backend
     container_name: simple_backend
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    volumes:
+      - ./backend:/app
     networks:
       - appnet
   nginx:
