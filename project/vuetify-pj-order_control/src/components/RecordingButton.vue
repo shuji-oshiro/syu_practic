@@ -7,10 +7,6 @@
       {{ isRecording ? '停止' : '注文' }}
     </span>
   </v-btn>
-
-  <!-- <button @click="toggleRecording">
-    {{ isRecording ? '⏹️ 停止' : '🎙️ 録音' }}
-  </button> -->
 </template>
 
 <script setup lang="ts">
@@ -29,11 +25,44 @@ const startRecording = async () => {
   chunks = []
 
   recorder.ondataavailable = (e) => chunks.push(e.data)
-  recorder.onstop = () => {
+
+// 🔧 async に変更
+  recorder.onstop = async () => {
     const blob = new Blob(chunks, { type: 'audio/webm' })
-    const url = URL.createObjectURL(blob)
-    emit('recorded', url)
+    chunks = []
+
+    // 🔧 サーバーへ送信
+    const formData = new FormData()
+    formData.append('file', blob, 'recording.webm')
+
+    try {
+      const response = await fetch('http://localhost:8000/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        console.error('Upload failed:', response.statusText)
+        return
+      }
+
+      const data = await response.json()
+      const mp3Url = `http://localhost:8000${data.url}`
+
+      // 🔧 mp3のURLをemit
+      emit('recorded', mp3Url)
+
+    } catch (err) {
+      console.error('Fetch error:', err)
+    }
   }
+  
+  // recorder.onstop = () => {
+  //   const blob = new Blob(chunks, { type: 'audio/webm' })
+    
+  //   const url = URL.createObjectURL(blob)
+  //   emit('recorded', url)
+  // }
 
   recorder.start()
   isRecording.value = true

@@ -24,4 +24,4 @@ const app = createApp(App)
 registerPlugins(app)
 
 // アプリをマウント
-app.use(router).mount('#app')
+app.mount('#app')
