@@ -12,7 +12,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 const emit = defineEmits<{
-  (e: 'recorded', url: string): void
+  (e: 'recorded', reco_text: string, match_text:string, blob:Blob): void
+  (e: 'error', message: string): void  // ← エラー用emit追加
 }>()
 
 const isRecording = ref(false)
@@ -26,34 +27,34 @@ const startRecording = async () => {
 
   recorder.ondataavailable = (e) => chunks.push(e.data)
 
-// 🔧 async に変更
   recorder.onstop = async () => {
     const blob = new Blob(chunks, { type: 'audio/webm' })
     chunks = []
 
-    // 🔧 サーバーへ送信
+    // サーバーへ送信
     const formData = new FormData()
     formData.append('file', blob, 'recording.webm')
 
     try {
-      const response = await fetch('http://localhost:8000/upload', {
+      const response = await fetch('http://localhost:8000/voice', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        console.error('Upload failed:', response.statusText)
-        return
+        const errorData = await response.json();
+        emit('error', errorData.detail || 'サーバーエラー')
+        return;
       }
 
       const data = await response.json()
-      const mp3Url = `http://localhost:8000${data.url}`
 
-      // 🔧 mp3のURLをemit
-      emit('recorded', mp3Url)
+      const reco_text = data.reco_text
+      const match_text = data.match_text
+      emit('recorded', reco_text, match_text, blob)
 
     } catch (err) {
-      console.error('Fetch error:', err)
+      emit('error', '通信エラーが発生しました')
     }
   }
   
@@ -61,8 +62,10 @@ const startRecording = async () => {
   //   const blob = new Blob(chunks, { type: 'audio/webm' })
     
   //   const url = URL.createObjectURL(blob)
-  //   emit('recorded', url)
+  //   emit('recorded', url, blob)
   // }
+  
+
 
   recorder.start()
   isRecording.value = true

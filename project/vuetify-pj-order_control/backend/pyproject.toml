@@ -5,7 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.115.12",
-    "python-multipart>=0.0.20",
-    "uvicorn>=0.34.3",
+    "fastapi",
+    "openai",
+    "openai-whisper",
+    "pykakasi",
+    "python-dotenv",
+    "python-multipart",
+    "rapidfuzz",
+    "uvicorn"
 ]
+
+[tool.uv.sources]
+openai-whisper = { git = "https://github.com/openai/whisper.git" }
