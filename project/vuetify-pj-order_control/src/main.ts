@@ -15,6 +15,7 @@ import { registerPlugins } from '@/plugins'
 
 // Styles
 import 'unfonts.css'
+import router from './router'
 
 // アプリ作成
 const app = createApp(App)
@@ -23,4 +24,4 @@ const app = createApp(App)
 registerPlugins(app)
 
 // アプリをマウント
-app.mount('#app')
+app.use(router).mount('#app')
