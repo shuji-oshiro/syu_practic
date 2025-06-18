@@ -9,10 +9,11 @@ dependencies = [
     "openai",
     "openai-whisper",
     "pykakasi",
+    "pytest>=8.4.0",
     "python-dotenv",
     "python-multipart",
     "rapidfuzz",
-    "uvicorn"
+    "uvicorn",
 ]
 
 [tool.uv.sources]

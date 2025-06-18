@@ -11,9 +11,8 @@ def insert_menus_from_csv(file_path: str) -> None:
 
     with open(file_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
+        
         for row in reader:
-            if len(row) < 4:
-                continue  # スキップ
             food_name, unit_price, descrption, search_text = row
             cursor.execute("""
                 INSERT INTO menus (name, price, description, search_text)
@@ -23,7 +22,8 @@ def insert_menus_from_csv(file_path: str) -> None:
     conn.commit()
     conn.close()
 
-# メニュー情報を取得する関数
+# メニュー情報を取得する関
+# 数
 def get_menus(menu_id: Optional[int] = None) -> List[MenusOut]:
     conn = get_db_connection()
     cursor = conn.cursor()
