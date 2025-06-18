@@ -85,7 +85,7 @@ def update_menu(menu_data: MenuUpdate) -> list[MenuOut]:
 
 # メニュー情報を削除する関数
 def delete_menu(menu_id: Optional[int]) -> list[MenuOut]:
-    if isinstance(menu_id, int):
+    if not isinstance(menu_id, int):
         raise ValueError("menu_id must be an integer or None")
     conn = get_db_connection()
     cursor = conn.cursor()

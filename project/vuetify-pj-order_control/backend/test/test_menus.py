@@ -1,13 +1,14 @@
 import os
 import tempfile
+import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.schemas.menu_schema import MenuOut,MenuIn, MenuUpdate
 
+
 client = TestClient(app)
 
 delite_menus_id = []
-
 
 def test_post_menus():
     # テスト用CSVを一時ファイルに作成
@@ -37,7 +38,7 @@ def test_add_menus():
         search_text="新しいメニュー"
     )
     
-    response = client.put("/menus", json=new_menu.dict())
+    response = client.put("/menus", json=new_menu.model_dump())
     assert response.status_code == 200
     data = response.json()
     menus = [MenuOut(**menu) for menu in data] 
@@ -79,7 +80,7 @@ def test_update_menus():
         search_text="更新された検索テキスト"
     )
     
-    response = client.patch("/menus", json=update_menu.dict())
+    response = client.patch("/menus", json=update_menu.model_dump())
     assert response.status_code == 200
     data = response.json()
     menus = [MenuOut(**menu) for menu in data] 
