@@ -50,7 +50,8 @@ git add .         # すべて追加
 git add *.css     # CSSファイルのみ追加
 git add -n        # 追加予定ファイルを確認
 git add -u        # 更新・削除のみ
-git rm --cached   # add済みファイルを除外
+git rm --cached   # --cached：ローカルには残す意味　-r：ディレクトリを再帰的に削除
+git rm --cached -r .pytest_cache/ 特定のフォルダを指定する場合
 ```
 
 ### コミット
