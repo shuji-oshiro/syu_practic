@@ -11,6 +11,16 @@ def setup_memory_db():
     conn = get_db_connection()  # メモリ内データベースを取得
     init_menus_db()
     init_orders_db()
+
+    # usersテストで仕様するmemory database fileを削除する
+    try:
+        if os.path.exists("file"):
+            os.remove("file")  
+    except Exception as e:
+        print(f"Error removing file: {e}")  # ファイル削除エラー
+        pass
+
+
     yield
 
     conn.close() # テスト後に接続を閉じる

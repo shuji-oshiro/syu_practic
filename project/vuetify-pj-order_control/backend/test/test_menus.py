@@ -1,9 +1,9 @@
 import os
 import tempfile
-import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.schemas.menu_schema import MenuOut,MenuIn, MenuUpdate
+
 
 
 client = TestClient(app)
@@ -98,5 +98,3 @@ def test_delete_menus():
 
     assert isinstance(data, list)
     assert len(menus) == 2  # メニューが1件削除されていることを確認
-
-
