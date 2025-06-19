@@ -8,6 +8,7 @@ dependencies = [
     "fastapi",
     "openai",
     "openai-whisper",
+    "pydantic[email]>=2.11.7",
     "pykakasi",
     "pytest>=8.4.0",
     "python-dotenv",

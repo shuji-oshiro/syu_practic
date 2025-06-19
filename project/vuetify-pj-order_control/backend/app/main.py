@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.models.db import init_menus_db, init_orders_db
-from backend.app.api import menus, orders, voice
+from backend.app.api import menus, orders, voice, users
 
 app = FastAPI()
 
@@ -18,6 +18,7 @@ app.add_middleware(
 app.include_router(menus.router, prefix="/menus", tags=["menus"])
 app.include_router(orders.router, prefix="/orders", tags=["orders"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])
+app.include_router(users.router, prefix="/users", tags=["users"])
 
 # DB初期化
 init_menus_db()
