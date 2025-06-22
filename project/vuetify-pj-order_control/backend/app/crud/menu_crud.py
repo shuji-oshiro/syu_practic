@@ -1,4 +1,3 @@
-import csv
 from fastapi import HTTPException
 import backend.app.models.model as model
 from sqlalchemy.orm import Session
