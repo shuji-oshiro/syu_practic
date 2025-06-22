@@ -19,3 +19,7 @@ class MenuUpdate(BaseSchema):
     price: int
     description: str
     search_text: str
+
+
+class MenuInputCsv(BaseSchema):
+    file_path: str

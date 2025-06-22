@@ -14,9 +14,9 @@ app.add_middleware(
 )
 
 # ルーター登録
-# app.include_router(menus.router, prefix="/menus", tags=["menus"])
-app.include_router(order_api.router, prefix="/order", tags=["order"])
+# ルーターを登録して、各APIエンドポイントを設定します。
 app.include_router(menu_api.router, prefix="/menu", tags=["menu"])
+app.include_router(order_api.router, prefix="/order", tags=["order"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])
 
 
