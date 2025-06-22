@@ -20,12 +20,13 @@ def add_order(db: Session, orders: list[OrderIn]):
         for order in orders:
             db_order = model.Order(**order.model_dump())
             db.add(db_order)
-            db.flush()
-            db.refresh(db_order) 
             db_orders.append(db_order)
-        db.commit()
 
-        return db_orders
+        db.flush() # ここで自動的に ID が入る
+        db.commit()        
+
+        return get_orders(db, seat_id=db_orders[0].seat_id)  # 最初の注文の座席IDを返す
+    
     except Exception as e:
         db.rollback()   
         raise HTTPException(status_code=500, detail="Invalid input data")
@@ -40,7 +41,8 @@ def delete_order(db: Session, order_id: int):
     try:
         db.delete(db_order)
         db.commit()
-        return db_order
+        return get_orders(db, seat_id=db_order.seat_id)  # 削除後の注文情報を返す
+    
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete order")

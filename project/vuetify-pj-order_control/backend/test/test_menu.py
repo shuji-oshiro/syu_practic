@@ -10,7 +10,6 @@ def test_import_menu():
     
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
     assert len(data) == 14  # CSVからメニューが読み込まれたことを確認
 
 def test_add_menu():
@@ -21,20 +20,14 @@ def test_add_menu():
         "search_text": "かつどん"
     })
     assert response.status_code == 200
-    
-def test_get_menus():
-    response = client.get("/menu")
-    assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 15 
-
+    assert len(data) == 15 # 新しいメニューが追加されたことを確認
 
 def test_get_menus_byid():
     response = client.get("/menu/1")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict)
+    assert isinstance(data, dict) # レスポンスが辞書型であることを確認
 
 
 def test_update_menu():
@@ -48,44 +41,53 @@ def test_update_menu():
 
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict)
+    assert len(data) == 15 # メニューの件数に変更がないことを確認
 
 def test_delete_menu():
     response = client.delete("/menu/1")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict)
-
-def test_get_menus_after_dele():
-    response = client.get("/menu")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 14 
+    assert len(data) == 14  # メニューが削除されたことを確認
 
 
-
-def test_add_order():
+def test_add_order1():
     response = client.post("/order", json=[
         {
             "seat_id": 1,
             "menu_id": 2,
             "order_cnt": 2
+        }
+    ])
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1 # 2件の注文が追加されたことを確認
+
+def test_add_order2():
+    response = client.post("/order", json=[
+        {
+            "seat_id": 2,
+            "menu_id": 2,
+            "order_cnt": 2
         },
         {
-            "seat_id": 1,
+            "seat_id": 2,
             "menu_id": 3,
             "order_cnt": 1
         }
     ])
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 2
+    assert len(data) == 2 # 2件の注文が追加されたことを確認
 
 
 def test_get_orders():
-    response = client.get("/order/1")
+    response = client.get("/order/2")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
+    assert len(data) == 2 # 指定したシートの注文が2件のであることを確認
+
+def test_delete_order():
+    response = client.delete("/order/1")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 0 # 注文が1件削除されたことを確認

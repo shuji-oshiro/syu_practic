@@ -41,6 +41,6 @@ def add_order(orders: list[OrderIn], db: Session = Depends(get_db)):
     return order_crud.add_order(db, orders)
 
 # 注文情報削除
-@router.delete("/{order_id}", response_model=OrderOut)
+@router.delete("/{order_id}", response_model=list[OrderOut])
 def delete_order(order_id: int, db: Session = Depends(get_db)):
     return order_crud.delete_order(db, order_id)

@@ -24,10 +24,9 @@ def import_menus_from_csv(db: Session, menus: list[MenuIn]):
     for menu in menus:            
         db_menu = model.Menu(**menu.model_dump())
         db.add(db_menu)
-        db.flush()
-        db.refresh(db_menu)  # ここで自動的に ID が入る
-    db.commit()
-
+    
+    db.flush()
+    db.commit()    
     return get_menus(db)    
 
 # メニュー情報を追加する関数
@@ -39,7 +38,8 @@ def add_menu(db: Session, menu: MenuIn):
         db.add(db_menu)
         db.commit()
         db.refresh(db_menu)  # ここで自動的に ID が入る
-        return db_menu
+
+        return get_menus(db)  
     except Exception as e:
         db.rollback()   
         raise HTTPException(status_code=500, detail="Invalid input data")
@@ -59,7 +59,8 @@ def update_menu(db: Session, menu_update: MenuUpdate):
         db_menu.search_text = menu_update.search_text
         db.commit()
         db.refresh(db_menu)
-        return db_menu
+
+        return get_menus(db) 
     
     except Exception as e:
         db.rollback()
@@ -75,7 +76,8 @@ def delete_menu(db: Session, menu_id: int):
     try:
         db.delete(db_menu)
         db.commit()
-        return db_menu
+        
+        return get_menus(db) 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete menu")

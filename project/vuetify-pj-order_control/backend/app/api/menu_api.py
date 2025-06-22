@@ -43,7 +43,7 @@ def get_all_menus(db: Session = Depends(get_db)):
     return menu_crud.get_menus(db)
 
 # メニュー情報の追加
-@router.put("/", response_model=MenuOut)
+@router.put("/", response_model=list[MenuOut])
 def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
     return menu_crud.add_menu(db, menu)
 
@@ -68,11 +68,11 @@ def import_menu(csvinfo: MenuInputCsv, db: Session = Depends(get_db)):
     return menu_crud.import_menus_from_csv(db, menus)
 
 # メニュー情報の更新
-@router.patch("/", response_model=MenuOut)
+@router.patch("/", response_model=list[MenuOut])
 def update_menu(menu_update: MenuUpdate, db: Session = Depends(get_db)):
     return menu_crud.update_menu(db, menu_update)
 
 # メニュー情報の削除
-@router.delete("/{menu_id}", response_model=MenuOut)
+@router.delete("/{menu_id}", response_model=list[MenuOut])
 def delete_menu(menu_id: int, db: Session = Depends(get_db)):
     return menu_crud.delete_menu(db, menu_id)
