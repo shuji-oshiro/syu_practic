@@ -1,6 +1,6 @@
 from fastapi import HTTPException
-import backend.app.models.model as model
 from sqlalchemy.orm import Session
+import backend.app.models.model as model
 from backend.app.schemas.menu_schema import MenuIn, MenuUpdate
 
 # メニュー情報のCRUD操作を行うモジュール

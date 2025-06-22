@@ -1,8 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.models import model
+from backend.app.database import database
 from backend.app.api import menu_api, order_api, voice
 
+# データベースのテーブルを作成
+# これにより、models.pyで定義したテーブルがデータベースに作成されます。
+# もしテーブルが既に存在する場合は何も行いません。
+model.Base.metadata.create_all(bind=database.engine)
+
 app = FastAPI()
+
 
 # CORS設定
 app.add_middleware(

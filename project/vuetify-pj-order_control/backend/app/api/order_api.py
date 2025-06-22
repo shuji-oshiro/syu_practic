@@ -3,30 +3,9 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends
 from backend.app.crud import order_crud
-from backend.app.models import model
-from backend.app.database import database
+from backend.app.database.database import get_db
 from backend.app.schemas.order_schema import OrderIn,OrderOut
 
-# データベースのテーブルを作成
-# これにより、models.pyで定義したテーブルがデータベースに作成されます。
-# もしテーブルが既に存在する場合は何も行いません。
-model.Base.metadata.create_all(bind=database.engine)
-
-# データベースセッションを取得するための依存関係
-# FastAPIの依存性注入を使用して、各エンドポイントでデータベースセッションを取得します。
-# これにより、各リクエストごとに新しいセッションが生成され、リクエストが終了したら自動的に閉じられます。
-def get_db():
-    db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        print("-------------Closing database session-------------")
-        db.close()
-
-# FastAPI実行の流れ
-# 1.Depends(get_db) が評価されて db = SessionLocal() でセッションが生成される
-# 2.yield db の db がエンドポイントに渡される
-# 3.エンドポイントの処理が完了したら finally ブロックが実行され、db.close() でセッションが閉じられる
 
 router = APIRouter()
 

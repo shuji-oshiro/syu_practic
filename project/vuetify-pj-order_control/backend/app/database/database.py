@@ -3,9 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from backend.app.utils.utils import is_running_under_pytest
 
+
 # SQLiteを使用する場合は、ファイルパスを指定します。
 
-DATABASE_URL = "sqlite:///./backend/data/test_menus.db"  # ← ファイルで保存
+DATABASE_URL = "sqlite:///./backend/data/store_database.db"  # ← ファイルで保存
 if is_running_under_pytest():
         # usersテストで仕様するmemory database fileを削除する
     try:
@@ -34,3 +35,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # declarative_base()：SQLAlchemyのORMを使うためのベースクラスを生成
 # これを継承したクラスがDBモデル（テーブル）となる
 Base = declarative_base()
+
+# データベースセッションを取得するための依存関係
+# FastAPIの依存性注入を使用して、各エンドポイントでデータベースセッションを取得します。
+# これにより、各リクエストごとに新しいセッションが生成され、リクエストが終了したら自動的に閉じられます。
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        print("-------------Closing database session-------------")
+        db.close()
