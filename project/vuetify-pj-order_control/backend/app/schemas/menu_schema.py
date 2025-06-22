@@ -1,30 +1,21 @@
-from pydantic import BaseModel
+from .baseSchema import BaseSchema
 
-class MenuOut(BaseModel):
+class MenuOut(BaseSchema):
+    id: int    
+    name: str
+    price: int
+    description: str
+    search_text: str
+
+class MenuIn(BaseSchema):
+    name: str
+    price: int
+    description: str
+    search_text: str
+
+class MenuUpdate(BaseSchema):
     menu_id: int
-    food_name: str
-    unit_price: int
-    descrption: str
+    name: str
+    price: int
+    description: str
     search_text: str
-
-    class Config:
-        orm_mode = True
-
-class MenuIn(BaseModel):
-    food_name: str
-    unit_price: int
-    descrption: str
-    search_text: str
-
-    class Config:
-        orm_mode = True
-
-class MenuUpdate(BaseModel):
-    menu_id: int
-    food_name: str
-    unit_price: int
-    descrption: str
-    search_text: str
-
-    class Config:
-        orm_mode = True

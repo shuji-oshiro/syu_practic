@@ -1,10 +1,23 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from backend.app.utils.utils import is_running_under_pytest
 
 # SQLiteを使用する場合は、ファイルパスを指定します。
-# DATABASE_URL = "sqlite:///./users.db"  # ← ファイルで保存
-DATABASE_URL = 'sqlite:///file:mem1?mode=memory&cache=shared -uri true'
 
+DATABASE_URL = "sqlite:///./backend/data/test_menus.db"  # ← ファイルで保存
+if is_running_under_pytest():
+        # usersテストで仕様するmemory database fileを削除する
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "../../data/.file")
+        if os.path.exists(file_path):
+            os.remove(file_path)  
+        DATABASE_URL = 'sqlite:///./backend/data/.file:mem1?mode=memory&cache=shared -uri True'
+    except Exception as e:
+        print(f"Error removing file: {e}")  # ファイル削除エラー
+        raise e
+    
 # SQLAlchemy が DBと通信するためのエンジンを作成
 engine = create_engine(
     # check_same_thread=False：SQLiteでは複数スレッドから接続するために必要な設定（FastAPIは非同期なので必須）

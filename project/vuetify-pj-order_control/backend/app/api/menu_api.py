@@ -1,0 +1,53 @@
+# app/main.py
+
+from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from backend.app.crud import menu_crud
+from backend.app.models import model
+from backend.app.database import database
+from backend.app.schemas.menu_schema import MenuIn, MenuUpdate, MenuOut
+
+# データベースのテーブルを作成
+# これにより、models.pyで定義したテーブルがデータベースに作成されます。
+# もしテーブルが既に存在する場合は何も行いません。
+model.Base.metadata.create_all(bind=database.engine)
+
+# データベースセッションを取得するための依存関係
+# FastAPIの依存性注入を使用して、各エンドポイントでデータベースセッションを取得します。
+# これにより、各リクエストごとに新しいセッションが生成され、リクエストが終了したら自動的に閉じられます。
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        print("-------------Closing database session-------------")
+        db.close()
+
+# FastAPI実行の流れ
+# 1.Depends(get_db) が評価されて db = SessionLocal() でセッションが生成される
+# 2.yield db の db がエンドポイントに渡される
+# 3.エンドポイントの処理が完了したら finally ブロックが実行され、db.close() でセッションが閉じられる
+
+router = APIRouter()
+
+@router.get("/{menu_id}", response_model=MenuOut)
+def get_menu(menu_id: int, db: Session = Depends(get_db)):
+    return menu_crud.get_menu_by_id(db, menu_id)
+
+@router.get("/", response_model=list[MenuOut])
+def get_all_menus(db: Session = Depends(get_db)):
+    return menu_crud.get_menus(db)
+
+# メニュー追加
+@router.put("/", response_model=MenuOut)
+def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
+    return menu_crud.add_menu(db, menu)
+
+# メニュー情報の更新
+@router.patch("/", response_model=MenuOut)
+def update_menu(menu_update: MenuUpdate, db: Session = Depends(get_db)):
+    return menu_crud.update_menu(db, menu_update)
+
+@router.post("/",response_model=list[MenuOut])
+def import_menu(file_path: str, db:Session = Depends(get_db)):
+    return menu_crud.import_menus_from_csv(db, file_path)

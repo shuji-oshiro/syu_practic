@@ -1,96 +1,75 @@
-import csv, os
-from typing import List, Optional
-from backend.app.models.db import get_db_connection
-from backend.app.schemas.menu_schema import MenuOut, MenuIn, MenuUpdate
+# app/crud.py
+import csv
+from fastapi import HTTPException
+import backend.app.models.model as model
+from sqlalchemy.orm import Session
+from backend.app.schemas.menu_schema import MenuIn, MenuUpdate
+
+
+def get_menus(db: Session): 
+    return db.query(model.Menu).all()
+
+def get_menu_by_id(db: Session, menu_id: int):
+    return db.query(model.Menu).filter(model.Menu.id == menu_id).first()
+
 
 # メニュー情報をCSVファイルからデータベースに一括で挿入する関数
-def import_menus_from_csv(file_path: str) -> list[MenuOut]:
+def import_menus_from_csv(db: Session, file_path: str):
     
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     with open(file_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         
         for row in reader:
             food_name, unit_price, descrption, search_text = row
-            cursor.execute("""
-                INSERT INTO menus (name, price, description, search_text)
-                VALUES (?, ?, ?, ?)
-            """, (food_name, int(unit_price), descrption, search_text))
+            db_menu = model.Menu(
+                name=food_name,
+                price=int(unit_price),
+                description=descrption,
+                search_text=search_text
+            )
+            db.add(db_menu)
+            db.refresh(db_menu)  # ここで自動的に ID が入る
 
-    conn.commit()
-    conn.close()
+    db.commit()
+    db.flush()  # データベースに変更を反映
 
-    return get_menus()
-
-
-# メニュー情報を取得する関数
-def get_menus(menu_id: Optional[int] = None) -> List[MenuOut]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if menu_id is None:
-        cursor.execute("SELECT id, name, price, description, search_text FROM menus")
-        rows = cursor.fetchall()
-    else:
-        cursor.execute("SELECT id, name, price, description, search_text FROM menus WHERE id = ?", (menu_id,))
-        rows = cursor.fetchall()
-
-    conn.close()
-    return [
-        MenuOut(
-            menu_id=row[0],
-            food_name=row[1],
-            unit_price=row[2],
-            descrption=row[3],
-            search_text=row[4]
-        )
-        for row in rows
-    ]
+    return get_menus(db)    
 
 
-# メニュー情報を追加する関数
-def add_menu(menu_data: MenuIn) -> list[MenuOut]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO menus (name, price, description, search_text)
-        VALUES (?, ?, ?, ?)
-    """, (menu_data.food_name, menu_data.unit_price, menu_data.descrption, menu_data.search_text))
-
-    conn.commit()
-    conn.close()
-
-    return get_menus()
-
-
-# メニュー情報を更新する関数
-def update_menu(menu_data: MenuUpdate) -> list[MenuOut]:
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE menus
-        SET name = ?, price = ?, description = ?, search_text = ?
-        WHERE id = ?
-    """, (menu_data.food_name, menu_data.unit_price, menu_data.descrption, menu_data.search_text, menu_data.menu_id))
-
-    conn.commit()
-    conn.close()
-
-    return get_menus(menu_data.menu_id)
+def add_menu(db: Session, menu: MenuIn):
+    try:        
+        # ユーザーをデータベースに追加
+        db_menu = model.Menu(
+                name=menu.name,
+                price=int(menu.price),
+                description=menu.description,
+                search_text=menu.search_text
+            )
+        db.add(db_menu)
+        db.commit()
+        db.refresh(db_menu)  # ここで自動的に ID が入る
+        return db_menu
+    except Exception as e:
+        db.rollback()   
+        raise HTTPException(status_code=500, detail="Invalid input data")
 
 
-# メニュー情報を削除する関数
-def delete_menu(menu_id: Optional[int]) -> list[MenuOut]:
-    if not isinstance(menu_id, int):
-        raise ValueError("menu_id must be an integer or None")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM menus WHERE id = ?", (menu_id,))
-    conn.commit()
-    conn.close()
 
-    return get_menus()
+def update_menu(db: Session, menu_update: MenuUpdate):
+    # 更新処理
+    db_menu = db.query(model.Menu).filter(model.Menu.id == menu_update.menu_id).first()
+    if not db_menu:
+        raise HTTPException(status_code=404, detail="Menu not found")
+
+    try:        
+        db_menu.name = menu_update.name
+        db_menu.price = menu_update.price
+        db_menu.description = menu_update.description
+        db_menu.search_text = menu_update.search_text
+        db.commit()
+        db.refresh(db_menu)
+        return db_menu
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Invalid input data")

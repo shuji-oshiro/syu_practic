@@ -1,16 +1,21 @@
-from pydantic import BaseModel
+from .baseSchema import BaseSchema
+from datetime import datetime
 
-class OrderIn(BaseModel):
+class MenuBase(BaseSchema):
+    name: str
+    price: int
+
+
+class OrderIn(BaseSchema):
     seat_id: int
     menu_id: int
     order_cnt: int
 
-class OrderOut(BaseModel):
-    seat_id: int
-    order_date: str # フォーマットされた日時文字列
-    food_name: str
-    unit_price: int
-    order_cnt: int
 
-    class Config:
-        orm_mode = True
+class OrderOut(BaseSchema):
+    id: int
+    order_date: datetime # フォーマットされた日時文字列
+    seat_id: int
+    menu_id: int
+    order_cnt: int
+    menu:MenuBase
