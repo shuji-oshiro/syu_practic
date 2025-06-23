@@ -23,9 +23,12 @@
         >
         <!-- メニューのアイコンを表示 -->
          <!-- name,price,decriptionの横に数値を入力できるテキストボックスを表示 -->
-        <v-list-item-avatar>
-          <v-img :src="menu.image" />
-        </v-list-item-avatar>
+        <template #prepend>
+          <v-avatar>
+            <v-icon v-if="!menu.image" size="32">mdi-food</v-icon>
+            <!-- <v-img :src="menu.image" /> -->
+          </v-avatar>
+        </template>
         <v-list-item-title>
           {{ menu.name }}
         </v-list-item-title>
