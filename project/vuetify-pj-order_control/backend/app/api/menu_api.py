@@ -1,10 +1,10 @@
 # app/main.py
 import csv
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends,HTTPException
+from fastapi import APIRouter, Depends,HTTPException, UploadFile, File
 from backend.app.crud import menu_crud
 from backend.app.database.database import get_db
-from backend.app.schemas.menu_schema import MenuIn, MenuUpdate, MenuOut,MenuInputCsv
+from backend.app.schemas.menu_schema import MenuIn, MenuUpdate, MenuOut
 
 
 router = APIRouter()
@@ -37,21 +37,20 @@ def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
 
 # メニュー情報の一括更新
 @router.post("/", response_model=list[MenuOut])
-def import_menu(csvinfo: MenuInputCsv, db: Session = Depends(get_db)):
-
-    with open(csvinfo.file_path, "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        
-        menus = []
-        for row in reader:
-            food_name, unit_price, descrption, search_text = row
-            menuin = MenuIn(
-                name=food_name,
-                price=int(unit_price),
-                description=descrption,
-                search_text=search_text
-            )
-            menus.append(menuin)
+def import_menu(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    contents = file.file.read().decode("utf-8")
+    reader = csv.reader(contents.splitlines())
+    # next(reader)  # ヘッダー行をスキップする場合はコメントアウトを外す
+    menus = []
+    for row in reader:
+        food_name, unit_price, descrption, search_text = row
+        menuin = MenuIn(
+            name=food_name,
+            price=int(unit_price),
+            description=descrption,
+            search_text=search_text
+        )
+        menus.append(menuin)
 
     return menu_crud.import_menus_from_csv(db, menus)
 

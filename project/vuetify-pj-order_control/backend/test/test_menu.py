@@ -13,10 +13,9 @@ def test_get_menu_by_id_not_found():
 
 
 def test_import_menu():
-    response = client.post("/menu", json={
-        "file_path": "backend/test/test_menudata.csv"
-    })
-    
+    with open("backend/test/test_menudata.csv", "rb") as f:
+        response = client.post("/menu", files={"file": f})
+
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 14  # CSVからメニューが読み込まれたことを確認

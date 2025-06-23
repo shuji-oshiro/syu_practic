@@ -13,7 +13,7 @@
 import { ref } from 'vue'
 const emit = defineEmits<{
   (e: 'recorded', reco_text: string, match_text:string, blob:Blob): void
-  (e: 'error', message: string): void  // ← エラー用emit追加
+  (e: 'error', message: string): void
 }>()
 
 const isRecording = ref(false)

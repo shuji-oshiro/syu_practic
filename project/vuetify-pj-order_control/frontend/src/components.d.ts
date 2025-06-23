@@ -8,6 +8,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ImportCSVBtn: typeof import('./components/ImportCSVBtn.vue')['default']
+    InputBtnCSV: typeof import('./components/InputBtnCSV.vue')['default']
     MenuList: typeof import('./components/MenuList.vue')['default']
     OrderList: typeof import('./components/OrderList.vue')['default']
     PlaybackAudio: typeof import('./components/PlaybackAudio.vue')['default']

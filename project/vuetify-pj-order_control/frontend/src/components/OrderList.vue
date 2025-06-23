@@ -32,4 +32,5 @@ defineProps<{ show: boolean }>()
 
 // ダミー注文データ
 const orders = ref<string[]>(Array.from({ length: 10 }, (_, i) => `注文 ${i + 1}`))
+
 </script>
