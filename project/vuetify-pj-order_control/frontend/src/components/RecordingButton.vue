@@ -57,15 +57,6 @@ const startRecording = async () => {
       emit('error', '通信エラーが発生しました')
     }
   }
-  
-  // recorder.onstop = () => {
-  //   const blob = new Blob(chunks, { type: 'audio/webm' })
-    
-  //   const url = URL.createObjectURL(blob)
-  //   emit('recorded', url, blob)
-  // }
-  
-
 
   recorder.start()
   isRecording.value = true

@@ -26,5 +26,6 @@ app.add_middleware(
 app.include_router(menu_api.router, prefix="/menu", tags=["menu"])
 app.include_router(order_api.router, prefix="/order", tags=["order"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])
+app.include_router(voice.router, prefix="/test", tags=["test"])
 
 

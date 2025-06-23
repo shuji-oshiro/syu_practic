@@ -1,7 +1,7 @@
 # app/main.py
 import csv
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends,HTTPException
 from backend.app.crud import menu_crud
 from backend.app.database.database import get_db
 from backend.app.schemas.menu_schema import MenuIn, MenuUpdate, MenuOut,MenuInputCsv
@@ -13,13 +13,22 @@ router = APIRouter()
 # メニューIDを指定してメニュー情報を取得する
 @router.get("/{menu_id}", response_model=MenuOut)
 def get_menu(menu_id: int, db: Session = Depends(get_db)):
-    return menu_crud.get_menu_by_id(db, menu_id)
+    if menu_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid menu ID")  # メニューIDが0以下の場合は400エラーを返す
+    result = menu_crud.get_menu_by_id(db, menu_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Menu not found")
+    return result
 
 # 全てのメニュー情報を取得
 # 取得したいメニュー情報は、全てのメニュー情報を取得する
 @router.get("/", response_model=list[MenuOut])
 def get_all_menus(db: Session = Depends(get_db)):
-    return menu_crud.get_menus(db)
+    result = menu_crud.get_menus(db)
+    if len(result) == 0:
+        raise HTTPException(status_code=404, detail="No menus found")
+
+    return result
 
 # メニュー情報の追加
 @router.put("/", response_model=list[MenuOut])

@@ -19,3 +19,7 @@ async def handle_voice(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"音声処理エラー: {str(e)}")
+
+@router.get("/", response_model=dict)
+async def test_endpoint():
+    return {"message": "This is a test endpoint for voice API."}

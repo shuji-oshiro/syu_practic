@@ -11,16 +11,23 @@
       </v-alert>
     </v-main>
     <v-slide-y-transition>
-      <OrderList :show="showList"/>
+      <OrderList :show="is_orderList"/>
+    </v-slide-y-transition>
+    <v-slide-y-transition>
+      <MenuList :show="is_MenuList"/>
     </v-slide-y-transition>
     <v-bottom-navigation>
       <RecordingButton 
-      @recorded="handleRecorded"
+      @recorded="on_Recorded"
       @error="errorMessage = $event"
       />
-      <v-btn @click="handle_Call_list">
+      <v-btn @click="setView_orderList">
         <v-icon>mdi-history</v-icon>
         <span>注文履歴</span>
+      </v-btn>
+      <v-btn @click="setView_MenuList">
+        <v-icon>mdi-silverware</v-icon>
+        <span>メニュー</span>
       </v-btn>
     </v-bottom-navigation>
   </v-app>
@@ -31,21 +38,28 @@
   import RecordingButton from '@/components/RecordingButton.vue'
   import PlaybackAudio from '@/components/PlaybackAudio.vue'
   import OrderList from '@/components/OrderList.vue'
+  import MenuList from '@/components/MenuList.vue'
 
-  const showList = ref<boolean>(true)
-  const handle_Call_list = () => {
-    showList.value = !showList.value
+  const is_orderList = ref<boolean>(true)
+  const setView_orderList = () => {
+    is_orderList.value = !is_orderList.value
   }
+
+  const is_MenuList = ref<boolean>(false)
+  const setView_MenuList = () => {
+    is_MenuList.value = !is_MenuList.value
+  }
+
 
   const reco_text = ref<string | null>(null)
   const match_text = ref<string | null>(null)
   const audioSize = ref<string | null>(null)
   const errorMessage = ref<string | null>(null)
 
-  const handleRecorded = (reco: string, match:string, blob: Blob) => {
-    if(showList){
-      showList.value = false
-    }
+  const on_Recorded = (reco: string, match:string, blob: Blob) => {
+    is_orderList.value = false
+    is_MenuList.value = false
+
     reco_text.value = reco
     match_text.value= match
     audioSize.value = (blob.size / 1024).toFixed(2)

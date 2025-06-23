@@ -3,6 +3,15 @@ from backend.app.main import app
 
 client = TestClient(app)
 
+def test_get_menu_allnot_found():
+    response = client.get("/menu")
+    assert response.status_code == 404
+
+def test_get_menu_by_id_not_found():
+    response = client.get("/menu/1")
+    assert response.status_code == 404
+
+
 def test_import_menu():
     response = client.post("/menu", json={
         "file_path": "backend/test/test_menudata.csv"
@@ -22,6 +31,14 @@ def test_add_menu():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 15 # 新しいメニューが追加されたことを確認
+
+
+def test_get_menus():
+    response = client.get("/menu")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list) # レスポンスがリスト型であることを確認
+
 
 def test_get_menus_byid():
     response = client.get("/menu/1")
