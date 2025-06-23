@@ -13,14 +13,37 @@
     </div>
 
     <v-sheet color="grey darken-3" elevation="2" class="flex-grow-1 overflow-y-auto mb-4 rounded">
-        <v-list density="compact">
-            <v-list-item
-            v-for="(menu, index) in menus"
-            :key="index"
-            :title="menu"
-            prepend-icon="mdi-food"
-            />
-        </v-list>
+      <v-list density="compact">
+        <v-list-item
+          v-for="menu in menus"
+          :key="menu.id"
+          class="menu-item"
+          prepend-icon="mdi-food"
+          lines="3"
+        >
+        <!-- メニューのアイコンを表示 -->
+         <!-- name,price,decriptionの横に数値を入力できるテキストボックスを表示 -->
+        <v-list-item-avatar>
+          <v-img :src="menu.image" />
+        </v-list-item-avatar>
+        <v-list-item-title>
+          {{ menu.name }}
+        </v-list-item-title>
+        <v-list-item-subtitle class="subtitle-wrap">
+          ¥{{ menu.price }}<br />
+          {{ menu.description }}
+        </v-list-item-subtitle>
+        <v-list-item-action>
+          <v-text-field
+            v-model="menu.quantity"
+            type="number"
+            min="0"
+            label="数量"
+            class="mt-2"
+          />
+        </v-list-item-action>
+      </v-list-item>
+    </v-list>
         <v-alert v-if="errorMessage" type="error" class="ma-4">
             {{ errorMessage }}
         </v-alert>
@@ -33,7 +56,7 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ImportCSVBtn from '@/components/ImportCSVBtn.vue'
 defineProps<{ show: boolean }>()
 
@@ -46,6 +69,7 @@ const menus = ref<string[]>([])
 
 // CSVデータをインポートする関数
 const importCSV = async (formData: FormData) => {
+
   // DBに送信するためのPOSTリクエスト
   const response = await axios.post('http://localhost:8000/menu', formData)
   if (response.status !== 200) {
@@ -53,39 +77,25 @@ const importCSV = async (formData: FormData) => {
   }
   menus.value = response.data.menus || []
   message.value = 'メニューが更新されました'  // メニュー更新後のメッセージ
-  errorMessage.value = null  // エラーメッセージをクリア
 }
+
 // エラー処理
 const handleError = (message: string) => {
   errorMessage.value = message
 }
 
-// onMounted(async () => {
-//   try {
-//     const response = await fetch('http://localhost:8000/menu', {
-//       method: 'GET'
-//     })
-
-//     if (!response.ok) {
-//       // ステータスコードに応じてエラー処理
-//       const errorData = await response.json()
-//       if (response.status === 404) {
-//         errorMessage.value = errorData.detail  // "Menu not found"
-//       } else if (response.status === 400) {
-//         errorMessage.value = "不正なメニューIDです"
-//       } else {
-//         errorMessage.value = "予期しないエラーが発生しました"
-//       }
-//       return
-//     }
-
-//     const data = await response.json()
-//     console.log(data)
-//   } catch (error) {
-//     console.error('Fetch error:', error)
-//     errorMessage.value = 'サーバーへの接続に失敗しました'
-//   }
-// })
-
+onMounted(async () => {
+  try {
+    // 初期メニューの取得
+    const response = await axios.get('http://localhost:8000/menu')
+    if (response.status === 200) {
+      menus.value = response.data || []
+    } else {
+      throw new Error('メニューの取得に失敗しました')
+    }
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '不明なエラーが発生しました'
+  }
+})
 
 </script>
