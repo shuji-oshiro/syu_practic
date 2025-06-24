@@ -31,6 +31,12 @@ export const useEventStore = defineStore('event', {
       timestamp: null as number | null
     },
 
+    showNavigationAction: {
+      source: '',
+      target: null as string | null,
+      timestamp: null as number | null
+    },
+
     // エラーイベント
     lastError: {
       message: '',
@@ -68,6 +74,14 @@ export const useEventStore = defineStore('event', {
       this.importMenusAction = {
         source,
         formData,
+        timestamp: Date.now()
+      }
+    },
+
+    triggerShowNavigationAction(target:string, source = 'ButtonNavigation') {
+      this.showNavigationAction = {
+        source,
+        target: target,
         timestamp: Date.now()
       }
     },

@@ -13,18 +13,22 @@
   </v-bottom-navigation>
 </template>
 <script setup lang="ts">
-import { ja } from 'vuetify/locale';
-
-  const emit = defineEmits<{
-      (e: 'flg_navigation', flg_history: boolean, flg_menu:boolean, flg_recording:boolean): void
-      (e: 'error', message: string): void
-  }>()
+  import { ja } from 'vuetify/locale';
+  import { useEventStore } from '@/stores/eventStore'
+  
+  const store = useEventStore()
+  // const emit = defineEmits<{
+  //     (e: 'flg_navigation', flg_history: boolean, flg_menu:boolean, flg_recording:boolean): void
+  //     (e: 'error', message: string): void
+  // }>()
 
   const on_history = () => {
-    emit('flg_navigation', true, false, false)
+    store.triggerShowNavigationAction('history')
+    //emit('flg_navigation', true, false, false)
   }
   const on_menu = () => {
-    emit('flg_navigation', false, true, false)
+    store.triggerShowNavigationAction('category')
+    //emit('flg_navigation', false, true, false)
   }
 
 </script>

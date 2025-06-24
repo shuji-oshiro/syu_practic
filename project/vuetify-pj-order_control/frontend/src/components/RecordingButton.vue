@@ -51,13 +51,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted, computed } from 'vue'
+import { ref, onUnmounted, computed } from 'vue'
+
 const dialog = ref(false)
 const isRecording = ref(false)
 const isCorect = ref(false)
 const reco_text = ref('')
 const match_text = ref('')
 const elapsed = ref(0)
+
 let timer: number | null = null
 let recorder: MediaRecorder | null = null
 let chunks: Blob[] = []
@@ -106,6 +108,8 @@ async function startRecording() {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
   recorder = new MediaRecorder(stream)
   recorder.ondataavailable = (e) => chunks.push(e.data)
+  
+  // 録音停止時の処理
   recorder.onstop = async () => {
     const blob = new Blob(chunks, { type: 'audio/webm' })
     chunks = []
@@ -134,6 +138,7 @@ async function startRecording() {
       isRecording.value = false
     }
   }
+  // 録音開始 最大5秒間録音
   recorder.start()
   timer = setInterval(() => {
     elapsed.value += 1
@@ -143,6 +148,7 @@ async function startRecording() {
   }, 1000)
 }
 
+// 録音停止
 function stopRecording() {
   if (recorder?.state === 'recording') {
     recorder.stop()
@@ -155,7 +161,7 @@ function stopRecording() {
 }
 
 function orderAndClose() {
-  // ここで注文処理を追加可能
+  // TODO：注文処理を実装
   closeDialog()
 }
 
