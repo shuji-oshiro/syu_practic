@@ -21,9 +21,10 @@
         <div v-if="isRecording">
           録音中...（{{ elapsed }}秒）
         </div>
-        <div v-else-if="reco_text || match_text">
+        <div v-else-if="!isRecording">
           <div>認識結果: {{ reco_text }}</div>
-          <div v-if="match_text">料理名: {{ match_text }}</div>
+
+          <div v-if="isCorect">料理名: {{ match_text }}</div>
           <div v-else>料理名が認識できませんでした。</div>
         </div>
       </v-card-text>
@@ -53,6 +54,7 @@
 import { ref, watch, onUnmounted, computed } from 'vue'
 const dialog = ref(false)
 const isRecording = ref(false)
+const isCorect = ref(false)
 const reco_text = ref('')
 const match_text = ref('')
 const elapsed = ref(0)
@@ -115,17 +117,21 @@ async function startRecording() {
         method: 'POST',
         body: formData,
       })
+      
+      const data = await response.json()
       if (!response.ok) {
-        const errorData = await response.json();
-        emit('error', errorData.detail || 'サーバーエラー')
+        emit('error', data.detail || 'サーバーエラー')
+        isCorect.value = false
         return;
       }
-      const data = await response.json()
       reco_text.value = data.reco_text
       match_text.value = data.match_text
+      isCorect.value = true
       emit('recorded', reco_text.value, match_text.value, blob)
     } catch (err) {
       emit('error', '通信エラーが発生しました')
+    }finally {
+      isRecording.value = false
     }
   }
   recorder.start()
@@ -140,7 +146,7 @@ async function startRecording() {
 function stopRecording() {
   if (recorder?.state === 'recording') {
     recorder.stop()
-    isRecording.value = false
+    //isRecording.value = false
     if (timer) {
       clearInterval(timer)
       timer = null

@@ -12,7 +12,12 @@ async def handle_voice(file: UploadFile = File(...)):
         with open(temp_path, "wb") as buffer:
             buffer.write(await file.read())
 
-        result = transcribe_audio_file_on_localmodel(temp_path)
+        # 音声ファイルをローカルモデルで処理
+        result: VoiceResult
+        result = VoiceResult.model_validate(transcribe_audio_file_on_localmodel(temp_path))
+        
+        if result.match_text is None:
+            raise HTTPException(status_code=400, detail=f"音声処理エラー: メニューは存在しません。音声内容: {result.reco_text}")
 
         os.remove(temp_path)
         return result
@@ -20,6 +25,3 @@ async def handle_voice(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"音声処理エラー: {str(e)}")
 
-@router.get("/", response_model=dict)
-async def test_endpoint():
-    return {"message": "This is a test endpoint for voice API."}
