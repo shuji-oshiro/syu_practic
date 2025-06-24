@@ -6,6 +6,7 @@
 
 // Composables
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 
 // Components
 import App from './App.vue'
@@ -19,9 +20,13 @@ import router from './router'
 
 // アプリ作成
 const app = createApp(App)
+const pinia = createPinia()
 
 // プラグイン登録（router, vuetifyなど）
 registerPlugins(app)
+
+// Pinia をアプリに登録
+app.use(pinia)
 
 // アプリをマウント
 app.mount('#app')

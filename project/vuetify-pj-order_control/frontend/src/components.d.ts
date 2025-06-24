@@ -8,13 +8,24 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BottomNavigation: typeof import('./components/BottomNavigation.vue')['default']
+    copy: typeof import('./components/NavigationOrder copy.vue')['default']
+    DrinkMenusList: typeof import('./components/DrinkMenusList.vue')['default']
+    FoodMenusList: typeof import('./components/FoodMenusList.vue')['default']
     ImportCSVBtn: typeof import('./components/ImportCSVBtn.vue')['default']
-    InputBtnCSV: typeof import('./components/InputBtnCSV.vue')['default']
     MenuList: typeof import('./components/MenuList.vue')['default']
-    OrderList: typeof import('./components/OrderList.vue')['default']
+    MenusList: typeof import('./components/MenusList.vue')['default']
+    Navigation: typeof import('./components/Navigation.vue')['default']
+    Navigation_order: typeof import('./components/Navigation_order.vue')['default']
+    NavigationHistory: typeof import('./components/NavigationHistory.vue')['default']
+    NavigationMenu: typeof import('./components/NavigationMenu.vue')['default']
+    NavigationOrder: typeof import('./components/NavigationOrder.vue')['default']
+    OrderHistory: typeof import('./components/OrderHistory.vue')['default']
     PlaybackAudio: typeof import('./components/PlaybackAudio.vue')['default']
     RecordingButton: typeof import('./components/RecordingButton.vue')['default']
+    RecordingDialg: typeof import('./components/RecordingDialg.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Window: typeof import('./components/Window.vue')['default']
   }
 }

@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory} from 'vue-router'
-import RecordPage from '@/views/RecordPage.vue'
+import Main from '@/views/Main.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'record',
-    component: RecordPage,
+    name: 'main',
+    component: Main,
   },
   // 必要に応じてページを追加
   // {

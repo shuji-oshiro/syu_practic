@@ -37,7 +37,6 @@
   import { ref } from 'vue'
   import RecordingButton from '@/components/RecordingButton.vue'
   import PlaybackAudio from '@/components/PlaybackAudio.vue'
-  import OrderList from '@/components/OrderList.vue'
   import MenuList from '@/components/MenuList.vue'
 
   const is_orderList = ref<boolean>(true)
