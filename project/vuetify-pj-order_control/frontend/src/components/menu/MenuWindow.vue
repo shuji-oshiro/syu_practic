@@ -1,16 +1,22 @@
 <template>
 <v-window v-model="onboarding" show-arrows="hover">
-  <v-window-item
+  <!-- <v-window-item
     v-for="(menuGroup, categoryId) in groupedMenus"
     :key="Number(categoryId)"
     :value="Number(categoryId)"
+  > -->
+  <v-window-item
+    v-for="menuGroup in groupedMenus"
+    :key="menuGroup.category_id"
+    :value="menuGroup.category_id"
   >
-  <h3>カテゴリ {{ categoryId }}</h3>
+
+  <h3>カテゴリ {{ menuGroup.category_name }}</h3>
   <v-container>
     <div style="max-height: 90vh; overflow-y: auto; overflow-x: hidden;">
         <v-row dense>
           <v-col
-            v-for="menu in menuGroup"
+            v-for="menu in menuGroup.menues"
             :key="menu.id"
             cols="12"
             md="4"
@@ -32,10 +38,13 @@
   import axios from 'axios'
   import { ref, onMounted, watch, computed } from 'vue'
   import { useEventStore } from '@/stores/eventStore'
+  import type { MenuOut_SP } from '@/types/menuTypes'
   const onboarding = ref(1)
   
+
+
   const store = useEventStore()
-  const groupedMenus = ref<Record<number, any[]>>({}) // カテゴリごとにグループ化されたメニュー
+  const groupedMenus = ref<MenuOut_SP[]>([]) // カテゴリごとにグループ化されたメニュー
 
   // メニュー情報をカテゴリごとにグループ化する関数
   // メニューのカテゴリIDをキーにしてグループ化
@@ -59,8 +68,8 @@
     if (response.status !== 200) {
       throw new Error('メニューの更新に失敗しました')
     }
-    const menus = response.data.menus || []
-    groupedMenus.value = getGroupedMenus(menus)
+    groupedMenus.value = response.data.menus || []
+    
     alert('メニューが更新されました')  // メニュー更新後のアラート
   }
 
@@ -89,10 +98,10 @@
   onMounted(async () => {
     try {
       // 初期メニューの取得
-      const response = await axios.get('http://localhost:8000/menu')
+      const response = await axios.get('http://localhost:8000/menulist')
       if (response.status === 200) {
-        const menus = response.data || []
-        groupedMenus.value = getGroupedMenus(menus) // カテゴリごとにグループ化
+        groupedMenus.value = response.data || []
+        
       } else {
         throw new Error('メニューの取得に失敗しました')
       }

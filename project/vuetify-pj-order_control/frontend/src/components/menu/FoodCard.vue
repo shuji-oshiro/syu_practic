@@ -31,16 +31,10 @@
 </template>
 
 <script setup lang="ts">
-
-interface MenuItem {
-  id: number
-  name: string
-  price: number
-  description: string
-}
+import type { MenuOut } from '@/types/menuTypes'
 
 defineProps<{
-  menu: MenuItem
+  menu: MenuOut
   onClick: () => void
 }>()
 </script>
