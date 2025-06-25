@@ -3,6 +3,7 @@
   <v-window-item
     v-for="(menuGroup, categoryId) in groupedMenus"
     :key="Number(categoryId)"
+    :value="Number(categoryId)"
   >
   <h3>カテゴリ {{ categoryId }}</h3>
   <v-container>
@@ -31,7 +32,7 @@
   import axios from 'axios'
   import { ref, onMounted, watch, computed } from 'vue'
   import { useEventStore } from '@/stores/eventStore'
-  const onboarding = ref(0)
+  const onboarding = ref(1)
   
   const store = useEventStore()
   const groupedMenus = ref<Record<number, any[]>>({}) // カテゴリごとにグループ化されたメニュー
@@ -70,7 +71,7 @@
     await store.triggerMenuSelectAction(menu) // ← Pinia に記録！
   }
   
-  // カテゴリが選択された時、またはメニューがインポートされた時の処理を監視
+  // ナビゲーションバーよりカテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
     () => [store.selectCategoryAction.timestamp, store.importMenusAction.timestamp],
     () => {

@@ -19,4 +19,4 @@ class OrderOut(BaseSchema):
     seat_id: int
     menu_id: int
     order_cnt: int
-    menu: Optional[MenuBase]  #NULL対応だが今後要検討
+    menu: MenuBase

@@ -11,9 +11,10 @@ from backend.app.schemas.category_schema import CategoryIn
 def get_category(db: Session):
     return db.query(model.Category).all()
 
-def insert_category(db: Session, category: CategoryIn):
-    db_category = model.Category(**category.model_dump())
-    db.add(db_category)
+def insert_category(db: Session, category: list[CategoryIn]):
+
+    db_categories = [model.Category(**cat.model_dump()) for cat in category]
+    db.add_all(db_categories)
     db.commit()
-    db.refresh(db_category)
-    return db_category
+
+    return db_categories

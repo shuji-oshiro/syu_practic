@@ -16,7 +16,7 @@ def get_categories(db: Session = Depends(get_db)):
 
 # カテゴリ情報の登録
 @router.post("/", response_model=list[CategoryOut])
-def create_category(category: CategoryIn, db: Session = Depends(get_db)):
+def create_category(category: list[CategoryIn], db: Session = Depends(get_db)):
     category_crud.insert_category(db, category)
 
     return category_crud.get_category(db)  # すべてのカテゴリ情報を返す
