@@ -15,7 +15,12 @@ export default defineConfig({
       autoImport: true,
       styles: { configFile: 'src/styles/settings.scss' },
     }),
-    Components({ dts: 'src/components.d.ts' }),
+    Components({
+      dirs: ['src/components'],
+      extensions: ['vue', 'tsx'],
+      deep: true,
+      dts: 'src/components.d.ts'
+    }),
     Fonts({
       fontsource: {
         families: [

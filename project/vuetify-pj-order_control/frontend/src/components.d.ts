@@ -8,18 +8,18 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    BottomNavigation: typeof import('./components/BottomNavigation.vue')['default']
-    DrinkMenusList: typeof import('./components/DrinkMenusList.vue')['default']
-    FoodMenusList: typeof import('./components/FoodMenusList.vue')['default']
-    ImportCSVBtn: typeof import('./components/ImportCSVBtn.vue')['default']
-    MenuCategory: typeof import('./components/MenuCategory.vue')['default']
-    NavigationOrder: typeof import('./components/NavigationOrder.vue')['default']
-    OrderConfirm: typeof import('./components/OrderConfirm.vue')['default']
-    OrderHistory: typeof import('./components/OrderHistory.vue')['default']
+    BottomNavigation: typeof import('./components/layout/BottomNavigation.vue')['default']
+    DrinkMenusList: typeof import('./components/menu/DrinkMenusList.vue')['default']
+    FoodMenusList: typeof import('./components/menu/FoodMenusList.vue')['default']
+    ImportCSVBtn: typeof import('./components/common/ImportCSVBtn.vue')['default']
+    MenuCategory: typeof import('./components/menu/MenuCategory.vue')['default']
+    NavigationOrder: typeof import('./components/layout/NavigationOrder.vue')['default']
+    OrderConfirm: typeof import('./components/order/OrderConfirm.vue')['default']
+    OrderHistory: typeof import('./components/order/OrderHistory.vue')['default']
     PlaybackAudio: typeof import('./components/PlaybackAudio.vue')['default']
-    RecordingButton: typeof import('./components/RecordingButton.vue')['default']
+    RecordingButton: typeof import('./components/order/RecordingButton.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Window: typeof import('./components/Window.vue')['default']
+    Window: typeof import('./components/layout/Window.vue')['default']
   }
 }
