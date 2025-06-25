@@ -70,11 +70,12 @@
     await store.triggerMenuSelectAction(menu) // ← Pinia に記録！
   }
   
+  // カテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
-    () => [store.categoryAction.timestamp, store.importMenusAction.timestamp],
+    () => [store.selectCategoryAction.timestamp, store.importMenusAction.timestamp],
     () => {
-      if (store.categoryAction.categoryId) {
-        onboarding.value = store.categoryAction.categoryId
+      if (store.selectCategoryAction.categoryId) {
+        onboarding.value = store.selectCategoryAction.categoryId
       }
       if (store.importMenusAction.formData) {
         importMenus(store.importMenusAction.formData)

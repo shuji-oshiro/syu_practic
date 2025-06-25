@@ -11,7 +11,7 @@ export const useEventStore = defineStore('event', {
     },
 
     // メニューカテゴリ選択イベント
-    categoryAction: {
+    selectCategoryAction: {
       source: '',
       categoryId: null as number | null,
       timestamp: null as number | null
@@ -54,8 +54,8 @@ export const useEventStore = defineStore('event', {
       }
     },
 
-    triggerCategoryAction(categoryId: number, source = 'CategoryList') {
-      this.categoryAction = {
+    triggerSelectCategoryAction(categoryId: number, source = 'CategoryList') {
+      this.selectCategoryAction = {
         source,
         categoryId,
         timestamp: Date.now()

@@ -5,18 +5,12 @@
   <v-divider></v-divider>
   
   <v-list density="compact" nav>
-    <!-- <v-list-item v-for="(category, index) in categories" 
-      :key="category.id" 
-      :prepend-icon="category.icon" 
-      :title="category.name" @click="selectCategory(index)">
-      {{ category.description }}
-    </v-list-item> -->
     <v-card
         v-for="(category, index) in categories"
         :key="category.id"
         :title="category.name"
         :subtitle="category.description"
-        @click="selectCategory(index)"
+        @click="selectCategory(category.id)"
       ></v-card>
   </v-list>
 </template>
@@ -28,11 +22,14 @@
   const store = useEventStore()
   const categories = ref([] as any[])
 
+  // カテゴリが選択された時の処理
+  // 注文画面に遷移し、選択されたカテゴリを Pinia に記録
+  // カテゴリIDを引数に受け取り、Pinia のアクションを呼び出す
   function selectCategory(id: number) {
-    console.log('カテゴリが選択されました:', id)
-    store.triggerCategoryAction(id) // ← Pinia に記録！
+    store.triggerSelectCategoryAction(id) 
   }
 
+  // カテゴリ情報を取得する関数
   async function getCategoryInfo() {
     try {
       // カテゴリ単位の現在のメニュー状況を取得
@@ -48,6 +45,7 @@
     }
   }
 
+  // コンポーネントがマウントされた時にカテゴリ情報を取得
   onMounted(() => {
     getCategoryInfo()
   })

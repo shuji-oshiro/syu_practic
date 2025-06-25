@@ -1,4 +1,4 @@
-<!-- src/components/menu/OrijinalCard.vue -->
+<!-- メニュー画面の共通デザインカード -->
 <template>
   <v-card
     elevated
@@ -10,7 +10,7 @@
     <template #title>
       <slot name="menu-title">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>{{ menu.name }}</span>
+          <span>{{ menu.name }}</span>          
           <span style="font-weight: bold;">¥{{ menu.price }}</span>
         </div>
       </slot>
@@ -31,8 +31,16 @@
 </template>
 
 <script setup lang="ts">
+
+interface MenuItem {
+  id: number
+  name: string
+  price: number
+  description: string
+}
+
 defineProps<{
-  menu: any
+  menu: MenuItem
   onClick: () => void
 }>()
 </script>

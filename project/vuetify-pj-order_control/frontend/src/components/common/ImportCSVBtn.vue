@@ -8,13 +8,10 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { useEventStore } from '@/stores/eventStore'
-  const emit = defineEmits<{
-    (e: 'error', message: string): void
-  }>()
+  const store = useEventStore()
 
-  const errorMessage = ref<string | null>(null)
   // CSVファイルを選択するダイアログを開く関数
-  // ファイル選択後、内容を親コンポーネントに送信する
+  // ファイル選択後、選択されたファイルを FormData に追加し、Pinia のアクションを呼び出す
   const openFileDialog = () => {
       const input = document.createElement('input')
       input.type = 'file'
@@ -24,7 +21,7 @@
         if (file) {
           const formData = new FormData()
           formData.append('file', file)
-          useEventStore().triggerImportMenusAction(formData)
+          store.triggerImportMenusAction(formData)
         }
       })
       input.click()

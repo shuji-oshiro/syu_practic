@@ -19,6 +19,7 @@
   const isHistory = ref<boolean>(false)
   const isMenuCategory = ref<boolean>(false)
 
+  // メニュー、注文履歴、注文画面の表示状態を監視
   watch(
   () => store.showNavigationAction.timestamp,
   () => {
