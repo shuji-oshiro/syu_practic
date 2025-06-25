@@ -13,6 +13,13 @@ class MenuOut(BaseSchema):
     search_text: str
     category: CategoryBase
 
+
+class MenuOut_SP(BaseSchema):
+    category_id: int
+    category_name: str
+    menues: list[MenuOut]
+
+
 class MenuIn(BaseSchema):
     category_id: int
     name: str

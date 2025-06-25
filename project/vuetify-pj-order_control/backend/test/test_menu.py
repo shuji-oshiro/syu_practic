@@ -66,3 +66,10 @@ def test_delete_menu():
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 50  # メニューが削除されたことを確認
+
+
+def test_get_all_menus_for_category():
+    response = client.get("/menulist")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list) # レスポンスがリスト型であることを確認

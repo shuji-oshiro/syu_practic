@@ -1,11 +1,11 @@
 # app/main.py
 import csv
+from collections import defaultdict
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends,HTTPException, UploadFile, File
 from backend.app.crud import menu_crud
 from backend.app.database.database import get_db
 from backend.app.schemas.menu_schema import MenuIn, MenuUpdate, MenuOut
-
 
 router = APIRouter()
 
@@ -27,8 +27,8 @@ def get_all_menus(db: Session = Depends(get_db)):
     result = menu_crud.get_menus(db)
     if len(result) == 0:
         raise HTTPException(status_code=404, detail="No menus found")
-
     return result
+
 
 # メニュー情報の追加
 @router.put("/", response_model=list[MenuOut])
