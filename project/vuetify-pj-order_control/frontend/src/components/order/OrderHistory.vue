@@ -9,7 +9,6 @@
   <v-data-table-virtual
     :headers="headers"
     :items="orders"
-    height="80vh"
     item-value="name"
     fixed-header
   ></v-data-table-virtual>
@@ -29,6 +28,8 @@
     { title: '合計金額', align: 'end', key: 'total_price', value: item => (item.menu.price * item.order_cnt) }
   ]
 
+  // 注文情報を取得する関数
+  // 注文情報は、座席IDを指定して取得する
   async function getOrderInfo(order) {
     try {
       // シート単位の現在の注文状況を取得
@@ -55,8 +56,7 @@
       if (store.updateOrderAction.timestamp) {
         getOrderInfo()
       }
-    },
-    { deep: true }
+    }
   ) 
 
   function formatPrice (value) {

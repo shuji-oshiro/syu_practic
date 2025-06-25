@@ -58,6 +58,7 @@
     const menuid = ref<number>(0)
     const quantity = ref(0)
     
+    // メニュー画面より商品が選択された時を検知
     watch(
         () => store.menuSelectAction.timestamp,
         () => {
@@ -96,20 +97,5 @@
           alert('注文に失敗しました。')
           return
       }
-    }
-
-    const orders = ref<any[]>([]) // 注文リスト
-    onMounted(async () => {
-      try {
-        // シート単位の現在の注文状況を取得
-        const response = await axios.get('http://localhost:8000/order/1')
-        if (response.status === 200) {
-          orders.value = response.data || []
-        } else {
-          throw new Error('注文の取得に失敗しました')
-        }
-      } catch (error) {
-        // errorMessage.value = error instanceof Error ? error.message : '不明なエラーが発生しました'
-      }
-    })    
+    }  
   </script>
