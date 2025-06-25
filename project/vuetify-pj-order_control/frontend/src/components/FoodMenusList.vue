@@ -69,8 +69,9 @@
     }
   })
   
-  function selectMenu(menu: any) {
-    store.triggerMenuAction(menu) // ← Pinia に記録！
+  async function selectMenu(menu: any) {
+    await store.triggerShowNavigationAction('order', 'OrderConfirm') // 注文画面を表示
+    await store.triggerMenuAction(menu) // ← Pinia に記録！
   }
 
   // メニュー情報を更新するCSVファイルが読み込まれた時の処理

@@ -78,9 +78,9 @@ export const useEventStore = defineStore('event', {
       }
     },
 
-    triggerShowNavigationAction(target:string, source = 'ButtonNavigation') {
+    triggerShowNavigationAction(target:string, source:string) {
       this.showNavigationAction = {
-        source,
+        source: source,
         target: target,
         timestamp: Date.now()
       }

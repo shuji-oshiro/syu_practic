@@ -20,21 +20,8 @@
   const isMenuCategory = ref<boolean>(false)
 
   watch(
-  () => [store.menuAction.timestamp, store.showNavigationAction.timestamp],
-  ([menuTime, navTime]) => {
-    
-    if (!menuTime && !navTime) return
-    
-    // どちらが新しいイベントかを比較
-    if ((menuTime || 0) > (navTime || 0)) {
-      // menuAction の方が新しい → 注文処理を優先
-      if (store.menuAction.menu) {
-        isOrder.value = true
-        isHistory.value = true
-        isMenuCategory.value = false
-      }
-    } else {
-      // showNavigationAction の方が新しい → targetによる分岐
+  () => store.showNavigationAction.timestamp,
+  () => {
       const target = store.showNavigationAction.target
       if (target === 'history') {
         isOrder.value = false
@@ -44,7 +31,14 @@
         isOrder.value = false
         isHistory.value = false
         isMenuCategory.value = true
-      }
+      }else if (target === 'order') {
+        isOrder.value = true
+        isHistory.value = true
+        isMenuCategory.value = false
+      } else {
+        isOrder.value = false
+        isHistory.value = false
+        isMenuCategory.value = false
     }
     isNavigation.value = true
   }
