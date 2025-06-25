@@ -3,9 +3,7 @@
   <v-card>
     <v-layout>
       <NavigationOrder />
-      <NavigationHistory />
-      <NavigationMenu />
-      <v-main style="height: 100vh;">  
+      <v-main style="height: 100vh;" >  
         <Window />
         <BottomNavigation />
       </v-main>
