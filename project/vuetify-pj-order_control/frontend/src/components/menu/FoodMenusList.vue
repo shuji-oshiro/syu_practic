@@ -45,16 +45,9 @@
   // Vuetify ダミーデータ
   //const variants = ['elevated', 'flat', 'tonal', 'outlined', 'text', 'plain'] as const  
   
-  async function importMenus(formData: FormData) {
-    // DBに送信するためのPOSTリクエスト
-    const response = await axios.post('http://localhost:8000/menu', formData)
-    if (response.status !== 200) {
-      throw new Error('メニューの更新に失敗しました')
-    }
-    menus.value = response.data.menus || []
-    alert('メニューが更新されました')  // メニュー更新後のアラート    
-  }
 
+  // コンポーネントがマウントされた時にメニュー情報を取得
+  // 初期メニューを取得し、menusに格納 
   onMounted(async () => {
     try {
       // 初期メニューの取得
@@ -69,11 +62,24 @@
     }
   })
   
+  // メニューが選択された時の処理
+  // 注文画面に遷移し、選択されたメニューを Pinia に記録
   async function selectMenu(menu: any) {
     await store.triggerShowNavigationAction('order', 'OrderConfirm') // 注文画面を表示
     await store.triggerMenuAction(menu) // ← Pinia に記録！
   }
 
+  // メニュー情報を更新するための関数
+  // CSVファイルを受け取り、DBに送信する
+  async function importMenus(formData: FormData) {
+    // DBに送信するためのPOSTリクエスト
+    const response = await axios.post('http://localhost:8000/menu', formData)
+    if (response.status !== 200) {
+      throw new Error('メニューの更新に失敗しました')
+    }
+    menus.value = response.data.menus || []
+    alert('メニューが更新されました')  // メニュー更新後のアラート    
+  }
   // メニュー情報を更新するCSVファイルが読み込まれた時の処理
   watch(
     () => store.importMenusAction,

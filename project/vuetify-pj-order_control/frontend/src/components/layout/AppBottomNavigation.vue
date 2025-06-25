@@ -23,11 +23,11 @@
   // }>()
 
   const on_history = () => {
-    store.triggerShowNavigationAction('history', 'BottomNavigation')
+    store.triggerShowNavigationAction('history', 'AppBottomNavigation')
     //emit('flg_navigation', true, false, false)
   }
   const on_menu = () => {
-    store.triggerShowNavigationAction('category', 'BottomNavigation')
+    store.triggerShowNavigationAction('category', 'AppBottomNavigation')
     //emit('flg_navigation', false, true, false)
   }
 

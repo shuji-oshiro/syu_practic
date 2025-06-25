@@ -8,18 +8,18 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    BottomNavigation: typeof import('./components/layout/BottomNavigation.vue')['default']
+    AppBottomNavigation: typeof import('./components/layout/AppBottomNavigation.vue')['default']
+    AppNavigation: typeof import('./components/layout/AppNavigation.vue')['default']
     DrinkMenusList: typeof import('./components/menu/DrinkMenusList.vue')['default']
     FoodMenusList: typeof import('./components/menu/FoodMenusList.vue')['default']
     ImportCSVBtn: typeof import('./components/common/ImportCSVBtn.vue')['default']
     MenuCategory: typeof import('./components/menu/MenuCategory.vue')['default']
-    NavigationOrder: typeof import('./components/layout/NavigationOrder.vue')['default']
+    MenuWindow: typeof import('./components/menu/MenuWindow.vue')['default']
     OrderConfirm: typeof import('./components/order/OrderConfirm.vue')['default']
     OrderHistory: typeof import('./components/order/OrderHistory.vue')['default']
     PlaybackAudio: typeof import('./components/PlaybackAudio.vue')['default']
     RecordingButton: typeof import('./components/order/RecordingButton.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Window: typeof import('./components/layout/Window.vue')['default']
   }
 }

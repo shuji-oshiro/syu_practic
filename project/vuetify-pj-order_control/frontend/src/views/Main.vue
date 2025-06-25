@@ -2,10 +2,10 @@
   <!-- <RecordingDialg v-model="showDialog"/> -->
   <v-card>
     <v-layout>
-      <NavigationOrder />
+      <AppNavigation />
       <v-main style="height: 100vh;" >  
-        <Window />
-        <BottomNavigation />
+        <MenuWindow />
+        <AppBottomNavigation />
       </v-main>
     </v-layout>
   </v-card>
