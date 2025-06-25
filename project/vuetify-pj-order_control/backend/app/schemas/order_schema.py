@@ -1,5 +1,6 @@
 from .baseSchema import BaseSchema
 from datetime import datetime
+from typing import Optional
 
 class MenuBase(BaseSchema):
     name: str
@@ -18,4 +19,4 @@ class OrderOut(BaseSchema):
     seat_id: int
     menu_id: int
     order_cnt: int
-    menu:MenuBase
+    menu: Optional[MenuBase]  #NULL対応だが今後要検討

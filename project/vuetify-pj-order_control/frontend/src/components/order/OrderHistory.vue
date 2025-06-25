@@ -50,9 +50,11 @@
 
   // 注文情報が更新されたときに再取得
   watch(
-    () => store.updateOrderAction,
-    (newVal, oldVal) => {
+    () => store.updateOrderAction.timestamp,
+    () => {
+      if (store.updateOrderAction.timestamp) {
         getOrderInfo()
+      }
     },
     { deep: true }
   ) 

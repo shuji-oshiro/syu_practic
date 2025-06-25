@@ -27,7 +27,7 @@
             cover
           ></v-img>
           <template v-slot:actions >
-            <v-btn text="注文" @click="selectMenu(menu)" width="100%"></v-btn>
+            <v-btn text="注文"  @click="selectMenu(menu)" width="100%"></v-btn>
           </template>
         </v-card>
       </v-col>
@@ -69,17 +69,7 @@
     await store.triggerMenuAction(menu) // ← Pinia に記録！
   }
 
-  // メニュー情報を更新するための関数
-  // CSVファイルを受け取り、DBに送信する
-  async function importMenus(formData: FormData) {
-    // DBに送信するためのPOSTリクエスト
-    const response = await axios.post('http://localhost:8000/menu', formData)
-    if (response.status !== 200) {
-      throw new Error('メニューの更新に失敗しました')
-    }
-    menus.value = response.data.menus || []
-    alert('メニューが更新されました')  // メニュー更新後のアラート    
-  }
+
   // メニュー情報を更新するCSVファイルが読み込まれた時の処理
   watch(
     () => store.importMenusAction,

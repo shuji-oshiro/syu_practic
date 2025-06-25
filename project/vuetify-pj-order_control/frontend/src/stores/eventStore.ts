@@ -4,7 +4,7 @@ import { tr } from 'vuetify/locale'
 export const useEventStore = defineStore('event', {
   state: () => ({
     // 注文選択イベント
-    menuAction: {
+    menuSelectAction: {
       source: '',
       menu: null as any,
       timestamp: null as number | null
@@ -46,8 +46,8 @@ export const useEventStore = defineStore('event', {
   }),
 
   actions: {
-    triggerMenuAction(menu: any, source = 'MenuList') {
-      this.menuAction = {
+    triggerMenuSelectAction(menu: any, source = 'MenuList') {
+      this.menuSelectAction = {
         source,
         menu,
         timestamp: Date.now()

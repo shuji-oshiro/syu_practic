@@ -59,9 +59,9 @@
     const quantity = ref(0)
     
     watch(
-        () => store.menuAction.timestamp,
+        () => store.menuSelectAction.timestamp,
         () => {
-            if (store.menuAction.menu) on_order(store.menuAction.menu)
+            if (store.menuSelectAction.menu) on_order(store.menuSelectAction.menu)
         }
     )
 

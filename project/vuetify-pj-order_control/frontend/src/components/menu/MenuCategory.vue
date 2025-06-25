@@ -1,6 +1,5 @@
 <template>
   <v-list-item
-      prepend-avatar="https://randomuser.me/api/portraits/men/78.jpg"
       title="メニューカテゴリ"
   ></v-list-item>
   <v-divider></v-divider>
