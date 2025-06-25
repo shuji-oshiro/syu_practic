@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.models import model
 from backend.app.database import database
-from backend.app.api import menu_api, order_api, voice
+from backend.app.api import menu_api, order_api, voice, category_api
 
 # データベースのテーブルを作成
 # これにより、models.pyで定義したテーブルがデータベースに作成されます。
@@ -26,6 +26,6 @@ app.add_middleware(
 app.include_router(menu_api.router, prefix="/menu", tags=["menu"])
 app.include_router(order_api.router, prefix="/order", tags=["order"])
 app.include_router(voice.router, prefix="/voice", tags=["voice"])
-app.include_router(voice.router, prefix="/test", tags=["test"])
+app.include_router(category_api.router, prefix="/category", tags=["category"])
 
 

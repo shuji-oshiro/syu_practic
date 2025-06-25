@@ -18,10 +18,11 @@ def test_import_menu():
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 14  # CSVからメニューが読み込まれたことを確認
+    assert len(data) == 50  # CSVからメニューが読み込まれたことを確認
 
 def test_add_menu():
     response = client.put("/menu", json={
+        "category_id": 1,  # カテゴリIDは適宜設定してください
         "name": "かつ丼",
         "price": 1000,
         "description": "美味しいかつ丼です",
@@ -29,7 +30,7 @@ def test_add_menu():
     })
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 15 # 新しいメニューが追加されたことを確認
+    assert len(data) == 51 # 新しいメニューが追加されたことを確認
 
 
 def test_get_menus():
@@ -49,6 +50,7 @@ def test_get_menus_byid():
 def test_update_menu():
     response = client.patch("/menu/", json={
         "menu_id": 1,
+        "category_id": 1,  # カテゴリIDは適宜設定してください
         "name": "天丼",
         "price": 1200,
         "description": "美味しい天丼です",
@@ -57,10 +59,10 @@ def test_update_menu():
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 15 # メニューの件数に変更がないことを確認
+    assert len(data) == 51 # メニューの件数に変更がないことを確認
 
 def test_delete_menu():
     response = client.delete("/menu/1")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 14  # メニューが削除されたことを確認
+    assert len(data) == 50  # メニューが削除されたことを確認

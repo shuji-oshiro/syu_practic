@@ -40,14 +40,15 @@ def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
 def import_menu(file: UploadFile = File(...), db: Session = Depends(get_db)):
     contents = file.file.read().decode("utf-8")
     reader = csv.reader(contents.splitlines())
-    # next(reader)  # ヘッダー行をスキップする場合はコメントアウトを外す
+    next(reader)  # ヘッダー行をスキップする場合はコメントアウトを外す
     menus = []
     for row in reader:
-        food_name, unit_price, descrption, search_text = row
+        category_id, food_name, unit_price, description, search_text = row
         menuin = MenuIn(
+            category_id=int(category_id),  # カテゴリIDは適宜設定してください
             name=food_name,
             price=int(unit_price),
-            description=descrption,
+            description=description,
             search_text=search_text
         )
         menus.append(menuin)
