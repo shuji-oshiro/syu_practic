@@ -30,18 +30,15 @@ def import_menus_from_csv(db: Session, menus: list[MenuIn]):
 
 # メニュー情報を追加する関数
 # メニュー情報を追加する際は、メニュー名、価格、説明、検索テキストを指定して追加する
-def add_menu(db: Session, menu: MenuIn):
-    try:        
-        # ユーザーをデータベースに追加
-        db_menu = model.Menu(**menu.model_dump())
-        db.add(db_menu)
-        db.commit()
-        db.refresh(db_menu)  # ここで自動的に ID が入る
+def add_menu(db: Session, menu: MenuIn):   
+    # ユーザーをデータベースに追加
+    db_menu = model.Menu(**menu.model_dump())
+    db.add(db_menu)
+    db.commit()
+    db.refresh(db_menu)  # ここで自動的に ID が入る
 
-        return get_menus(db)  
-    except Exception as e:
-        db.rollback()   
-        raise HTTPException(status_code=500, detail="Invalid input data")
+    return get_menus(db)  
+ 
 
 # メニュー情報を更新する関数
 # メニュー情報を更新する際は、メニューID、メニュー名、価格、説明、検索テキストを指定して更新する
@@ -50,20 +47,15 @@ def update_menu(db: Session, menu_update: MenuUpdate):
     db_menu = db.query(model.Menu).filter(model.Menu.id == menu_update.menu_id).first()
     if not db_menu:
         raise HTTPException(status_code=404, detail="Menu not found")
+      
+    db_menu.name = menu_update.name
+    db_menu.price = menu_update.price
+    db_menu.description = menu_update.description
+    db_menu.search_text = menu_update.search_text
+    db.commit()
+    db.refresh(db_menu)
 
-    try:        
-        db_menu.name = menu_update.name
-        db_menu.price = menu_update.price
-        db_menu.description = menu_update.description
-        db_menu.search_text = menu_update.search_text
-        db.commit()
-        db.refresh(db_menu)
-
-        return get_menus(db) 
-    
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Invalid input data")
+    return get_menus(db) 
 
 # メニュー情報を削除する関数
 # メニュー情報を削除する際は、メニューIDを指定して削除する
@@ -72,11 +64,7 @@ def delete_menu(db: Session, menu_id: int):
     if not db_menu:
         raise HTTPException(status_code=404, detail="Menu not found")
     
-    try:
-        db.delete(db_menu)
-        db.commit()
-        
-        return get_menus(db) 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete menu")
+    db.delete(db_menu)
+    db.commit()
+    
+    return get_menus(db) 

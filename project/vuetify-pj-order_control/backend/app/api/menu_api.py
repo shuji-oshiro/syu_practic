@@ -13,27 +13,34 @@ router = APIRouter()
 # メニューIDを指定してメニュー情報を取得する
 @router.get("/{menu_id}", response_model=MenuOut)
 def get_menu(menu_id: int, db: Session = Depends(get_db)):
-    if menu_id <= 0:
-        raise HTTPException(status_code=400, detail="Invalid menu ID")  # メニューIDが0以下の場合は400エラーを返す
-    result = menu_crud.get_menu_by_id(db, menu_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail="Menu not found")
-    return result
+    try:
+        result = menu_crud.get_menu_by_id(db, menu_id)
+        if len(result) == 0:
+            raise HTTPException(status_code=404, detail="No menus found")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
 
 # 全てのメニュー情報を取得
 # 取得したいメニュー情報は、全てのメニュー情報を取得する
 @router.get("/", response_model=list[MenuOut])
 def get_all_menus(db: Session = Depends(get_db)):
-    result = menu_crud.get_menus(db)
-    if len(result) == 0:
-        raise HTTPException(status_code=404, detail="No menus found")
-    return result
+    try:
+        result = menu_crud.get_menus(db)
+        if len(result) == 0:
+            raise HTTPException(status_code=404, detail="No menus found")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
 
 
 # メニュー情報の追加
 @router.put("/", response_model=list[MenuOut])
 def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
-    return menu_crud.add_menu(db, menu)
+    try:
+        return menu_crud.add_menu(db, menu)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
 
 # メニュー情報の一括更新
 @router.post("/", response_model=list[MenuOut])
@@ -57,14 +64,20 @@ def import_menu(file: UploadFile = File(...), db: Session = Depends(get_db)):
         return menu_crud.import_menus_from_csv(db, menus)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f'メニュー情報の一括更新処理に失敗しました： {e}')
+        raise HTTPException(status_code=500, detail=f'{e}')
 
 # メニュー情報の更新
 @router.patch("/", response_model=list[MenuOut])
 def update_menu(menu_update: MenuUpdate, db: Session = Depends(get_db)):
-    return menu_crud.update_menu(db, menu_update)
+    try:
+        return menu_crud.update_menu(db, menu_update)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
 
 # メニュー情報の削除
 @router.delete("/{menu_id}", response_model=list[MenuOut])
 def delete_menu(menu_id: int, db: Session = Depends(get_db)):
-    return menu_crud.delete_menu(db, menu_id)
+    try:
+        return menu_crud.delete_menu(db, menu_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')

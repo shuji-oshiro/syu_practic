@@ -1,10 +1,5 @@
 <template>
 <v-window v-model="onboarding" show-arrows="hover">
-  <!-- <v-window-item
-    v-for="(menuGroup, categoryId) in groupedMenus"
-    :key="Number(categoryId)"
-    :value="Number(categoryId)"
-  > -->
   <v-window-item
     v-for="menuGroup in groupedMenus"
     :key="menuGroup.category_id"
@@ -38,13 +33,11 @@
   import axios from 'axios'
   import { ref, onMounted, watch, computed } from 'vue'
   import { useEventStore } from '@/stores/eventStore'
-  import type { MenuOut_SP } from '@/types/menuTypes'
+  import type { MenuOut_GP } from '@/types/menuTypes'
   const onboarding = ref(1)
   
-
-
   const store = useEventStore()
-  const groupedMenus = ref<MenuOut_SP[]>([]) // カテゴリごとにグループ化されたメニュー
+  const groupedMenus = ref<MenuOut_GP[]>([]) // カテゴリごとにグループ化されたメニュー
 
   // メニュー情報を更新するための関数
   // CSVファイルを受け取り、DBに送信する
@@ -52,12 +45,11 @@
     // DBに送信するためのPOSTリクエスト
     try{
       const response = await axios.post('http://localhost:8000/menu', formData)
-      groupedMenus.value = response.data.menus || []
     }catch (error) {
       if (axios.isAxiosError(error)) {
         // FastAPI 側の raise HTTPException(..., detail="...") を拾う
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        store.reportError(`メニューの更新に失敗しました: ${errorMessage}`)
+        store.reportError("メニューの一括更新中にエラーが発生しました", errorMessage)
       } else {
         store.reportError('メニュー更新中に予期しないエラーが発生しました')
       }

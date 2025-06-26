@@ -17,7 +17,7 @@ export type MenuOut = {
 }
 
 // カテゴリごとのメニューグループ
-export type MenuOut_SP = {
+export type MenuOut_GP = {
   category_id: number
   category_name: string
   menues: MenuOut[]

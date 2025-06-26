@@ -6,9 +6,9 @@
         <v-alert
           v-if="showAlert"
           closable
-          icon="$vuetify"
-          title="Alert title"
-          text="..aaaaaaaaaa."
+          :title="title"
+          :text="message"
+          :type="alertType"
           variant="tonal"
           @click:close="showAlert = false"
         ></v-alert>
@@ -24,14 +24,29 @@
   const showAlert = ref(false)
   const store = useEventStore()
   const message = ref('')
-
+  const icon = ref('mdi-alert-circle')
+  const title = ref('')
+  const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
   // ナビゲーションバーよりカテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
-    () => store.lastError.timestamp,
+    () => [store.lastError.timestamp, store.lastInfo.timestamp, store.lastWarning.timestamp],
     () => {
+      showAlert.value = true  
       if (store.lastError.message) {
-        showAlert.value = true
-        message.value = store.lastError.message
+        title.value = store.lastError.message
+        message.value = store.lastError.detail
+        icon.value = 'mdi-alert-circle'
+        alertType.value = 'error' // エラータイプ
+      } else if (store.lastInfo.message) {
+        title.value = store.lastInfo.message
+        message.value = store.lastInfo.detail
+        icon.value = 'mdi-information'
+        alertType.value = 'info' // 情報タイプ
+      } else if (store.lastWarning.message) {
+        title.value = store.lastWarning.message
+        message.value = store.lastWarning.detail
+        icon.value = 'mdi-alert-circle'
+        alertType.value = 'warning' // 警告タイプ
       }
     }
   )

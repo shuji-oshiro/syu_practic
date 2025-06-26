@@ -40,9 +40,28 @@ export const useEventStore = defineStore('event', {
     // エラーイベント
     lastError: {
       message: '',
+      detail: '',
       code: null as number | null,
-      timestamp: null as number | null
+      timestamp: null as number | null,
+      source: ''
+    },
+    // 情報イベント
+    lastInfo: {
+      message: '',
+      detail: '',
+      code: null as number | null,
+      timestamp: null as number | null,
+      source: ''
+    },
+    // 警告イベント
+    lastWarning: {
+      message: '',
+      detail: '',
+      code: null as number | null,
+      timestamp: null as number | null,
+      source: ''
     }
+
   }),
 
   actions: {
@@ -86,12 +105,32 @@ export const useEventStore = defineStore('event', {
       }
     },
 
-    reportError(message: string, code: number = 0) {
+    reportError(message: string, detail: string = '', code: number = 2, source: string = 'EventStore') {
       this.lastError = {
         message,
+        detail,
+        source,
         code,
         timestamp: Date.now()
       }
-    }
+    },
+    reportInfo(message: string, detail: string = '', code: number = 0, source: string = 'EventStore') {
+      this.lastInfo = {
+        message,
+        detail,
+        source,
+        code,
+        timestamp: Date.now()
+      }
+    },
+    reportWarning(message: string, detail: string = '', code: number = 1, source: string = 'EventStore') {
+      this.lastWarning = {
+        message,
+        detail,
+        source,
+        code,
+        timestamp: Date.now()
+      }
+    },
   }
 })

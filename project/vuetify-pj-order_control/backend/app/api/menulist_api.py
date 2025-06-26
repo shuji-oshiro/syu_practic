@@ -13,23 +13,31 @@ router = APIRouter()
 # 取得したいメニュー情報は、全てのメニュー情報を取得する
 @router.get("/", response_model=list[MenuOut_SP])
 def get_all_menus_for_category(db: Session = Depends(get_db)):
-    result = menu_crud.get_menus(db)
-    if len(result) == 0:
-        raise HTTPException(status_code=404, detail="No menus found")
 
-    grouped = defaultdict(list)
+    try:
+        # メニュー情報を取得
+        result = menu_crud.get_menus(db)
+        if len(result) == 0:
+            raise HTTPException(status_code=404, detail="No menus found")
 
-    for menu in result:
-        grouped[(menu.category.id, menu.category.name)].append(menu)
+        grouped = defaultdict(list)
 
-    # list[MenuOut_SP]型に変換
-    menu_out_list = []
-    for (category_id, category_name), menus in grouped.items():
-        menu_out_list.append(
-            MenuOut_SP(
-                category_id=category_id,
-                category_name=category_name,
-                menues=menus
+        # メニュー情報をカテゴリごとにグループ化
+        # defaultdictを使用して、カテゴリIDとカテゴリ名をキーにしてメニューをグループ化
+        for menu in result:
+            grouped[(menu.category.id, menu.category.name)].append(menu)
+
+        # list[MenuOut_SP]型に変換
+        menu_out_list = []
+        for (category_id, category_name), menus in grouped.items():
+            menu_out_list.append(
+                MenuOut_SP(
+                    category_id=category_id,
+                    category_name=category_name,
+                    menues=menus
+                )
             )
-        )
-    return menu_out_list
+        return menu_out_list
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'{e}')
