@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import { triggerRef } from 'vue'
-import { tr } from 'vuetify/locale'
+import type { MenuOut } from '@/types/menuTypes'
+
 export const useEventStore = defineStore('event', {
   state: () => ({
     // 注文選択イベント
     menuSelectAction: {
       source: '',
-      menu: null as any,
+      menu: null as MenuOut | null,
       timestamp: null as number | null
     },
 
@@ -65,7 +65,7 @@ export const useEventStore = defineStore('event', {
   }),
 
   actions: {
-    triggerMenuSelectAction(menu: any, source = 'MenuList') {
+    triggerMenuSelectAction(menu: MenuOut | null, source = 'MenuList') {
       this.menuSelectAction = {
         source,
         menu,

@@ -31,9 +31,9 @@
   //const variants = ['elevated', 'flat', 'tonal', 'outlined', 'text', 'plain'] as const  
   
   import axios from 'axios'
-  import { ref, onMounted, watch, computed } from 'vue'
+  import { ref, onMounted, watch } from 'vue'
   import { useEventStore } from '@/stores/eventStore'
-  import type { MenuOut_GP } from '@/types/menuTypes'
+  import type { MenuOut_GP, MenuOut } from '@/types/menuTypes'
   const onboarding = ref(1)
   
   const store = useEventStore()
@@ -45,6 +45,7 @@
     // DBに送信するためのPOSTリクエスト
     try{
       const response = await axios.post('http://localhost:8000/menu', formData)
+      // TODO:　メニュー画面更新処理は後日実装
     }catch (error) {
       if (axios.isAxiosError(error)) {
         // FastAPI 側の raise HTTPException(..., detail="...") を拾う
@@ -58,7 +59,7 @@
 
   // メニューが選択された時の処理
   // 注文画面に遷移し、選択されたメニューを Pinia に記録
-  async function selectMenu(menu: any) {
+  async function selectMenu(menu: MenuOut) {
     await store.triggerShowNavigationAction('order', 'OrderConfirm') // 注文画面を表示
     await store.triggerMenuSelectAction(menu) // ← Pinia に記録！
   }
@@ -76,7 +77,7 @@
     }
   )
 
-    // コンポーネントがマウントされた時にメニュー情報を取得
+  // コンポーネントがマウントされた時にメニュー情報を取得
   // 初期メニューを取得し、menusに格納 
   onMounted(async () => {
     try {
