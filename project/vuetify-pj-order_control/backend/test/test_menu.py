@@ -20,6 +20,11 @@ def test_import_menu():
     data = response.json()
     assert len(data) == 50  # CSVからメニューが読み込まれたことを確認
 
+def test_import_menu2():
+    with open("backend/test/test_menudata.csv", "rb") as f:
+        response = client.post("/menu", files={"file": f})
+    assert response.status_code == 500
+
 def test_add_menu():
     response = client.put("/menu", json={
         "category_id": 1,  # カテゴリIDは適宜設定してください

@@ -46,31 +46,22 @@
   const store = useEventStore()
   const groupedMenus = ref<MenuOut_SP[]>([]) // カテゴリごとにグループ化されたメニュー
 
-  // メニュー情報をカテゴリごとにグループ化する関数
-  // メニューのカテゴリIDをキーにしてグループ化
-  function getGroupedMenus(menus: any[]) {
-    const groups: Record<number, any[]> = {}
-    for (const menu of menus) {
-      const cid = menu.category_id || 0
-      if (!groups[cid]) {
-        groups[cid] = []
-      }
-      groups[cid].push(menu)
-    }
-    return groups
-  }
-
   // メニュー情報を更新するための関数
   // CSVファイルを受け取り、DBに送信する
   async function importMenus(formData: FormData) {
     // DBに送信するためのPOSTリクエスト
-    const response = await axios.post('http://localhost:8000/menu', formData)
-    if (response.status !== 200) {
-      throw new Error('メニューの更新に失敗しました')
+    try{
+      const response = await axios.post('http://localhost:8000/menu', formData)
+      groupedMenus.value = response.data.menus || []
+    }catch (error) {
+      if (axios.isAxiosError(error)) {
+        // FastAPI 側の raise HTTPException(..., detail="...") を拾う
+        const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
+        store.reportError(`メニューの更新に失敗しました: ${errorMessage}`)
+      } else {
+        store.reportError('メニュー更新中に予期しないエラーが発生しました')
+      }
     }
-    groupedMenus.value = response.data.menus || []
-    
-    alert('メニューが更新されました')  // メニュー更新後のアラート
   }
 
   // メニューが選択された時の処理

@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppBottomNavigation: typeof import('./components/layout/AppBottomNavigation.vue')['default']
     AppNavigation: typeof import('./components/layout/AppNavigation.vue')['default']
+    BaseAlert: typeof import('./components/common/BaseAlert.vue')['default']
     CardFood: typeof import('./components/menu/CardFood.vue')['default']
     FoodCard: typeof import('./components/menu/FoodCard.vue')['default']
     ImportCSVBtn: typeof import('./components/common/ImportCSVBtn.vue')['default']

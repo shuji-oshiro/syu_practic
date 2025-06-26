@@ -38,22 +38,26 @@ def add_menu(menu: MenuIn, db: Session = Depends(get_db)):
 # メニュー情報の一括更新
 @router.post("/", response_model=list[MenuOut])
 def import_menu(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    contents = file.file.read().decode("utf-8")
-    reader = csv.reader(contents.splitlines())
-    next(reader)  # ヘッダー行をスキップする場合はコメントアウトを外す
-    menus = []
-    for row in reader:
-        category_id, food_name, unit_price, description, search_text = row
-        menuin = MenuIn(
-            category_id=int(category_id),  # カテゴリIDは適宜設定してください
-            name=food_name,
-            price=int(unit_price),
-            description=description,
-            search_text=search_text
-        )
-        menus.append(menuin)
+    try:
+        contents = file.file.read().decode("utf-8")
+        reader = csv.reader(contents.splitlines())
+        next(reader)  # ヘッダー行をスキップする場合はコメントアウトを外す
+        menus = []
+        for row in reader:
+            category_id, food_name, unit_price, description, search_text = row
+            menuin = MenuIn(
+                category_id=int(category_id),  # カテゴリIDは適宜設定してください
+                name=food_name,
+                price=int(unit_price),
+                description=description,
+                search_text=search_text
+            )
+            menus.append(menuin)
 
-    return menu_crud.import_menus_from_csv(db, menus)
+        return menu_crud.import_menus_from_csv(db, menus)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'メニュー情報の一括更新処理に失敗しました： {e}')
 
 # メニュー情報の更新
 @router.patch("/", response_model=list[MenuOut])

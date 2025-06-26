@@ -86,7 +86,7 @@ export const useEventStore = defineStore('event', {
       }
     },
 
-    reportError(message: string, code: number) {
+    reportError(message: string, code: number = 0) {
       this.lastError = {
         message,
         code,
