@@ -17,6 +17,8 @@ def get_orders(seat_id: int, db: Session = Depends(get_db)):
         if len(result) == 0:
             raise HTTPException(status_code=404, detail="No orders found for this seat")
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'{e}')
 

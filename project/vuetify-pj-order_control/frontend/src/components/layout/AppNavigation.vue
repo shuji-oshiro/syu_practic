@@ -34,7 +34,7 @@
         isMenuCategory.value = true
       }else if (target === 'order') {
         isOrder.value = true
-        isHistory.value = true
+        isHistory.value = false
         isMenuCategory.value = false
       } else {
         isOrder.value = false

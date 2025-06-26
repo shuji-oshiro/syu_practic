@@ -49,7 +49,7 @@ def test_get_menus_byid():
     response = client.get("/menu/1")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict) # レスポンスが辞書型であることを確認
+    assert isinstance(data, list) # レスポンスが辞書型であることを確認
 
 
 def test_update_menu():
@@ -75,6 +75,13 @@ def test_delete_menu():
 
 def test_get_all_menus_for_category():
     response = client.get("/menulist")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list) # レスポンスがリスト型であることを確認
+
+
+def test_get_menus_by_category():
+    response = client.get("/menu/category/1")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list) # レスポンスがリスト型であることを確認

@@ -14,9 +14,8 @@ client = TestClient(app)
 
 def test_get_orders_error():
     response = client.get("/order/2")
-    assert response.status_code == 200
+    assert response.status_code == 404  # 存在しないシートIDでのリクエストは404エラーを返すことを確認
     data = response.json()
-    # assert len(data) == 2 # 指定したシートの注文が2件のであることを確認
 
 def test_add_order1():
     response = client.post("/order", json=
@@ -28,7 +27,7 @@ def test_add_order1():
     )
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1 # 2件の注文が追加されたことを確認
+    assert len(data) == 1 # 1件の注文が追加されたことを確認
 
 def test_add_order2():
     response = client.post("/order", json=[

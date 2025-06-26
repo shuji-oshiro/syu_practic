@@ -13,7 +13,12 @@ def get_menus(db: Session):
 # メニュー情報を取得する関数
 # メニューIDを指定してメニュー情報を取得する
 def get_menu_by_id(db: Session, menu_id: int):
-    return db.query(model.Menu).filter(model.Menu.id == menu_id).first()
+    return db.query(model.Menu).filter(model.Menu.id == menu_id).all()
+
+
+def get_menus_by_category(db: Session, category_id: int):
+    return db.query(model.Menu).filter(model.Menu.category_id == category_id).all()
+
 
 #　一括でメニュー情報をCSVファイルからデータベースに挿入する関数
 # CSVファイルのフォーマットは、1行目にヘッダーがあり、2行目以降にメニュー情報があると仮定します。
