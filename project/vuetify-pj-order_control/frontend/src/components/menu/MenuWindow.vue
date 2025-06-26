@@ -14,7 +14,6 @@
             v-for="menu in menuGroup.menues"
             :key="menu.id"
             cols="12"
-            md="4"
           >
           <FoodCard :menu="menu" :onClick="() => selectMenu(menu)" />
           </v-col>
@@ -29,14 +28,21 @@
 <script setup lang="ts">
   // Vuetify ダミーデータ
   //const variants = ['elevated', 'flat', 'tonal', 'outlined', 'text', 'plain'] as const  
-  
   import axios from 'axios'
   import { ref, onMounted, watch } from 'vue'
-  import { useEventStore } from '@/stores/eventStore'
+  import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
+  import { NavigationType } from '@/types/enums'
   import type { MenuOut_GP, MenuOut } from '@/types/menuTypes'
-  const onboarding = ref(1)
+
+
+  const emit = defineEmits<{
+    (e: 'click', value: MenuOut, navigation: NavigationType): void
+  }>()
   
-  const store = useEventStore()
+  const onboarding = ref(1)
+
+  const useEventStore = UseEventStore()
+  const commonEventStore = CommonEventStore()
   const groupedMenus = ref<MenuOut_GP[]>([]) // カテゴリごとにグループ化されたメニュー
 
   // メニュー情報を更新するための関数
@@ -50,29 +56,28 @@
       if (axios.isAxiosError(error)) {
         // FastAPI 側の raise HTTPException(..., detail="...") を拾う
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        store.reportError("メニューの一括更新中にエラーが発生しました", errorMessage)
+        commonEventStore.reportError("メニューの一括更新中にエラーが発生しました", errorMessage)
       } else {
-        store.reportError('メニュー更新中に予期しないエラーが発生しました')
+        commonEventStore.reportError('メニュー更新中に予期しないエラーが発生しました')
       }
     }
   }
 
   // メニューが選択された時の処理
-  // 注文画面に遷移し、選択されたメニューを Pinia に記録
+  // 親コンポーネントに選択されたメニューを通知する
   async function selectMenu(menu: MenuOut) {
-    await store.triggerShowNavigationAction('order', 'OrderConfirm') // 注文画面を表示
-    await store.triggerMenuSelectAction(menu) // ← Pinia に記録！
+    emit('click', menu, NavigationType.Order)
   }
   
   // ナビゲーションバーよりカテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
-    () => [store.selectCategoryAction.timestamp, store.importMenusAction.timestamp],
+    () => [useEventStore.selectCategoryAction.timestamp, useEventStore.importMenusAction.timestamp],
     () => {
-      if (store.selectCategoryAction.categoryId) {
-        onboarding.value = store.selectCategoryAction.categoryId
+      if (useEventStore.selectCategoryAction.categoryId) {
+        onboarding.value = useEventStore.selectCategoryAction.categoryId
       }
-      if (store.importMenusAction.formData) {
-        importMenus(store.importMenusAction.formData)
+      if (useEventStore.importMenusAction.formData) {
+        importMenus(useEventStore.importMenusAction.formData)
       }
     }
   )

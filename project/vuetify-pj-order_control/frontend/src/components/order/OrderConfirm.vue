@@ -3,13 +3,12 @@
         title="注文確認"
     ></v-list-item>
     <v-list density="compact">
-      <!-- 今後リストでの注文更新する際は検討 -->
-      <!-- <v-list-item 
-        v-for="menu in menus"
-        :key="menu.id"
+      <v-list-item 
+        v-for="(item, index) in order_list"
+        :key="item.order_menu.id"
         class="menu-item"
         lines="three"
-      > -->
+      >
         <v-card
           elevated
           class="mx-auto"
@@ -18,28 +17,21 @@
         >
           <template #title>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>{{ menus?.name }}</span>
-              <span style="font-weight: bold;">¥{{ menus?.price }}</span>
+              <span>{{ item.order_menu?.name }}</span>
+              <span style="font-weight: bold;">¥{{ item.order_menu?.price }}</span>
             </div>
+            <v-number-input
+              control-variant="split"
+              v-model="item.order_cnt"
+              :min="0"
+              :max="10"
+              hide-details
+            >
+            </v-number-input>
           </template>
-          <v-img
-            height="100px"
-            src="https://cdn.vuetifyjs.com/images/cards/sunshine.jpg"
-            cover
-          ></v-img>
         </v-card>
-      <!-- </v-list-item> -->
+      </v-list-item>
     </v-list>
-    <div class="d-flex align-center mt-2" style="gap: 8px; width: 100%;">
-      <v-number-input
-        control-variant="split"
-        v-model="quantity"
-        :min="1"
-        :max="10"
-        hide-details
-      >
-      </v-number-input>
-    </div>
     <div>
       <v-btn color="primary" :width="'100%'" @click="on_order_commit">
           注文
@@ -50,20 +42,36 @@
 <script setup lang="ts">
     import axios from 'axios'
     import { ref ,watch} from 'vue'
-    import { useEventStore } from '@/stores/eventStore'
+    import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
     import type { MenuOut } from '@/types/menuTypes'
-    
-    const store = useEventStore()
-    const menus = ref<MenuOut>() // 選択されたメニュー
-    const quantity = ref<number>(0)
-    
+
+    const useEventStore = UseEventStore()
+    const commonEventStore = CommonEventStore()
+
+    interface typeList {
+      order_menu: MenuOut,
+      order_cnt: number
+    }
+    // const menus = ref<MenuOut>() // 選択されたメニュー
+    // const quantity = ref<number>(1) // 注文数を管理する変数
+
+    const order_list = ref<typeList[]>([]) // 注文リスト
+
     // メニュー画面より商品が選択された時を検知
     watch(
-        () => store.menuSelectAction.timestamp,
+        () => [useEventStore.menuSelectAction.timestamp],
         () => {
-            if (store.menuSelectAction.menu){
-              quantity.value = 1 // 数量を初期化
-              menus.value = store.menuSelectAction.menu // 選択されたメニューをセット
+            if (useEventStore.menuSelectAction.menu){
+              const selectedMenu = useEventStore.menuSelectAction.menu // 選択されたメニューをセット
+              // 注文リストに選択されたメニューが存在しない場合、追加
+              if (!order_list.value.some(item => item.order_menu.id === selectedMenu.id)) {
+                order_list.value.push({
+                  order_menu: selectedMenu,
+                  order_cnt: 1 // 初期値は1など適宜
+                })
+              }
+                // order_cntが1以上のものだけを残す
+                order_list.value = order_list.value.filter(item => item.order_cnt >= 1)
             }
         }
     )
@@ -72,23 +80,38 @@
     async function on_order_commit() {
       try{
         // 注文データをサーバーに送信
-        const response = await axios.post('http://localhost:8000/order', [{
-            "seat_id": 1,
-            "menu_id": menus.value?.id,
-            "order_cnt": quantity.value
-        }])      
-        store.reportInfo("ご注文ありがとうございました", menus.value?.name + "*" + quantity.value )
-        // 注文が成功したら、注文履歴を更新
-        store.triggerUpdateOrderAction() 
-        //store.clearMenuAction() // Pinia の状態をクリア
+        // 注文用にデータを加工
+        // order_cntが1以上のものだけを残す
+        order_list.value = order_list.value.filter(item => item.order_cnt >= 1)
+        const orders = order_list.value.map(item => ({
+          seat_id: 1, // 仮の座席ID、実際のアプリケーションでは適切な値を使用
+          menu_id: item.order_menu.id,
+          order_cnt: item.order_cnt
+        }))
 
+        const response = await axios.post('http://localhost:8000/order', orders)      
+
+        commonEventStore.reportInfo(
+          "ご注文ありがとうございました",
+          order_list.value
+            .map(order => `${order.order_menu.name} × ${order.order_cnt}`)
+            .join('\n') 
+        )
+
+        // 注文が成功したら、注文履歴を更新
+        useEventStore.triggerUpdateOrderAction() 
+        //store.clearMenuAction() // Pinia の状態をクリア
+      
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-          store.reportError("注文登録中にエラーが発生しました", errorMessage)
+          commonEventStore.reportError("注文登録中にエラーが発生しました", errorMessage)
         } else {
-          store.reportError('注文登録中に予期しないエラーが発生しました')
+          commonEventStore.reportError('注文登録中に予期しないエラーが発生しました')
         }
-      }
+      }finally {
+        // 注文リストをクリア
+        order_list.value = []
+      } 
     }  
   </script>

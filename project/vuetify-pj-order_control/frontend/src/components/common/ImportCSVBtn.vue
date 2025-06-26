@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import { useEventStore } from '@/stores/eventStore'
-const store = useEventStore()
+import { UseEventStore } from '@/stores/eventStore'
+const useEventStore = UseEventStore()
 
 const openFileDialog = () => {
   const input = document.createElement('input')
@@ -18,7 +18,7 @@ const openFileDialog = () => {
     if (file) {
       const formData = new FormData()
       formData.append('file', file)
-      await store.triggerImportMenusAction(formData)
+      await useEventStore.triggerImportMenusAction(formData)
     }
   })
   input.click()

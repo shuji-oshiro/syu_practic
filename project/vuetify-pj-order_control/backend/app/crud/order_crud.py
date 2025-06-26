@@ -22,7 +22,7 @@ def add_order(db: Session, orders: list[OrderIn]):
         db_orders.append(db_order)
 
     db.flush() # ここで自動的に ID が入る
-    db.commit()        
+    db.commit()     
 
     return get_orders(db, seat_id=db_orders[0].seat_id)  # 最初の注文の座席IDを返す
     

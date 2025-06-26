@@ -5,10 +5,9 @@
   <div style="max-height: 90vh; overflow-y: auto; overflow-x: hidden;">
     <v-row dense>
       <v-col
-        v-for="menu in recomend_menus"
-        :key="menu.id"
-        cols="12"
-        md="4"
+      v-for="menu in recomend_menus"
+      :key="menu.id"
+      cols="12"
       >
       <FoodCard :menu="menu" :onClick="() => selectMenu(menu)" />
       </v-col>
@@ -19,19 +18,20 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted, watch } from 'vue'
-  import { useEventStore } from '@/stores/eventStore'
+  import { CommonEventStore, UseEventStore } from '@/stores/eventStore'
   import type { MenuOut } from '@/types/menuTypes'
 
-  const recomend_menus  = ref<MenuOut[]>([]) // 注文リスト
-  const store = useEventStore()
+  const recomend_menus  = ref<MenuOut[]>([]) // おすすめメニューのリストを管理する変数
+  const commonEventStore = CommonEventStore()
+  const useEventStore = UseEventStore()
 
   const selectMenu = (menu: MenuOut) => {
-    store.triggerMenuSelectAction(menu)
+    useEventStore.triggerMenuSelectAction(menu)
   }
 
 
-  // 情報を取得する関数
-  // 注文情報は、座席IDを指定して取得する
+  //おすすめメニューを取得する関数
+  // この関数は、コンポーネントの初期化時に呼び出され、サーバーからおすすめメニューを取得します。
   async function getRecomendMenu() {
     try {
       // シート単位の現在の注文状況を取得
@@ -41,9 +41,9 @@
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        store.reportError("注文履歴情報の取得中にエラーが発生しました", errorMessage)
+        commonEventStore.reportError("注文履歴情報の取得中にエラーが発生しました", errorMessage)
       } else {
-        store.reportError('注文履歴情報の取得中に予期しないエラーが発生しました')
+        commonEventStore.reportError('注文履歴情報の取得中に予期しないエラーが発生しました')
       }
     }
   }

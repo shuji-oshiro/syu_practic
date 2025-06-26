@@ -20,13 +20,13 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted, watch, computed } from 'vue'
-  import { useEventStore } from '@/stores/eventStore'
+  import { CommonEventStore,UseEventStore } from '@/stores/eventStore'
   import type { OrderOut } from '@/types/orderTypes'
   import type { DataTableHeader } from 'vuetify'
 
   const rawOrders  = ref<OrderOut[]>([]) // 注文リスト
-  const store = useEventStore()
-
+  const commonEventStore = CommonEventStore()
+  const useEventOrder = UseEventStore()
   // 合計金額付きの加工済みリスト
   const orders = computed(() =>
     rawOrders.value.map(order => ({
@@ -60,9 +60,9 @@
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        store.reportError("注文履歴情報の取得中にエラーが発生しました", errorMessage)
+        commonEventStore.reportError("注文履歴情報の取得中にエラーが発生しました", errorMessage)
       } else {
-        store.reportError('注文履歴情報の取得中に予期しないエラーが発生しました')
+        commonEventStore.reportError('注文履歴情報の取得中に予期しないエラーが発生しました')
       }
     }
   }
@@ -74,9 +74,9 @@
 
   // 注文情報が更新されたときに再取得
   watch(
-    () => store.updateOrderAction.timestamp,
+    () => useEventOrder.updateOrderAction.timestamp,
     () => {
-      if (store.updateOrderAction.timestamp) {
+      if (useEventOrder.updateOrderAction.timestamp) {
         getOrderInfo()
       }
     }

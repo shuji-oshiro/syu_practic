@@ -18,15 +18,15 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted } from 'vue'
-  import { useEventStore } from '@/stores/eventStore'
-  const store = useEventStore()
+  import { UseEventStore } from '@/stores/eventStore'
+  const useEventStore = UseEventStore()
   const categories = ref([] as any[])
 
   // カテゴリが選択された時の処理
   // 注文画面に遷移し、選択されたカテゴリを Pinia に記録
   // カテゴリIDを引数に受け取り、Pinia のアクションを呼び出す
   function selectCategory(id: number) {
-    store.triggerSelectCategoryAction(id) 
+    useEventStore.triggerSelectCategoryAction(id) 
   }
 
   // カテゴリ情報を取得する関数
