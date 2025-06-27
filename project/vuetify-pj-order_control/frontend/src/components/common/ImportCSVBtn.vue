@@ -7,6 +7,7 @@
 
 <script setup lang="ts">
 import axios from 'axios'
+import { AlertType } from '@/types/enums'
 import { CommonEventStore } from '@/stores/eventStore'
 const commonEventStore = CommonEventStore()
 
@@ -31,14 +32,17 @@ async function importMenus(formData: FormData) {
   // DBに送信するためのPOSTリクエスト
   try{
     const response = await axios.post('http://localhost:8000/menu', formData)
-    // TODO:　メニュー画面更新処理は後日実装
+    
+    commonEventStore.EventAlertInformation(AlertType.Success, "メニューの一括更新が完了しました")
+    // TODO: ここで必要に応じて、メニュー情報を再取得するなど
+
   }catch (error) {
     if (axios.isAxiosError(error)) {
       // FastAPI 側の raise HTTPException(..., detail="...") を拾う
       const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-      commonEventStore.reportError("メニューの一括更新中にエラーが発生しました", errorMessage)
+      commonEventStore.EventAlertInformation(AlertType.Error, "メニューの一括更新中にエラーが発生しました", errorMessage)
     } else {
-      commonEventStore.reportError('メニュー更新中に予期しないエラーが発生しました')
+      commonEventStore.EventAlertInformation(AlertType.Error, 'メニュー更新中に予期しないエラーが発生しました')
     }
   }
 }

@@ -18,6 +18,7 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted, watch } from 'vue'
+  import { AlertType } from '@/types/enums'
   import { CommonEventStore, UseEventStore } from '@/stores/eventStore'
   import type { MenuOut } from '@/types/menuTypes'
 
@@ -41,9 +42,9 @@
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        commonEventStore.reportError("注文履歴情報の取得中にエラーが発生しました", errorMessage)
+        commonEventStore.EventAlertInformation(AlertType.Error, "注文履歴情報の取得中にエラーが発生しました", errorMessage)
       } else {
-        commonEventStore.reportError('注文履歴情報の取得中に予期しないエラーが発生しました')
+        commonEventStore.EventAlertInformation(AlertType.Error, "注文履歴情報の取得中にエラーが発生しました", '予期しないエラーが発生しました')
       }
     }
   }

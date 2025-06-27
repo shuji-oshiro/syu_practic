@@ -18,6 +18,7 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted } from 'vue'
+  import { AlertType } from '@/types/enums'
   import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
   import type { MenuCategory } from '@/types/menuTypes'
   const useEventStore = UseEventStore()
@@ -40,9 +41,9 @@
     } catch (error) {
       if (axios.isAxiosError(error)) {
         // Axios エラーの場合
-          commonEventStore.reportError(`カテゴリ情報の取得に失敗しました: ${error.message}`)
+          commonEventStore.EventAlertInformation(AlertType.Error, `カテゴリ情報の取得に失敗しました: ${error.message}`)
         } else {
-          commonEventStore.reportError('カテゴリ情報の取得中に予期しないエラーが発生しました')
+          commonEventStore.EventAlertInformation(AlertType.Error, 'カテゴリ情報の取得中に予期しないエラーが発生しました')
       }
     }
   }

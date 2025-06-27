@@ -30,13 +30,13 @@
   //const variants = ['elevated', 'flat', 'tonal', 'outlined', 'text', 'plain'] as const  
   import axios from 'axios'
   import { ref, onMounted, watch } from 'vue'
-  import { NavigationType } from '@/types/enums'
+  import { AlertType } from '@/types/enums'
   import type { MenuOut_GP, MenuOut } from '@/types/menuTypes'
   import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
 
 
   const emit = defineEmits<{
-    (e: 'click', value: MenuOut, navigation: NavigationType): void
+    (e: 'click', value: MenuOut): void
   }>()
   
   const onboarding = ref(1)
@@ -48,7 +48,7 @@
   // メニューが選択された時の処理
   // 親コンポーネントに選択されたメニューを通知する
   async function selectMenu(menu: MenuOut) {
-    emit('click', menu, NavigationType.Order)
+    emit('click', menu)
   }
   
   // ナビゲーションバーよりカテゴリが選択された時の処理を監視
@@ -73,9 +73,9 @@
       if (axios.isAxiosError(error)) {
         // FastAPI 側の raise HTTPException(..., detail="...") を拾う
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        commonEventStore.reportError("メニュー情報の取得中にエラーが発生しました", errorMessage)
+        commonEventStore.EventAlertInformation(AlertType.Error, "メニュー情報の取得中にエラーが発生しました", errorMessage)
       } else {
-        commonEventStore.reportError('メニュー情報の取得中に予期しないエラーが発生しました')
+        commonEventStore.EventAlertInformation(AlertType.Error, "メニュー情報の取得中にエラーが発生しました", '予期しないエラーが発生しました')
       }
     }
   })

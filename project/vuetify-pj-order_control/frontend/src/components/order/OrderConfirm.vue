@@ -42,6 +42,7 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref ,watch} from 'vue'
+  import { AlertType } from '@/types/enums'
   import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
   import type { MenuOut } from '@/types/menuTypes'
 
@@ -90,7 +91,8 @@
 
       const response = await axios.post('http://localhost:8000/order', orders)      
 
-      commonEventStore.reportInfo(
+      commonEventStore.EventAlertInformation(
+        AlertType.Success,
         "ご注文ありがとうございました",
         order_list.value
           .map(order => `${order.order_menu.name} × ${order.order_cnt}`)
@@ -103,9 +105,9 @@
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
-        commonEventStore.reportError("注文登録中にエラーが発生しました", errorMessage)
+        commonEventStore.EventAlertInformation(AlertType.Error, "注文登録中にエラーが発生しました", errorMessage)
       } else {
-        commonEventStore.reportError('注文登録中に予期しないエラーが発生しました')
+        commonEventStore.EventAlertInformation(AlertType.Error, "注文登録中にエラーが発生しました", '予期しないエラーが発生しました')
       }
     }finally {
       // 注文リストをクリア

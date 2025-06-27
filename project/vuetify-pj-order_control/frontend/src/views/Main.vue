@@ -22,7 +22,7 @@
 </template>
 <script setup lang="ts">
   import { ref, watch} from 'vue'
-  import { NavigationType } from '@/types/enums'
+  import { NavigationType, AlertType } from '@/types/enums'
   import type { MenuOut } from '@/types/menuTypes'
   import { CommonEventStore, UseEventStore } from '@/stores/eventStore'
   const useEventStore = UseEventStore()
@@ -33,32 +33,24 @@
   const isNavigationHistory = ref<boolean>(false)
 
   const showAlert = ref(false)
+  const alertType = ref<AlertType>(AlertType.Error)
   const title = ref<string>('')
-  const message = ref('')
-  const icon = ref<'mdi-alert-circle' | 'mdi-information' | 'mdi-check-circle'>()
-  const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
+  const message = ref<string>('')
+
   // ナビゲーションバーよりカテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
-    () => [commonEventStore.lastError.timestamp, commonEventStore.lastInfo.timestamp, commonEventStore.lastWarning.timestamp],
+    () => commonEventStore.AlertInformation.timestamp,
     () => {
-      showAlert.value = true
-      title.value = commonEventStore.lastError.message
-      message.value = commonEventStore.lastError.detail
-
-      if (commonEventStore.lastError.message) {
-        icon.value = 'mdi-alert-circle'
-        alertType.value = 'error' // エラータイプ
-      } else if (commonEventStore.lastWarning.message) {
-        icon.value = 'mdi-alert-circle'
-        alertType.value = 'warning' // 警告タイプ
-      } else if (commonEventStore.lastInfo.message) {
-        icon.value = 'mdi-information'
-        alertType.value = 'info' // 情報タイプ
+      if (commonEventStore.AlertInformation.timestamp) {
+        showAlert.value = true
+        title.value = commonEventStore.AlertInformation.message
+        message.value = commonEventStore.AlertInformation.detail
+        alertType.value = commonEventStore.AlertInformation.alertType
       }
     }
   )
 
-  function selectMenu(menu: MenuOut, navigation: NavigationType) {
+  function selectMenu(menu: MenuOut) {
     // メニューが選択されたことを通知
     useEventStore.triggerMenuSelectAction(menu)
     // ナビゲーションの状態を更新
