@@ -18,12 +18,13 @@
 <script setup lang="ts">
   import axios from 'axios'
   import { ref, onMounted } from 'vue'
-  import { UseEventStore } from '@/stores/eventStore'
+  import { UseEventStore, CommonEventStore } from '@/stores/eventStore'
+  import type { MenuCategory } from '@/types/menuTypes'
   const useEventStore = UseEventStore()
-  const categories = ref([] as any[])
+  const commonEventStore = CommonEventStore()
+  const categories = ref([] as MenuCategory[])
 
   // カテゴリが選択された時の処理
-  // 注文画面に遷移し、選択されたカテゴリを Pinia に記録
   // カテゴリIDを引数に受け取り、Pinia のアクションを呼び出す
   function selectCategory(id: number) {
     useEventStore.triggerSelectCategoryAction(id) 
@@ -34,14 +35,15 @@
     try {
       // カテゴリ単位の現在のメニュー状況を取得
       const response = await axios.get(`http://localhost:8000/category`)
-      
-      if (response.status === 200) {
-        categories.value = response.data || []
-      } else {
-        throw new Error('カテゴリの取得に失敗しました')
-      }
+      categories.value = response.data || []
+
     } catch (error) {
-      // errorMessage.value = error instanceof Error ? error.message : '不明なエラーが発生しました'
+      if (axios.isAxiosError(error)) {
+        // Axios エラーの場合
+          commonEventStore.reportError(`カテゴリ情報の取得に失敗しました: ${error.message}`)
+        } else {
+          commonEventStore.reportError('カテゴリ情報の取得中に予期しないエラーが発生しました')
+      }
     }
   }
 

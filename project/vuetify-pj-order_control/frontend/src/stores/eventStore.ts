@@ -103,7 +103,7 @@ export const UseEventStore = defineStore('event', {
     //注文更新イベント
     updateOrderAction: {
       source: '',
-      updateflg: true,
+      updateflg: false,
       timestamp: null as number | null
     },
 
@@ -133,10 +133,10 @@ export const UseEventStore = defineStore('event', {
       }
     },
 
-    triggerUpdateOrderAction(source = 'FoodMenusList') {
+    triggerUpdateOrderAction(flg: boolean, source = 'FoodMenusList') {
       this.updateOrderAction = {
         source,
-        updateflg: true,
+        updateflg: flg,
         timestamp: Date.now()
       }
     }, 

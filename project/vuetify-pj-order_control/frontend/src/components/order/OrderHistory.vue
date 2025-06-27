@@ -11,9 +11,6 @@
     :items="orders"
     fixed-header
   >
-  <!-- <template #item.total="{ item }">
-    ¥{{ item.total }}
-  </template> -->
   </v-data-table-virtual>
 </template>
 
@@ -72,11 +69,11 @@
     getOrderInfo
   )
 
-  // 注文情報が更新されたときに再取得
+  // 注文情報が更新された状態を検知し、注文情報を再取得する
   watch(
     () => useEventOrder.updateOrderAction.timestamp,
     () => {
-      if (useEventOrder.updateOrderAction.timestamp) {
+      if (useEventOrder.updateOrderAction.updateflg) {
         getOrderInfo()
       }
     }

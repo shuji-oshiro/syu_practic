@@ -22,3 +22,10 @@ export type MenuOut_GP = {
   category_name: string
   menues: MenuOut[]
 }
+
+// カテゴリ情報
+export type MenuCategory = {
+  id: number
+  name: string
+  description: string
+}

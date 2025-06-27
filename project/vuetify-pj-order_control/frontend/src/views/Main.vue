@@ -22,42 +22,36 @@
 </template>
 <script setup lang="ts">
   import { ref, watch} from 'vue'
-  import { CommonEventStore } from '@/stores/eventStore'
   import { NavigationType } from '@/types/enums'
   import type { MenuOut } from '@/types/menuTypes'
-
-  const emit = defineEmits<{
-    (e: 'click', value: MenuOut): void
-  }>()
+  import { CommonEventStore, UseEventStore } from '@/stores/eventStore'
+  const useEventStore = UseEventStore()
+  const commonEventStore = CommonEventStore()
 
   const isNavigationCategory = ref<boolean>(false)
   const isNavigationOrder = ref<boolean>(false)
   const isNavigationHistory = ref<boolean>(false)
 
-  const store = CommonEventStore()
   const showAlert = ref(false)
-  const message = ref('')
   const title = ref<string>('')
-  const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
+  const message = ref('')
   const icon = ref<'mdi-alert-circle' | 'mdi-information' | 'mdi-check-circle'>()
+  const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
   // ナビゲーションバーよりカテゴリが選択された時、またはメニューがインポートされた時の処理を監視
   watch(
-    () => [store.lastError.timestamp, store.lastInfo.timestamp, store.lastWarning.timestamp],
+    () => [commonEventStore.lastError.timestamp, commonEventStore.lastInfo.timestamp, commonEventStore.lastWarning.timestamp],
     () => {
-      showAlert.value = true  
-      if (store.lastError.message) {
-        title.value = store.lastError.message
-        message.value = store.lastError.detail
+      showAlert.value = true
+      title.value = commonEventStore.lastError.message
+      message.value = commonEventStore.lastError.detail
+
+      if (commonEventStore.lastError.message) {
         icon.value = 'mdi-alert-circle'
         alertType.value = 'error' // エラータイプ
-      } else if (store.lastWarning.message) {
-        title.value = store.lastWarning.message
-        message.value = store.lastWarning.detail
+      } else if (commonEventStore.lastWarning.message) {
         icon.value = 'mdi-alert-circle'
         alertType.value = 'warning' // 警告タイプ
-      } else if (store.lastInfo.message) {
-        title.value = store.lastInfo.message
-        message.value = store.lastInfo.detail
+      } else if (commonEventStore.lastInfo.message) {
         icon.value = 'mdi-information'
         alertType.value = 'info' // 情報タイプ
       }
@@ -65,11 +59,10 @@
   )
 
   function selectMenu(menu: MenuOut, navigation: NavigationType) {
-    // 親コンポーネントに選択されたメニューを通知する
-    emit('click', menu)
-    //TODO: menu をAppNavigationOrderに渡す方法があるのか？
-    // ナビゲーションバーの状態を更新
-    showNavigation(navigation)
+    // メニューが選択されたことを通知
+    useEventStore.triggerMenuSelectAction(menu)
+    // ナビゲーションの状態を更新
+    showNavigation(NavigationType.Order)
   }
 
 
@@ -88,4 +81,5 @@
       isNavigationHistory.value = true
     }
   }
+
 </script>

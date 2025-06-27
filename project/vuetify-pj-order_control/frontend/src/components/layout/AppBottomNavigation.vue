@@ -21,8 +21,7 @@
   const emit = defineEmits<{
     (e: 'click', value: NavigationType): void
   }>()
-  import { ja } from 'vuetify/locale';
-  
+ 
   //呼び出しナビゲーションボタン押下時
   function on_click(target: NavigationType) {
     emit('click', target)
