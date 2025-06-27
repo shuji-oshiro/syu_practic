@@ -11,9 +11,12 @@
     <v-btn @click="on_click(NavigationType.Category)">
     <v-icon>mdi-silverware</v-icon>
     <span>メニュー</span>
-    </v-btn>    
+    </v-btn>   
+    <v-btn @click="on_click(NavigationType.Maintenance)">
+    <v-icon>mdi-tools</v-icon>
+    <span>メンテナンス</span>
+    </v-btn>   
     <RecordingButton />
-    <ImportCSVBtn />
   </v-bottom-navigation>
 </template>
 <script setup lang="ts">
@@ -26,6 +29,7 @@
   function on_click(target: NavigationType) {
     emit('click', target)
   }
+  
  
 
 </script>

@@ -1,44 +1,39 @@
 <template>
-  <v-btn @click="openFileDialog">
-    <v-icon >mdi-import</v-icon>
-    <span>更新</span>
-  </v-btn>
+  <v-file-input
+    v-model="selectedFile"
+    label="CSVファイルを選択"
+    accept=".csv"
+    prepend-icon="mdi-import"
+    @change="onFileChange"
+    hide-details
+    dense
+  ></v-file-input>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import axios from 'axios'
 import { AlertType } from '@/types/enums'
 import { CommonEventStore } from '@/stores/eventStore'
 const commonEventStore = CommonEventStore()
 
-const openFileDialog = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.csv'
-  input.addEventListener('change', async (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (file) {
-      const formData = new FormData()
-      formData.append('file', file)
-      await importMenus(formData)
-    }
-  })
-  input.click()
+const selectedFile = ref<File | null>(null)
+
+const onFileChange = async () => {
+  if (!selectedFile.value) return
+  const formData = new FormData()
+  formData.append('file', selectedFile.value)
+  await importMenus(formData)
+  // ファイル選択状態をリセットしたい場合
+  selectedFile.value = null
 }
 
-// メニュー情報を更新するための関数
-// CSVファイルを受け取り、DBに送信する
 async function importMenus(formData: FormData) {
-  // DBに送信するためのPOSTリクエスト
-  try{
+  try {
     const response = await axios.post('http://localhost:8000/menu', formData)
-    
     commonEventStore.EventAlertInformation(AlertType.Success, "メニューの一括更新が完了しました")
-    // TODO: ここで必要に応じて、メニュー情報を再取得するなど
-
-  }catch (error) {
+  } catch (error) {
     if (axios.isAxiosError(error)) {
-      // FastAPI 側の raise HTTPException(..., detail="...") を拾う
       const errorMessage = error.response?.data?.detail || 'サーバーからの応答がありません'
       commonEventStore.EventAlertInformation(AlertType.Error, "メニューの一括更新中にエラーが発生しました", errorMessage)
     } else {

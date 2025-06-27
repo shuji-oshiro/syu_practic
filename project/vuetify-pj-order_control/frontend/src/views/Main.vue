@@ -4,6 +4,7 @@
       <AppNavigationCategory v-model="isNavigationCategory"/>
       <AppNavigationOrder v-model="isNavigationOrder"/>
       <AppNavigationHistory v-model="isNavigationHistory"/>
+      <AppNavigationMentenance v-model="isNavigationMaintenance" />
       <v-main style="height: 100vh;" >  
         <v-alert
           v-if="showAlert"
@@ -25,12 +26,14 @@
   import { NavigationType, AlertType } from '@/types/enums'
   import type { MenuOut } from '@/types/menuTypes'
   import { CommonEventStore, UseEventStore } from '@/stores/eventStore'
+import App from '@/App.vue'
   const useEventStore = UseEventStore()
   const commonEventStore = CommonEventStore()
 
   const isNavigationCategory = ref<boolean>(false)
   const isNavigationOrder = ref<boolean>(false)
   const isNavigationHistory = ref<boolean>(false)
+  const isNavigationMaintenance = ref<boolean>(false)
 
   const showAlert = ref(false)
   const alertType = ref<AlertType>(AlertType.Error)
@@ -64,6 +67,7 @@
     isNavigationCategory.value = false
     isNavigationOrder.value = false
     isNavigationHistory.value = false
+    isNavigationMaintenance.value = false
 
     if (target === NavigationType.Category) {
       isNavigationCategory.value = true
@@ -71,6 +75,8 @@
       isNavigationOrder.value = true
     } else if (target === NavigationType.History) {
       isNavigationHistory.value = true
+    } else if (target === NavigationType.Maintenance) {
+      isNavigationMaintenance.value = true
     }
   }
 

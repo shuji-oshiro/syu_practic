@@ -3,7 +3,8 @@
   export enum NavigationType {
       History = 'history',
       Category = 'category',
-      Order = 'order'
+      Order = 'order',
+      Maintenance = 'maintenance'
     }
 
   // アラートの種類を定義

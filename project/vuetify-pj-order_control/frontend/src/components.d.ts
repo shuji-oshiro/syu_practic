@@ -9,13 +9,11 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppBottomNavigation: typeof import('./components/layout/AppBottomNavigation.vue')['default']
-    AppNavigation: typeof import('./components/layout/AppNavigation.vue')['default']
     AppNavigationCategory: typeof import('./components/layout/AppNavigationCategory.vue')['default']
     AppNavigationHistory: typeof import('./components/layout/AppNavigationHistory.vue')['default']
+    AppNavigationMentenance: typeof import('./components/layout/AppNavigationMentenance.vue')['default']
     AppNavigationOrder: typeof import('./components/layout/AppNavigationOrder.vue')['default']
-    BaseAlert: typeof import('./components/common/BaseAlert.vue')['default']
-    CardFood: typeof import('./components/menu/CardFood.vue')['default']
-    copy: typeof import('./components/menu/OrderHistory copy.vue')['default']
+    copy: typeof import('./components/layout/AppNavigationCategory copy.vue')['default']
     FoodCard: typeof import('./components/menu/FoodCard.vue')['default']
     ImportCSVBtn: typeof import('./components/common/ImportCSVBtn.vue')['default']
     MenuCategory: typeof import('./components/menu/MenuCategory.vue')['default']
