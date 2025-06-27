@@ -18,7 +18,7 @@ def transcribe_audio_file_on_localmodel(file_path: str) -> dict:
     
     reco_text = reco_text.strip()
     match_orders = fuzzy_menu_match(reco_text)
-    match_text = None
+    match_text = ""
     if match_orders:
         match_orders = sorted(match_orders, key=lambda x: x[1], reverse=True)
         match_text = match_orders[0][0]
