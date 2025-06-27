@@ -29,3 +29,19 @@ export type MenuCategory = {
   name: string
   description: string
 }
+
+
+/// 音声認識結果とマッチしたメニュー情報のスコア
+export type MatchMenu = {
+  menu: MenuOut
+  score: number
+}
+
+// 音声認識結果とマッチしたメニュー情報
+export type VoiceResult = {
+  reco_text: string
+  match_menus: MatchMenu[]
+}
+
+
+

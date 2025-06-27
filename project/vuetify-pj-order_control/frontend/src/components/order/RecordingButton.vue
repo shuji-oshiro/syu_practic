@@ -121,6 +121,7 @@ async function startRecording() {
         method: 'POST',
         body: formData,
       })
+      const voiceResult = response.data as VoiceResult
       
       const data = await response.json()
       if (!response.ok) {
@@ -128,8 +129,21 @@ async function startRecording() {
         isCorect.value = false
         return;
       }
+      
       reco_text.value = data.reco_text
-      match_text.value = data.match_text
+      
+      let match_menus_text = ""
+      data.match_menus.forEach((match_menus) => {
+        const val = "商品名：" + match_menus.menu.name + " スコア：" + match_menus.score
+        match_menus_text += val + "\n"
+      })
+      if (match_menus_text === "") {
+        emit('error', '料理名が認識できませんでした')
+        isCorect.value = false
+        return;
+      }
+      match_text.value = match_menus_text
+
       isCorect.value = true
       emit('recorded', reco_text.value, match_text.value, blob)
     } catch (err) {
