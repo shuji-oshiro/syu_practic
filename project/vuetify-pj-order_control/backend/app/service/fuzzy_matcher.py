@@ -1,12 +1,10 @@
 import json
 import pykakasi
 from rapidfuzz import fuzz
+from backend.app.crud import menu_crud
+from backend.app.database.database import get_db
+from backend.app.schemas.menu_schema import MenuOut
 
-# メニュー情報の読み込み
-with open("backend/data/menu.json", "r", encoding="utf-8") as f:
-    menu_data = json.load(f)
-
-search_list = [(v["search_string"], k) for k, v in menu_data.items()]
 
 def to_hira(text: str) -> str:
     kakasi = pykakasi.kakasi()
@@ -15,9 +13,16 @@ def to_hira(text: str) -> str:
 
 def fuzzy_menu_match(text: str, threshold: int = 50):
     cnv_text = to_hira(text)
-    results = []
-    for search_string, display_name in search_list:
-        score = fuzz.ratio(cnv_text, search_string)
+    
+    result = menu_crud.get_menus(next(get_db()))
+    menu_out_list = [MenuOut.model_validate(item) for item in result]
+    # 各メニューの検索用テキストの配列をキーにメニューオブジェクトのタプルを作成
+    search_menus = [(menu.search_text, menu) for menu in menu_out_list]
+
+    match_menus = []
+    for search_text, menu in search_menus:
+        score = fuzz.ratio(cnv_text, search_text)
         if score >= threshold:
-            results.append((display_name, score))
-    return results
+            match_menus.append((menu, score))
+
+    return match_menus

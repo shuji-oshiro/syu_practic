@@ -13,15 +13,18 @@ async def handle_voice(file: UploadFile = File(...)):
             buffer.write(await file.read())
 
         # 音声ファイルをローカルモデルで処理
-        result = VoiceResult.model_validate(transcribe_audio_file_on_localmodel(temp_path))
-        
-        if result.match_text == "":
-            raise HTTPException(status_code=400, detail=f"音声認識エラー: {result.reco_text}")
-
-        os.remove(temp_path)
-        return result
+        reco_text, match_menus = transcribe_audio_file_on_localmodel(temp_path)
+        if len(match_menus) == 0:
+            raise HTTPException(status_code=400, detail=f"音声認識エラー: {reco_text}")
+    
+        return {
+            "reco_text": reco_text, 
+            "match_menus": [menu for menu, _ in match_menus]
+            }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"音声処理エラー: {str(e)}")
-
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
