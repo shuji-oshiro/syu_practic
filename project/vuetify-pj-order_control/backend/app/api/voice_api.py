@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from backend.app.schemas.voice_schema import VoiceResult
-from backend.app.service.voice_handler import transcribe_audio_file_on_localmodel
+from backend.app.service.voice_handler import speechRecognition
 
 router = APIRouter()
 
@@ -13,14 +13,20 @@ async def handle_voice(file: UploadFile = File(...)):
             buffer.write(await file.read())
 
         # 音声ファイルをローカルモデルで処理
-        reco_text, match_menus = transcribe_audio_file_on_localmodel(temp_path)
+        reco_text, match_menus = speechRecognition(temp_path)
         if len(match_menus) == 0:
             raise HTTPException(status_code=400, detail=f"音声認識エラー: {reco_text}")
     
         return {
             "reco_text": reco_text, 
-            "match_menus": [menu for menu, _ in match_menus]
-            }
+            "match_menus": [
+                {
+                    "menu": menu,
+                    "score": score
+                } for menu, score in match_menus
+            ]
+        }
+
     except HTTPException:
         raise
     except Exception as e:

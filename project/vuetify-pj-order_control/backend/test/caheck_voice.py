@@ -1,6 +1,7 @@
 import io
 import os
 import sys
+import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import subprocess
 import sounddevice as sd
@@ -44,8 +45,19 @@ def test_voice_recognition_success():
             files = {"file": ("test_sample.webm", f, "audio/webm")}
             response = client.post("/voice/", files=files)
 
-        data = response.json()        
-        print("レスポンスデータ:", data)
+        data = response.json()      
+        if response.status_code != 200:
+            print("エラー:", response.status_code, data)
+            return
+        print("音声認識結果:", data.get("reco_text", ""))
+        match_menus = data.get("match_menus", [])
+        if match_menus:
+            print("マッチしたメニュー:")
+            for menu in match_menus:
+                menu_obj = json.loads(json.dumps(menu["menu"], ensure_ascii=False))
+                print("-", menu_obj["name"], "(スコア:", menu["score"], ")")
+        else:
+            print("マッチしたメニューはありません。")
 
     finally:
         if os.path.exists(wav_file):
